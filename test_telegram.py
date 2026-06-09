@@ -8,13 +8,13 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 
 from src.config import Config
-from src.crawler import get_high_impact_events
+from src.digest import build_daily_digest
 from src.telegram_sender import send_economic_calendar_to_telegram_sync
 
 
 def test_telegram():
-    """텔레그램 전송 테스트"""
-    print("텔레그램 전송 테스트 시작...")
+    """날씨 + 경제 캘린더 전송 테스트"""
+    print("날씨 + 경제 캘린더 전송 테스트 시작...")
     print("-" * 60)
     
     try:
@@ -22,24 +22,24 @@ def test_telegram():
         Config.validate()
         
         # 데이터 수집
-        events, message = get_high_impact_events()
+        digest = build_daily_digest()
         
-        print(f"수집된 이벤트 수: {len(events)}")
+        print(f"수집된 이벤트 수: {len(digest['events'])}")
         print("\n전송할 메시지:")
         print("-" * 60)
-        print(message)
+        print(digest['message'])
         print("-" * 60)
         
         # 텔레그램 전송
         print("\n텔레그램으로 전송 중...")
         success = send_economic_calendar_to_telegram_sync(
-            message,
+            digest['message'],
             Config.TELEGRAM_BOT_TOKEN,
             Config.TELEGRAM_CHAT_ID
         )
         
         if success:
-            print("✓ 텔레그램 전송 성공!")
+            print("✓ 날씨 + 경제 캘린더 전송 성공!")
         else:
             print("✗ 텔레그램 전송 실패")
     

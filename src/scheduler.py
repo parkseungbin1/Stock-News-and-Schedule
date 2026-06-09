@@ -9,7 +9,7 @@ from apscheduler.job import Job
 import atexit
 from datetime import datetime
 
-from src.crawler import get_high_impact_events
+from src.digest import build_daily_digest
 from src.telegram_sender import send_economic_calendar_to_telegram_sync
 
 logger = logging.getLogger(__name__)
@@ -64,28 +64,28 @@ class EconomicCalendarScheduler:
     
     def send_economic_calendar(self):
         """
-        경제 캘린더 데이터 수집 및 텔레그램 전송
+        날씨 + 경제 캘린더 데이터 수집 및 텔레그램 전송
         """
         try:
-            logger.info(f"[{datetime.now()}] 경제 캘린더 데이터 수집 시작")
+            logger.info(f"[{datetime.now()}] 날씨 + 경제 캘린더 데이터 수집 시작")
             
             # 데이터 수집
-            events, message = get_high_impact_events()
+            digest = build_daily_digest()
             
             # 텔레그램 전송
             success = send_economic_calendar_to_telegram_sync(
-                message,
+                digest['message'],
                 self.bot_token,
                 self.chat_id
             )
             
             if success:
-                logger.info(f"[{datetime.now()}] 경제 캘린더 전송 성공 (이벤트 수: {len(events)})")
+                logger.info(f"[{datetime.now()}] 날씨 + 경제 캘린더 전송 성공 (이벤트 수: {len(digest['events'])})")
             else:
-                logger.error(f"[{datetime.now()}] 경제 캘린더 전송 실패")
+                logger.error(f"[{datetime.now()}] 날씨 + 경제 캘린더 전송 실패")
         
         except Exception as e:
-            logger.error(f"[{datetime.now()}] 경제 캘린더 처리 중 오류: {e}", exc_info=True)
+            logger.error(f"[{datetime.now()}] 날씨 + 경제 캘린더 처리 중 오류: {e}", exc_info=True)
     
     def get_jobs(self):
         """
@@ -98,9 +98,9 @@ class EconomicCalendarScheduler:
     
     def trigger_now(self):
         """
-        즉시 경제 캘린더 전송 (테스트용)
+        즉시 날씨 + 경제 캘린더 전송 (테스트용)
         """
-        logger.info("경제 캘린더 즉시 전송 (테스트)")
+        logger.info("날씨 + 경제 캘린더 즉시 전송 (테스트)")
         self.send_economic_calendar()
 
 

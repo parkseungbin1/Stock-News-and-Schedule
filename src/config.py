@@ -18,6 +18,12 @@ class Config:
     # 스케줄링 설정
     SCHEDULE_HOUR = int(os.getenv('SCHEDULE_HOUR', '7'))
     SCHEDULE_MINUTE = int(os.getenv('SCHEDULE_MINUTE', '0'))
+
+    # 날씨 설정
+    WEATHER_CITY = os.getenv('WEATHER_CITY', '서울')
+    WEATHER_LATITUDE = float(os.getenv('WEATHER_LATITUDE', '37.5665'))
+    WEATHER_LONGITUDE = float(os.getenv('WEATHER_LONGITUDE', '126.9780'))
+    WEATHER_TIMEZONE = os.getenv('WEATHER_TIMEZONE', 'Asia/Seoul')
     
     # 로깅 설정
     LOG_LEVEL = os.getenv('LOG_LEVEL', 'INFO')
