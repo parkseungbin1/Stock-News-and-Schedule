@@ -2,6 +2,7 @@
 텔레그램 전송 테스트 스크립트
 """
 import sys
+import time
 from pathlib import Path
 
 # 현재 디렉토리를 Python 경로에 추가
@@ -26,19 +27,29 @@ def test_telegram():
         
         print(f"수집된 이벤트 수: {len(digest['events'])}")
         print("\n전송할 메시지:")
-        print("-" * 60)
-        print(digest['message'])
-        print("-" * 60)
+        print("[날씨]\n", digest['weather_message'])
+        print("-" * 30)
+        print("[경제]\n", digest['economic_message'])
+        print("-" * 30)
         
         # 텔레그램 전송
         print("\n텔레그램으로 전송 중...")
-        success = send_economic_calendar_to_telegram_sync(
-            digest['message'],
+        success_w = send_economic_calendar_to_telegram_sync(
+            digest['weather_message'],
             Config.TELEGRAM_BOT_TOKEN,
             Config.TELEGRAM_CHAT_ID
         )
         
-        if success:
+        # 메시지 간 간격을 두기 위해 3초 대기
+        time.sleep(3)
+        
+        success_e = send_economic_calendar_to_telegram_sync(
+            digest['economic_message'],
+            Config.TELEGRAM_BOT_TOKEN,
+            Config.TELEGRAM_CHAT_ID
+        )
+        
+        if success_w and success_e:
             print("✓ 날씨 + 경제 캘린더 전송 성공!")
         else:
             print("✗ 텔레그램 전송 실패")
