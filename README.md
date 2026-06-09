@@ -74,6 +74,18 @@ python test_telegram.py
 
 크롤링된 데이터를 텔레그램으로 실제로 전송하여 테스트합니다.
 
+### GitHub Actions로 매일 자동 실행
+
+이 저장소는 GitHub Actions 스케줄로 매일 아침 6시에 자동 실행할 수 있습니다.
+
+1. GitHub 저장소의 `Settings` > `Secrets and variables` > `Actions`로 이동합니다.
+2. 다음 시크릿을 등록합니다.
+  - `TELEGRAM_BOT_TOKEN`
+  - `TELEGRAM_CHAT_ID`
+3. `Actions` 탭에서 `Daily Telegram Digest` 워크플로우를 수동 실행하거나, 예약 실행을 기다립니다.
+
+주의: GitHub Actions의 `cron`은 UTC 기준입니다. 현재 설정은 한국시간(KST) 오전 6시를 기준으로 `21:00 UTC`에 실행되도록 되어 있습니다.
+
 ## 프로젝트 구조
 
 ```
@@ -204,6 +216,7 @@ MIT License
 - 네이버 증권의 로봇 차단 정책을 확인하고 적절한 크롤링 간격을 유지하세요
 - 개인적인 용도로만 사용해주세요
 - 텔레그램 봇 토큰은 절대 공개하지 마세요
+- `.env.example`에는 실제 토큰 대신 예시값만 사용하세요
 
 ## 업데이트 로그
 
