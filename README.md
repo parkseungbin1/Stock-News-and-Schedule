@@ -79,10 +79,17 @@ python test_telegram.py
 이 저장소는 GitHub Actions 스케줄로 매일 아침 6시에 자동 실행할 수 있습니다.
 
 1. GitHub 저장소의 `Settings` > `Secrets and variables` > `Actions`로 이동합니다.
-2. 다음 시크릿을 등록합니다.
-  - `TELEGRAM_BOT_TOKEN`
-  - `TELEGRAM_CHAT_ID`
-3. `Actions` 탭에서 `Daily Telegram Digest` 워크플로우를 수동 실행하거나, 예약 실행을 기다립니다.
+2. `New repository secret`를 눌러 다음 시크릿을 각각 추가합니다.
+   - `TELEGRAM_BOT_TOKEN`: 텔레그램 봇 토큰
+   - `TELEGRAM_CHAT_ID`: 메시지를 받을 채팅 ID
+3. `Actions` 탭에서 `Daily Telegram Digest`는 매일 자동 실행되고, `Manual Setup Check`는 필요할 때 직접 실행해서 점검할 수 있습니다.
+
+점검용 워크플로우는 다음을 확인합니다.
+
+- 시크릿이 실제로 등록되어 있는지
+- 크롤러가 정상 동작하는지
+
+점검 후 텔레그램까지 실제로 보내고 싶으면 `Daily Telegram Digest` 워크플로우의 `Run workflow`를 눌러 수동 실행하면 됩니다.
 
 주의: GitHub Actions의 `cron`은 UTC 기준입니다. 현재 설정은 한국시간(KST) 오전 6시를 기준으로 `21:00 UTC`에 실행되도록 되어 있습니다.
 
