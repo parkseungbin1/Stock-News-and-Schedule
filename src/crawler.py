@@ -194,16 +194,19 @@ class EconomicCalendarCrawler:
                 current_date = event_date
                 message += f"📅 {event_date}\n"
 
-            message += f"⏰ {event.get('time', 'N/A')} | 🌍 {event.get('country', 'N/A')} | {event.get('importance_label', '매우 높음')}\n"
+            release_status = '발표 완료' if event.get('is_release') else '발표 전'
+
+            message += f"⏰ {event.get('time', 'N/A')}\n"
+            message += f"🌍 {event.get('country', 'N/A')} | {event.get('importance_label', '매우 높음')}\n"
             message += f"📈 {event.get('event', 'N/A')}\n"
             if event.get('period'):
                 message += f"📌 기간: {event.get('period')}\n"
-            if event.get('previous') or event.get('actual'):
-                message += f"📊 이전: {event.get('previous', '-')} | 실제: {event.get('actual', '-')}\n"
-            if event.get('unit'):
-                message += f"📐 단위: {event.get('unit')}\n"
+            message += f"📊 전회: {event.get('previous', '-')}\n"
+            message += f"🧾 실적: {event.get('actual', '-')}\n"
+            message += f"📐 단위: {event.get('unit', '-') or '-'}\n"
+            message += f"📣 상태: {release_status}\n"
 
-            message += "\n"
+            message += f"{'-'*28}\n"
 
         return message
 
