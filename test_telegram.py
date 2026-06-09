@@ -48,10 +48,12 @@ def test_telegram():
         print("\n.env 파일에 다음을 설정하세요:")
         print("TELEGRAM_BOT_TOKEN=your_bot_token")
         print("TELEGRAM_CHAT_ID=your_chat_id")
+        sys.exit(1)
     except Exception as e:
         print(f"오류 발생: {e}")
         import traceback
         traceback.print_exc()
+        sys.exit(1)
 
 
 if __name__ == '__main__':
