@@ -30,4 +30,4 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           SCHEDULE_HOUR: '6'
           SCHEDULE_MINUTE: '0'
-        run: python test_telegram.py
+        run: python daily_digest.py

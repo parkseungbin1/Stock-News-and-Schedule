@@ -1,13 +1,14 @@
 # Stock-News-and-Schedule
 
-네이버 증권 stock.naver.com의 경제 지표 API에서 시장 영향력이 매우 높은 경제 지표를 수집하여 매일 아침 텔레그램으로 전송하는 봇입니다.
+네이버 증권 stock.naver.com의 경제 지표 API와 날씨 API를 이용해, 매일 아침 텔레그램으로 날씨와 경제 지표를 함께 전송하는 봇입니다.
 
 ## 기능
 
 - 📊 네이버 증권 stock.naver.com 경제 지표 API에서 데이터 크롤링
+- 🌤 서울 기준 날씨 정보와 3일 예보 자동 수집
 - 🎯 시장 영향력 "매우 높음" 지표만 필터링
 - 📅 1주일치 경제 지표 자동 수집
-- 💬 매일 아침 7시(설정 가능)에 텔레그램으로 자동 전송
+- 💬 매일 아침 6시(KST, 설정 가능)에 텔레그램으로 자동 전송
 - 🔄 백그라운드에서 지속적으로 실행
 
 ## 설치
@@ -44,6 +45,10 @@ TELEGRAM_CHAT_ID=your_chat_id_here
 # 선택 설정
 SCHEDULE_HOUR=7          # 전송 시간 (기본값: 7시)
 SCHEDULE_MINUTE=0        # 전송 분 (기본값: 0분)
+WEATHER_CITY=서울
+WEATHER_LATITUDE=37.5665
+WEATHER_LONGITUDE=126.9780
+WEATHER_TIMEZONE=Asia/Seoul
 LOG_LEVEL=INFO          # 로깅 레벨
 DATA_DAYS=7             # 조회 기간 (기본값: 7일)
 ```
@@ -56,7 +61,7 @@ DATA_DAYS=7             # 조회 기간 (기본값: 7일)
 python main.py
 ```
 
-프로그램이 백그라운드에서 실행되며, 매일 설정된 시간(기본값 07:00)에 자동으로 경제 캘린더를 전송합니다.
+프로그램이 백그라운드에서 실행되며, 매일 설정된 시간(기본값 07:00)에 날씨와 경제 캘린더를 함께 전송합니다.
 
 ### 크롤러 테스트
 
@@ -72,7 +77,7 @@ python test_crawler.py
 python test_telegram.py
 ```
 
-크롤링된 데이터를 텔레그램으로 실제로 전송하여 테스트합니다.
+날씨와 크롤링된 경제 데이터를 텔레그램으로 실제로 전송하여 테스트합니다.
 
 ### GitHub Actions로 매일 자동 실행
 
@@ -87,7 +92,7 @@ python test_telegram.py
 점검용 워크플로우는 다음을 확인합니다.
 
 - 시크릿이 실제로 등록되어 있는지
-- 크롤러가 정상 동작하는지
+- 날씨 API와 경제 지표 API가 정상 동작하는지
 
 점검 후 텔레그램까지 실제로 보내고 싶으면 `Daily Telegram Digest` 워크플로우의 `Run workflow`를 눌러 수동 실행하면 됩니다.
 
@@ -116,10 +121,15 @@ Stock-News-and-Schedule/
 ## 주요 모듈 설명
 
 ### crawler.py
-- `EconomicCalendarCrawler`: 네이버 증권 글로벌 경제 캘린더를 크롤링
+- `EconomicCalendarCrawler`: 네이버 증권 경제 지표 API를 크롤링
   - `get_economic_calendar_data()`: 모든 경제 지표 데이터 수집
   - `filter_high_impact_events()`: 시장 영향력 "매우 높음" 필터링
   - `format_events_for_message()`: 메시지 형식으로 변환
+
+### weather.py
+- `WeatherService`: Open-Meteo를 사용해 날씨와 3일 예보를 조회
+  - `fetch_weather()`: 현재 날씨와 일별 예보 수집
+  - `format_weather_for_message()`: 텔레그램 메시지 형식으로 변환
 
 ### scheduler.py
 - `EconomicCalendarScheduler`: APScheduler를 사용한 일정 관리

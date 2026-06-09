@@ -38,5 +38,15 @@ jobs:
 
           echo "Secrets are registered successfully."
 
+      - name: Run weather smoke test
+        run: |
+          python - <<'PY'
+          from src.weather import get_weather_forecast_message
+
+          weather_data, message = get_weather_forecast_message()
+          print(f"weather_city={weather_data['city_name']}")
+          print(message.splitlines()[0])
+          PY
+
       - name: Run crawler smoke test
         run: python test_crawler.py

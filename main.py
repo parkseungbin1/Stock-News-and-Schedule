@@ -1,7 +1,6 @@
 """
 메인 실행 파일
-네이버 증권 글로벌 경제 캘린더에서 시장 영향력 매우 높은 항목을 
-매일 아침 7시에 텔레그램으로 전송
+네이버 증권 날씨와 경제 캘린더를 매일 아침 설정된 시간에 텔레그램으로 전송
 """
 import sys
 import logging
@@ -21,7 +20,7 @@ def main():
     # 로거 설정
     logger = setup_logger()
     logger.info("="*60)
-    logger.info("경제 캘린더 텔레그램 봇 시작")
+    logger.info("날씨 + 경제 캘린더 텔레그램 봇 시작")
     logger.info("="*60)
     
     try:
