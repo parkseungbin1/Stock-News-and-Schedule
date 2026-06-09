@@ -17,9 +17,9 @@ def build_daily_digest():
 
     events, economic_message = get_high_impact_events()
 
-    message = f"{weather_message}\n\n{economic_message}"
     return {
         'weather_data': weather_data,
+        'weather_message': weather_message,
         'events': events,
-        'message': message,
+        'economic_message': economic_message,
     }

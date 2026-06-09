@@ -7,6 +7,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 from apscheduler.job import Job
 import atexit
+import time
 from datetime import datetime
 
 from src.digest import build_daily_digest
@@ -72,14 +73,24 @@ class EconomicCalendarScheduler:
             # 데이터 수집
             digest = build_daily_digest()
             
-            # 텔레그램 전송
-            success = send_economic_calendar_to_telegram_sync(
-                digest['message'],
+            # 1. 날씨 메시지 전송
+            success_weather = send_economic_calendar_to_telegram_sync(
+                digest['weather_message'],
                 self.bot_token,
                 self.chat_id
             )
             
-            if success:
+            # 메시지 간 간격을 두기 위해 3초 대기
+            time.sleep(3)
+            
+            # 2. 경제 캘린더 메시지 전송
+            success_economic = send_economic_calendar_to_telegram_sync(
+                digest['economic_message'],
+                self.bot_token,
+                self.chat_id
+            )
+            
+            if success_weather and success_economic:
                 logger.info(f"[{datetime.now()}] 날씨 + 경제 캘린더 전송 성공 (이벤트 수: {len(digest['events'])})")
             else:
                 logger.error(f"[{datetime.now()}] 날씨 + 경제 캘린더 전송 실패")
