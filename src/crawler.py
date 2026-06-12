@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 class EconomicCalendarCrawler:
     """Investing.com 경제 캘린더 크롤러 클래스"""
     
-    BASE_URL = "https://www.investing.com/economic-calendar/Service/getCalendarFilteredData"
+    BASE_URL = "https://kr.investing.com/economic-calendar/Service/getCalendarFilteredData"
     # Investing.com 국가 식별 (한국, 미국)
     TARGET_COUNTRIES = ['South Korea', 'United States']
     
@@ -19,6 +19,7 @@ class EconomicCalendarCrawler:
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
         'X-Requested-With': 'XMLHttpRequest',
         'Accept': 'application/json, text/javascript, */*; q=0.01',
+        'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7',
         'Content-Type': 'application/x-www-form-urlencoded',
     }
 
@@ -123,15 +124,15 @@ class EconomicCalendarCrawler:
                 event_name = event_td.text.strip() if event_td else ''
                 
                 # 수치 (실제, 예상, 이전)
-                actual_td = row.find('td', id=lambda x: x and x.startswith('actual'))
+                actual_td = row.find('td', id=lambda x: x and x.startswith('eventActual'))
                 actual = actual_td.text.strip() if actual_td else '-'
                 if not actual: actual = '-'
                 
-                forecast_td = row.find('td', id=lambda x: x and x.startswith('forecast'))
+                forecast_td = row.find('td', id=lambda x: x and x.startswith('eventForecast'))
                 forecast = forecast_td.text.strip() if forecast_td else '-'
                 if not forecast: forecast = '-'
                 
-                previous_td = row.find('td', id=lambda x: x and x.startswith('previous'))
+                previous_td = row.find('td', id=lambda x: x and x.startswith('eventPrevious'))
                 previous = previous_td.text.strip() if previous_td else '-'
                 if not previous: previous = '-'
 
