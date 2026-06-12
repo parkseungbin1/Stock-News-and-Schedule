@@ -170,7 +170,7 @@ class WeatherService:
                 
                 lines.append(
                     f"▫️ <b>{date_str}({forecast['weekday']})</b> {forecast['weather']}\n"
-                    f"   🌡️ {self._format_number(forecast['min_temp'])}° ~ {self._format_number(forecast['max_temp'])}°{prob_text}"
+                    f"   🌡️ {self._format_number(forecast['min_temp'])}° ~ {self._format_number(forecast['max_temp'])}°{prob_text}\n"
                 )
 
         return "\n".join(lines)
