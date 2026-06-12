@@ -137,30 +137,36 @@ class WeatherService:
         city_name = weather_data.get('city_name', self.city_name)
 
         lines = [
-            f"🌤 오늘의 날씨 ({city_name})",
-            f"{'=' * 50}",
+            f"🌤 <b>오늘의 날씨 ({city_name})</b>",
+            "",
         ]
 
         if current:
+            # 현재 시각 포맷팅 (YYYY-MM-DDTHH:MM -> HH:MM)
+            current_time = current.get('time', 'N/A')
+            if len(current_time) > 11:
+                current_time = current_time[11:16]
+
             lines.extend([
-                f"⏰ 현재 시각: {current.get('time', 'N/A')}",
-                f"🌡 현재 기온: {self._format_number(current.get('temperature'))}°C",
-                f"🌬 바람: {self._format_number(current.get('wind_speed'))} m/s",
-                f"☁️ 상태: {self._describe_weather_code(current.get('weather_code'))}",
+                f"⏰ <b>{current_time}</b> | 🌡 <b>{self._format_number(current.get('temperature'))}°C</b>",
+                f"🌬 {self._format_number(current.get('wind_speed'))}m/s | ☁️ {self._describe_weather_code(current.get('weather_code'))}",
             ])
         else:
             lines.append("날씨 정보를 불러오지 못했습니다.")
 
         if daily:
-            lines.append("")
-            lines.append("📅 3일 예보")
+            lines.append("\n📅 <b>3일 예보</b>")
             for forecast in daily[:3]:
+                # YYYY-MM-DD -> MM/DD
+                date_str = forecast['date'][5:].replace('-', '/') if len(forecast['date']) >= 10 else forecast['date']
+                
+                prob_val = forecast.get('precipitation_probability')
+                prob_text = f" 💧{self._format_number(prob_val)}%" if prob_val is not None else ""
+                
                 lines.append(
-                    f"- {forecast['date']} ({forecast['weekday']}): {forecast['weather']} | "
-                    f"최저 {self._format_number(forecast['min_temp'])}° / 최고 {self._format_number(forecast['max_temp'])}°"
+                    f"▫️ <b>{date_str}({forecast['weekday']})</b> {forecast['weather']}\n"
+                    f"   🌡️ {self._format_number(forecast['min_temp'])}° ~ {self._format_number(forecast['max_temp'])}°{prob_text}"
                 )
-                if forecast.get('precipitation_probability') is not None:
-                    lines.append(f"  강수확률: {self._format_number(forecast.get('precipitation_probability'))}%")
 
         return "\n".join(lines)
 
