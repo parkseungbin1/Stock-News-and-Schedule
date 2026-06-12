@@ -156,15 +156,12 @@ class EconomicCalendarCrawler:
         """
         filtered_events = []
         today = datetime.now().date()
-        
-        # 이번주 월요일부터 일요일까지로 범위 설정
-        start_of_week = today - timedelta(days=today.weekday())
-        end_of_week = start_of_week + timedelta(days=6)
+        week_later = today + timedelta(days=days)
 
         for event in events:
             event_date = event.get('parsed_date') or self._parse_release_date(event.get('date', ''))
 
-            if event.get('importance', 0) >= self.HIGH_IMPACT_THRESHOLD and event_date and start_of_week <= event_date <= end_of_week:
+            if event.get('importance', 0) >= self.HIGH_IMPACT_THRESHOLD and event_date and today <= event_date <= week_later:
                 event['parsed_date'] = event_date
                 filtered_events.append(event)
 
