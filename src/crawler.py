@@ -182,8 +182,7 @@ class EconomicCalendarCrawler:
         if not events:
             return "이번주 시장 영향력 매우 높은 경제지표가 없습니다."
 
-        message = "📊 이번주 주요 경제지표 (시장 영향력: 매우 높음)\n"
-        message += f"{'='*50}\n\n"
+        message = "📊 <b>이번주 주요 경제지표</b>\n\n"
 
         current_date = None
         for event in events:
@@ -192,23 +191,39 @@ class EconomicCalendarCrawler:
             # 날짜가 변경되었을 때
             if event_date != current_date:
                 current_date = event_date
-                message += f"📅 {event_date}\n"
+                # MM/DD 형식으로 날짜 축소
+                try:
+                    if hasattr(event_date, 'strftime'):
+                        date_str = event_date.strftime('%m/%d')
+                    else:
+                        date_str = str(event_date)[5:10] if len(str(event_date)) >= 10 else str(event_date)
+                except Exception:
+                    date_str = str(event_date)
+                message += f"📅 <b>{date_str}</b>\n"
 
-            release_status = '발표 완료' if event.get('is_release') else '발표 전'
+            release_status = '완료' if event.get('is_release') else '예정'
+            
+            # 국가 표시 간소화
+            country = event.get('country', 'N/A')
+            if country == '한국':
+                country_display = '🇰🇷'
+            elif country == '미국':
+                country_display = '🇺🇸'
+            else:
+                country_display = f"[{country}]"
 
-            message += f"⏰ {event.get('time', 'N/A')}\n"
-            message += f"🌍 {event.get('country', 'N/A')} | {event.get('importance_label', '매우 높음')}\n"
-            message += f"📈 {event.get('event', 'N/A')}\n"
-            if event.get('period'):
-                message += f"📌 기간: {event.get('period')}\n"
-            message += f"📊 전회: {event.get('previous', '-')}\n"
-            message += f"🧾 실적: {event.get('actual', '-')}\n"
-            message += f"📐 단위: {event.get('unit', '-') or '-'}\n"
-            message += f"📣 상태: {release_status}\n"
+            # 이벤트 시간은 HH:MM만 표시되므로 그대로 사용
+            message += f"▫️ {event.get('time', 'N/A')} {country_display} <b>{event.get('event', 'N/A')}</b>\n"
+            
+            unit = event.get('unit', '')
+            unit_str = f"({unit})" if unit and unit.strip() else ""
+            prev_val = event.get('previous', '-')
+            actual_val = event.get('actual', '-')
+            
+            # 기간 표시 생략하고 단순화
+            message += f"   📊 {prev_val} ➡️ {actual_val} {unit_str} 📣{release_status}\n\n"
 
-            message += f"{'-'*28}\n"
-
-        return message
+        return message.strip()
 
 
 def get_high_impact_events():

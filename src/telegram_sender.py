@@ -86,7 +86,7 @@ async def send_economic_calendar_to_telegram(message, bot_token, chat_id):
         bool: 성공 여부
     """
     sender = TelegramSender(bot_token, chat_id)
-    return await sender.send_message(message, parse_mode='Markdown')
+    return await sender.send_message(message, parse_mode='HTML')
 
 
 def send_economic_calendar_to_telegram_sync(message, bot_token, chat_id):
@@ -102,4 +102,4 @@ def send_economic_calendar_to_telegram_sync(message, bot_token, chat_id):
         bool: 성공 여부
     """
     sender = TelegramSender(bot_token, chat_id)
-    return sender.send_message_sync(message, parse_mode='Markdown')
+    return sender.send_message_sync(message, parse_mode='HTML')
