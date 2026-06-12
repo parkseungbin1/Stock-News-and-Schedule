@@ -40,11 +40,20 @@ class EconomicCalendarCrawler:
         if not self.BeautifulSoup:
             return []
 
+        today = datetime.now()
+        start_of_week = today - timedelta(days=today.weekday())
+        end_of_week = start_of_week + timedelta(days=6)
+
         data = {
             'timeZone': '54', # Seoul Time
             'timeFilter': 'timeOnly',
-            'currentTab': 'thisWeek',
-            'limit_from': '0'
+            'currentTab': 'custom',
+            'limit_from': '0',
+            'dateFrom': start_of_week.strftime('%Y-%m-%d'),
+            'dateTo': end_of_week.strftime('%Y-%m-%d'),
+            # 5: USA, 11: South Korea
+            'country[]': ['5', '11'],
+            'importance[]': ['3']
         }
 
         try:
