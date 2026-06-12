@@ -9,161 +9,164 @@ import logging
 logger = logging.getLogger(__name__)
 
 class EconomicCalendarCrawler:
-    """네이버 증권 글로벌 경제 캘린더 크롤러"""
-
-    # 네이버 증권 경제지표 API URL
-    BASE_URL = "https://stock.naver.com/api/securityService/economic/indicator/nations/upcoming"
-    DEFAULT_NATION_TYPES = ("KOR", "USA")
-    HIGH_IMPACT_THRESHOLD = 4
-
+    """Investing.com 경제 캘린더 크롤러 클래스"""
+    
+    BASE_URL = "https://www.investing.com/economic-calendar/Service/getCalendarFilteredData"
+    # Investing.com 국가 식별 (한국, 미국)
+    TARGET_COUNTRIES = ['South Korea', 'United States']
+    
     HEADERS = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+        'X-Requested-With': 'XMLHttpRequest',
+        'Accept': 'application/json, text/javascript, */*; q=0.01',
+        'Content-Type': 'application/x-www-form-urlencoded',
     }
 
     def __init__(self):
         self.session = requests.Session()
         self.session.headers.update(self.HEADERS)
-
-    def _fetch_nation_events(self, nation_type):
-        """
-        특정 국가의 경제지표 데이터를 수집
-
-        Args:
-            nation_type (str): 국가 코드
-
-        Returns:
-            list: 원본 API 응답 목록
-        """
-        params = [
-            ('nationTypeList', nation_type),
-            ('nationTypeList', nation_type),
-            ('gteImportance', str(self.HIGH_IMPACT_THRESHOLD)),
-        ]
-
+        # BeautifulSoup 사용을 위해 선언 (설치된 패키지 확인 완료)
         try:
-            response = self.session.get(self.BASE_URL, params=params, timeout=10)
-            response.raise_for_status()
-
-            data = response.json()
-            if not isinstance(data, list):
-                logger.warning(f"경제 지표 응답 형식이 올바르지 않습니다: {nation_type}")
-                return []
-
-            return data
-
-        except requests.RequestException as e:
-            logger.error(f"네이버 증권 경제지표 API 접근 오류({nation_type}): {e}")
-            return []
-        except ValueError as e:
-            logger.error(f"경제지표 JSON 파싱 오류({nation_type}): {e}")
-            return []
+            from bs4 import BeautifulSoup
+            self.BeautifulSoup = BeautifulSoup
+        except ImportError:
+            logger.error("beautifulsoup4 패키지가 설치되지 않았습니다. 파싱에 실패할 수 있습니다.")
+            self.BeautifulSoup = None
 
     def get_economic_calendar_data(self, nation_types=None):
         """
-        네이버 증권에서 글로벌 경제 캘린더 데이터 수집
-
-        Args:
-            nation_types (list|tuple|None): 국가 코드 목록
-
-        Returns:
-            list: 경제 이벤트 데이터 리스트
+        Investing.com에서 이번 주(월~일) 글로벌 경제 캘린더 데이터 수집
         """
-        nation_types = nation_types or self.DEFAULT_NATION_TYPES
-        events = []
-        seen = set()
+        if not self.BeautifulSoup:
+            return []
 
-        for nation_type in nation_types:
-            for item in self._fetch_nation_events(nation_type):
-                event_key = (
-                    item.get('reutersCode'),
-                    item.get('releaseDate'),
-                    item.get('releaseTime'),
-                )
-                if event_key in seen:
-                    continue
-                seen.add(event_key)
+        data = {
+            'timeZone': '54', # Seoul Time
+            'timeFilter': 'timeOnly',
+            'currentTab': 'thisWeek',
+            'limit_from': '0'
+        }
+
+        try:
+            response = self.session.post(self.BASE_URL, data=data, timeout=10)
+            response.raise_for_status()
+
+            json_data = response.json()
+            html_content = json_data.get('data', '')
+            
+            return self._parse_html(html_content)
+
+        except requests.RequestException as e:
+            logger.error(f"Investing.com API 접근 오류: {e}")
+            return []
+        except ValueError as e:
+            logger.error(f"JSON 파싱 오류: {e}")
+            return []
+        except Exception as e:
+            logger.error(f"데이터 파싱 오류: {e}")
+            return []
+
+    def _parse_html(self, html_content):
+        """HTML 테이블에서 이벤트 파싱"""
+        soup = self.BeautifulSoup(html_content, 'html.parser')
+        events = []
+        current_date_str = ''
+        
+        for row in soup.find_all('tr'):
+            if 'theDay' in row.get('class', []):
+                current_date_str = row.text.strip()
+                continue
+                
+            if 'js-event-item' in row.get('class', []):
+                # 날짜 추출
+                dt_str = row.get('data-event-datetime', '')
+                parsed_date = None
+                parsed_time = None
+                if dt_str:
+                    try:
+                        dt_obj = datetime.strptime(dt_str, '%Y/%m/%d %H:%M:%S')
+                        parsed_date = dt_obj.date()
+                        parsed_time = dt_obj.time()
+                    except ValueError:
+                        pass
+                
+                # 시간
+                time_td = row.find('td', class_='time')
+                time_str = time_td.text.strip() if time_td else ''
+                
+                # 국가
+                flag_td = row.find('td', class_='flagCur')
+                country = ''
+                if flag_td:
+                    span = flag_td.find('span')
+                    if span and 'title' in span.attrs:
+                        country = span['title']
+                
+                # 중요도 (황소 아이콘 갯수)
+                imp_td = row.find('td', class_='sentiment')
+                importance = 0
+                if imp_td:
+                    bulls = imp_td.find_all('i', class_='grayFullBullishIcon')
+                    importance = len(bulls)
+                    
+                # 이벤트 이름
+                event_td = row.find('td', class_='event')
+                event_name = event_td.text.strip() if event_td else ''
+                
+                # 수치 (실제, 예상, 이전)
+                actual_td = row.find('td', id=lambda x: x and x.startswith('actual'))
+                actual = actual_td.text.strip() if actual_td else '-'
+                if not actual: actual = '-'
+                
+                forecast_td = row.find('td', id=lambda x: x and x.startswith('forecast'))
+                forecast = forecast_td.text.strip() if forecast_td else '-'
+                if not forecast: forecast = '-'
+                
+                previous_td = row.find('td', id=lambda x: x and x.startswith('previous'))
+                previous = previous_td.text.strip() if previous_td else '-'
+                if not previous: previous = '-'
+
+                # 한국어 매핑
+                country_korean = '미국' if country == 'United States' else '한국' if country == 'South Korea' else country
 
                 events.append({
-                    'date': self._format_release_date(item.get('releaseDate', '')),
-                    'time': self._format_release_time(item.get('releaseTime', '')),
-                    'country': item.get('nationKoreanName', nation_type),
-                    'event': item.get('name', ''),
-                    'importance': int(item.get('importance', 0) or 0),
-                    'importance_label': self._format_importance(item.get('importance', 0)),
-                    'period': item.get('period', ''),
-                    'previous': self._format_value(item.get('previousValue')),
-                    'actual': self._format_value(item.get('actualValue')),
-                    'unit': self._build_unit_label(item.get('indicatorUnit'), item.get('unitScale')),
-                    'is_release': bool(item.get('isRelease')),
-                    'parsed_date': self._parse_release_date(item.get('releaseDate', '')),
-                    'parsed_time': self._parse_release_time(item.get('releaseTime', '')),
+                    'date': parsed_date.strftime('%Y-%m-%d') if parsed_date else current_date_str,
+                    'time': time_str if time_str != 'All Day' else '종일',
+                    'country': country_korean,
+                    'event': event_name,
+                    'importance': importance,
+                    'actual': actual,
+                    'forecast': forecast,
+                    'previous': previous,
+                    'parsed_date': parsed_date,
+                    'parsed_time': parsed_time,
+                    # 이전 호환성 필드
+                    'unit': '',
+                    'is_release': actual != '-',
                 })
 
-        events.sort(key=lambda x: (x.get('parsed_date') or datetime.max.date(), x.get('parsed_time') or datetime.max.time()))
         return events
-
-    def _format_release_date(self, release_date):
-        """날짜 문자열을 사람이 읽기 쉬운 형식으로 변환"""
-        parsed_date = self._parse_release_date(release_date)
-        return parsed_date.strftime('%Y-%m-%d') if parsed_date else release_date
-
-    def _format_release_time(self, release_time):
-        """시간 문자열을 HH:MM 형식으로 변환"""
-        parsed_time = self._parse_release_time(release_time)
-        return parsed_time.strftime('%H:%M') if parsed_time else release_time
-
-    def _parse_release_date(self, release_date):
-        """YYYYMMDD 형식의 날짜를 date로 변환"""
-        try:
-            return datetime.strptime(str(release_date), '%Y%m%d').date()
-        except ValueError:
-            return None
-
-    def _parse_release_time(self, release_time):
-        """HHMMSS 형식의 시간을 time으로 변환"""
-        try:
-            return datetime.strptime(str(release_time).zfill(6), '%H%M%S').time()
-        except ValueError:
-            return None
-
-    def _format_importance(self, importance):
-        """숫자 중요도를 메시지용 텍스트로 변환"""
-        return '매우 높음' if int(importance or 0) >= self.HIGH_IMPACT_THRESHOLD else '높음'
-
-    def _format_value(self, value):
-        """숫자나 빈 값을 문자열로 정리"""
-        if value in (None, '', 0, 0.0):
-            return '-'
-        if isinstance(value, float) and value.is_integer():
-            return str(int(value))
-        return str(value)
-
-    def _build_unit_label(self, indicator_unit, unit_scale):
-        """단위와 스케일을 합쳐 표시용 문자열로 변환"""
-        parts = [part for part in [indicator_unit, unit_scale] if part]
-        return ' '.join(parts)
 
     def filter_high_impact_events(self, events, days=7):
         """
-        매우 높은 영향도의 이벤트만 필터링
-
-        Args:
-            events (list): 모든 경제 이벤트
-            days (int): 조회 기간 (기본값 7일)
-
-        Returns:
-            list: 필터링된 이벤트
+        매우 높은 영향도의 이벤트만 이번 주 월~일 필터링하여 반환
         """
         filtered_events = []
         today = datetime.now().date()
-        week_later = today + timedelta(days=days)
+        
+        # 이번주 월요일부터 일요일까지
+        start_of_week = today - timedelta(days=today.weekday())
+        end_of_week = start_of_week + timedelta(days=6)
 
         for event in events:
-            event_date = event.get('parsed_date') or self._parse_release_date(event.get('date', ''))
-
-            if event.get('importance', 0) >= self.HIGH_IMPACT_THRESHOLD and event_date and today <= event_date <= week_later:
-                event['parsed_date'] = event_date
-                filtered_events.append(event)
+            event_date = event.get('parsed_date')
+            
+            # 중요도 3(최상)이고 타겟 국가이며 날짜가 이번 주 내에 포함될 경우
+            country_en = 'United States' if event.get('country') == '미국' else 'South Korea' if event.get('country') == '한국' else ''
+            
+            if event.get('importance', 0) >= 3 and country_en in self.TARGET_COUNTRIES:
+                if event_date and start_of_week <= event_date <= end_of_week:
+                    filtered_events.append(event)
 
         # 날짜순 정렬
         filtered_events.sort(key=lambda x: (x.get('parsed_date') or today, x.get('parsed_time') or datetime.now().time()))
