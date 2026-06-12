@@ -54,12 +54,17 @@ class WeatherService:
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
         })
 
-    def fetch_weather(self, forecast_days=3):
-        """현재 날씨와 일별 예보를 조회"""
+    def fetch_weather(self):
+        """현재 날씨와 이번 주(월~일) 예보를 조회"""
+        today = datetime.now()
+        past_days = today.weekday()
+        forecast_days = 7 - today.weekday()
+
         params = {
             'latitude': self.latitude,
             'longitude': self.longitude,
             'timezone': self.timezone,
+            'past_days': past_days,
             'forecast_days': forecast_days,
             'current_weather': 'true',
             'daily': 'weathercode,temperature_2m_max,temperature_2m_min,precipitation_probability_max',
@@ -155,8 +160,8 @@ class WeatherService:
             lines.append("날씨 정보를 불러오지 못했습니다.")
 
         if daily:
-            lines.append("\n📅 <b>3일 예보</b>")
-            for forecast in daily[:3]:
+            lines.append("\n📅 <b>이번 주 예보</b>")
+            for forecast in daily:
                 # YYYY-MM-DD -> MM/DD
                 date_str = forecast['date'][5:].replace('-', '/') if len(forecast['date']) >= 10 else forecast['date']
                 
