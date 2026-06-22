@@ -3,7 +3,7 @@
 시장 영향력이 매우 높음인 항목만 수집
 """
 import requests
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import logging
 
 logger = logging.getLogger(__name__)
@@ -41,7 +41,8 @@ class EconomicCalendarCrawler:
         if not self.BeautifulSoup:
             return []
 
-        today = datetime.now()
+        kst = timezone(timedelta(hours=9))
+        today = datetime.now(kst)
         start_of_week = today - timedelta(days=today.weekday())
         end_of_week = start_of_week + timedelta(days=6)
 
@@ -162,7 +163,8 @@ class EconomicCalendarCrawler:
         매우 높은 영향도의 이벤트만 이번 주 월~일 필터링하여 반환
         """
         filtered_events = []
-        today = datetime.now().date()
+        kst = timezone(timedelta(hours=9))
+        today = datetime.now(kst).date()
         
         # 이번주 월요일부터 일요일까지
         start_of_week = today - timedelta(days=today.weekday())
@@ -179,7 +181,8 @@ class EconomicCalendarCrawler:
                     filtered_events.append(event)
 
         # 날짜순 정렬
-        filtered_events.sort(key=lambda x: (x.get('parsed_date') or today, x.get('parsed_time') or datetime.now().time()))
+        kst = timezone(timedelta(hours=9))
+        filtered_events.sort(key=lambda x: (x.get('parsed_date') or today, x.get('parsed_time') or datetime.now(kst).time()))
         return filtered_events
 
     def format_events_for_message(self, events):
