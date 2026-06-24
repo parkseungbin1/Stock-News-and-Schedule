@@ -1,5 +1,5 @@
 """
-네이버 증권 글로벌 경제 캘린더 크롤러
+Investing.com 글로벌 경제 캘린더 크롤러
 시장 영향력이 매우 높음인 항목만 수집
 """
 import requests
@@ -24,7 +24,13 @@ class EconomicCalendarCrawler:
     }
 
     def __init__(self):
-        self.session = requests.Session()
+        try:
+            import cloudscraper
+            self.session = cloudscraper.create_scraper()
+        except ImportError:
+            logger.warning("cloudscraper가 설치되지 않았습니다. 기본 requests를 사용합니다.")
+            self.session = requests.Session()
+            
         self.session.headers.update(self.HEADERS)
         # BeautifulSoup 사용을 위해 선언 (설치된 패키지 확인 완료)
         try:

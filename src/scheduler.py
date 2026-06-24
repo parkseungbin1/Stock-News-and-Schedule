@@ -45,10 +45,10 @@ class EconomicCalendarScheduler:
             logger.warning("스케줄러가 이미 실행 중입니다")
             return
         
-        # 매일 지정된 시간에 작업 실행
+        # 월요일부터 금요일까지 지정된 시간에 작업 실행
         self.scheduler.add_job(
             func=self.send_economic_calendar,
-            trigger=CronTrigger(hour=self.hour, minute=self.minute),
+            trigger=CronTrigger(day_of_week='mon-fri', hour=self.hour, minute=self.minute),
             id='economic_calendar_daily',
             name='경제 캘린더 일일 전송',
             replace_existing=True
