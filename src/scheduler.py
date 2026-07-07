@@ -5,7 +5,6 @@ APScheduler를 사용한 일정 관리
 import logging
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
-from apscheduler.job import Job
 import atexit
 import time
 from datetime import datetime

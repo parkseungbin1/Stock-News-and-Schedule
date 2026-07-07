@@ -3,7 +3,6 @@
 Investing.com 날씨와 경제 캘린더를 매일 아침 설정된 시간에 텔레그램으로 전송
 """
 import sys
-import logging
 from pathlib import Path
 
 # 현재 디렉토리를 Python 경로에 추가
@@ -26,7 +25,7 @@ def main():
     try:
         # 설정 검증
         Config.validate()
-        logger.info(f"설정 검증 완료")
+        logger.info("설정 검증 완료")
         logger.info(f"전송 시간: {Config.SCHEDULE_HOUR:02d}:{Config.SCHEDULE_MINUTE:02d}")
         
         # 스케줄러 생성 및 시작
