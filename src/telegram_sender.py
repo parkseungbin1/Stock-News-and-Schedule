@@ -41,7 +41,7 @@ class TelegramSender:
                 text=message,
                 parse_mode=parse_mode
             )
-            logger.info(f"텔레그램 메시지 전송 성공")
+            logger.info("텔레그램 메시지 전송 성공")
             return True
         except TelegramError as e:
             logger.error(f"텔레그램 메시지 전송 실패: {e}")
