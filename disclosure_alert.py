@@ -14,6 +14,13 @@ import time
 from datetime import datetime
 from pathlib import Path
 
+# Windows 콘솔 등에서 이모지 출력 시 cp949 인코딩 오류 방지
+if hasattr(sys.stdout, 'reconfigure'):
+    try:
+        sys.stdout.reconfigure(encoding='utf-8')
+    except Exception:
+        pass
+
 sys.path.insert(0, str(Path(__file__).parent))
 
 from dotenv import load_dotenv
