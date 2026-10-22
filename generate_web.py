@@ -1374,8 +1374,8 @@ def generate_html():
                 <div class="criteria-item">
                     <div class="ci-num">03</div>
                     <div class="ci-content">
-                        <div class="ci-title">상승률 골디락스 (+2% ~ +14% 구간)</div>
-                        <div class="ci-desc">이미 15~20% 이상 폭등하여 다음 날 개파락/상투 위험이 있는 종목을 피하고, 갭상승 확률이 가장 높은 탄력 구간만 공략</div>
+                        <div class="ci-title">상승률 골디락스 (+3.5% ~ +8.5% 구간)</div>
+                        <div class="ci-desc">+3% 미만은 당일 수급 탄력이 약하고, +10% 이상은 익일 아침 차익실현 매물 폭탄(상투) 위험이 크므로 승률이 가장 높은 핵심 탄력 구간만 선별</div>
                     </div>
                 </div>
                 <div class="criteria-item">
@@ -1425,8 +1425,8 @@ def generate_html():
                 <div class="criteria-item">
                     <div class="ci-num num-purple">03</div>
                     <div class="ci-content">
-                        <div class="ci-title">시총 1,500억 이상 중대형 우량주</div>
-                        <div class="ci-desc">실적과 펀더멘털을 갖춘 기업만 선별하여 테마 소멸로 인한 급락 리스크를 사전에 원천 차단</div>
+                        <div class="ci-title">시총 4,000억 이상 중·대형 우량주</div>
+                        <div class="ci-desc">시총 4,000억 미만 소형주/작전주를 원천 배제하고, 기관·외국인 메이저 수급이 유입되는 견고한 중·대형 펀더멘털 기업만 선별하여 급락 리스크 차단</div>
                     </div>
                 </div>
                 <div class="criteria-item">

@@ -105,15 +105,15 @@ def get_recommendations(dart_disclosures=None, market_context=None):
 
     # =========================================================================
     # Track 1: 🎯 오늘 15:10 종가베팅 (오버나잇)
-    # 4대 기준: 1) 거래대금 50억~1,000억+ 집중, 2) 윗꼬리 25% 이하 단단한 양봉,
-    #           3) 골디락스 상승률 (+2.5%~+13%), 4) 과열(>15%) 및 잡주 배제
+    # 4대 기준: 1) 거래대금 50억~1,000억+ 집중, 2) 윗꼬리 28% 이하 단단한 양봉,
+    #           3) 골디락스 상승률 (+3.5%~+8.5%), 4) 과열(>9%) 및 저탄력(<3.5%) 배제
     # =========================================================================
     closing_picks = []
     closing_pool = common[
-        (common['Marcap'] >= 1000 * 1e8) &
-        (common['Amount'] >= 50 * 1e8) &
-        (common['ChagesRatio'] >= 2.0) &
-        (common['ChagesRatio'] <= 14.5)  # 과열/상투 방지 (15% 이상 급등주 배제)
+        (common['Marcap'] >= 2000 * 1e8) &  # 시총 2,000억 이상
+        (common['Amount'] >= 50 * 1e8) &    # 당일 거래대금 50억 이상
+        (common['ChagesRatio'] >= 3.5) &    # 최소 +3.5% 이상 (저탄력 잡음 배제)
+        (common['ChagesRatio'] <= 8.5)      # 최대 +8.5% 이하 (과열/익일 시초 상투 배제)
     ].copy()
 
     # 거래대금 상위 60개 종목 압축
@@ -140,9 +140,9 @@ def get_recommendations(dart_disclosures=None, market_context=None):
 
         # 윗꼬리 28% 이하 & 양봉 몸통 40% 이상 엄격 필터링
         if head_ratio <= 0.28 and body_ratio >= 0.40:
-            # 점수 산정: 기본 60 + 거래대금(최대 16) + 윗꼬리 억제(최대 16) + 골디락스 탄력(최대 8)
-            sweet_spot_score = 8.0 - abs(change_pct - 6.0) * 0.8
-            score = 60.0 + min(amount_eok / 80, 16.0) + (1.0 - head_ratio) * 16.0 + max(sweet_spot_score, 2.0)
+            # 점수 산정: 기본 60 + 거래대금(최대 16) + 윗꼬리 억제(최대 16) + 골디락스 최적점(+5.5~+6.5% 중심 최고점)
+            sweet_spot_score = 10.0 - abs(change_pct - 6.0) * 1.5
+            score = 60.0 + min(amount_eok / 80, 16.0) + (1.0 - head_ratio) * 16.0 + max(sweet_spot_score, 3.0)
             
             reasons = [f"거래대금 {int(amount_eok):,}억 집중", f"고가 마감 양봉(윗꼬리 {int(head_ratio*100)}%)"]
             tags = ['거래대금폭발', '단단한양봉', '익일시초가노림']
@@ -176,15 +176,17 @@ def get_recommendations(dart_disclosures=None, market_context=None):
 
     # =========================================================================
     # Track 2: 🚀 2~5일 스윙 (추세 파동)
-    # 4대 기준: 1) 시총 1,500억+ 중대형주, 2) 20일선 우상향 & 5% 이내 눌림목,
-    #           3) 거래량 수축 후 변곡점 반등, 4) 정량적 손익비 (익절 +5~9%, 손절 -3%)
+    # 4대 기준: 1) 시총 4,000억+ 중·대형 우량주 (소형주/작전주 원천 배제),
+    #           2) 20일선 우상향 & 5% 이내 눌림목 지지,
+    #           3) 스마트머니 수급 & 거래량 수축 후 변곡점 반등,
+    #           4) 정량적 손익비 (익절 +5~9%, 손절 -3%)
     # =========================================================================
     swing_picks = []
     swing_pool = common[
-        (common['Marcap'] >= 1500 * 1e8) &
-        (common['Amount'] >= 30 * 1e8) &
+        (common['Marcap'] >= 4000 * 1e8) &  # 시총 4,000억 이상 (진짜 중·대형주!)
+        (common['Amount'] >= 30 * 1e8) &    # 당일 거래대금 30억 이상
         (common['ChagesRatio'] >= -2.0) &
-        (common['ChagesRatio'] <= 7.0)  # 과열되지 않은 눌림목/초입 양봉
+        (common['ChagesRatio'] <= 6.5)      # 과열되지 않은 눌림목/초입 양봉
     ].copy()
 
     swing_pool = swing_pool.sort_values(by='Amount', ascending=False).head(40)
