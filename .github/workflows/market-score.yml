@@ -3,11 +3,13 @@ name: Market Score & Betting Alert
 on:
   schedule:
     # UTC 기준 (KST = UTC + 9)
-    # 1. [아침 07:40 KST] = 22:40 UTC (일~목 -> 월~금 아침 장전 시초가 매도 가이드)
+    # 1. [아침 07:40 KST] = 22:40 UTC (일~목 -> 월~금 08:00 NXT 프리마켓 개장 전 시초가 매도 가이드)
     - cron: '40 22 * * 0-4'
-    # 2. [오후 15:10 KST] = 06:10 UTC (월~금 -> 장 마감 종가베팅 진입 가이드)
+    # 2. [아침 08:40 KST] = 23:40 UTC (일~목 -> 월~금 09:00 정규장 개장 전 최종 매도 가이드)
+    - cron: '40 23 * * 0-4'
+    # 3. [오후 15:10 KST] = 06:10 UTC (월~금 -> 15:30 정규장 마감 1차 종가베팅 가이드)
     - cron: '10 6 * * 1-5'
-    # 3. [저녁 19:40 KST] = 10:40 UTC (월~금 -> NXT 8시 마감 최종 종가베팅 가이드)
+    # 4. [저녁 19:40 KST] = 10:40 UTC (월~금 -> 20:00 NXT 8시 마감 최종 종가베팅 가이드)
     - cron: '40 10 * * 1-5'
   workflow_dispatch:
     inputs:
@@ -18,7 +20,8 @@ on:
         type: choice
         options:
           - auto
-          - morning
+          - morning_740
+          - morning_840
           - closing
           - night
 
