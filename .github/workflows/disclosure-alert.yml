@@ -1,0 +1,56 @@
+name: Disclosure Alert
+
+on:
+  schedule:
+    # UTC 기준. 07:10 KST = 22:10 UTC(전날), 15:00 KST = 06:00 UTC
+    # 하루 2회 x 약 1~2분 → 월 100분 내외 (비공개 저장소 무료 2,000분 이내)
+    - cron: '10 22 * * 0-4'   # 월~금 아침 (IR 일정 요약 포함)
+    - cron: '0 6 * * 1-5'     # 월~금 오후 3시
+  workflow_dispatch:
+    inputs:
+      morning:
+        description: '오늘의 IR 일정 요약 포함'
+        type: boolean
+        default: false
+
+jobs:
+  alert:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - run: pip install -r requirements.txt
+
+      # 이미 보낸 공시 목록(중복 알림 방지)을 캐시로 유지
+      - name: Restore state
+        uses: actions/cache/restore@v4
+        with:
+          path: state
+          key: disclosure-state-${{ github.run_id }}
+          restore-keys: disclosure-state-
+
+      - name: Run alert
+        env:
+          DART_API_KEY: ${{ secrets.DART_API_KEY }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          if [ "${{ github.event.schedule }}" = "10 22 * * 0-4" ] || [ "${{ inputs.morning }}" = "true" ]; then
+            python disclosure_alert.py --morning
+          else
+            python disclosure_alert.py
+          fi
+
+      - name: Save state
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: state
+          key: disclosure-state-${{ github.run_id }}
