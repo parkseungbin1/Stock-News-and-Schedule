@@ -2,10 +2,10 @@ name: Daily Telegram Digest
 
 on:
   schedule:
-    # GitHub Actions cron은 UTC 기준이며 정각(0분)에는 전 세계 작업이 몰려 지연이 심합니다. 
-    # GitHub Actions cron is UTC. 05:30 KST = 20:30 UTC (previous day).
-    # 5시 30분에 트리거한 뒤 스크립트에서 6시 정각까지 대기하여 정확히 발송
-    - cron: '30 20 * * *'
+    # GitHub Actions cron은 UTC 기준. 07:00 KST = 22:00 UTC (전날)
+    # 스크립트 내 대기 없음 (대기 시간도 Actions 사용 시간으로 차감되므로 제거)
+    # 참고: GitHub 스케줄은 혼잡 시 수 분~수십 분 늦게 시작될 수 있음
+    - cron: '0 22 * * *'
   workflow_dispatch:
 
 jobs:

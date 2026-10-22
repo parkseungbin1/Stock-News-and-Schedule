@@ -20,17 +20,6 @@ def main():
 
     try:
         Config.validate()
-        
-        # 6시 정각에 보내기 위해 대기 (만약 6시 이전이라면)
-        kst = timezone(timedelta(hours=9))
-        now = datetime.now(kst)
-        target = now.replace(hour=6, minute=0, second=0, microsecond=0)
-        
-        if now < target:
-            wait_seconds = (target - now).total_seconds()
-            print(f"현재 시간: {now.strftime('%H:%M:%S')}. 6시 정각 발송을 위해 {wait_seconds:.1f}초 대기합니다...")
-            time.sleep(wait_seconds)
-            print("대기 완료, 발송을 시작합니다.")
 
         digest = build_daily_digest()
         print(f"수집된 경제 이벤트 수: {len(digest['events'])}")
