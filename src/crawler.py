@@ -55,16 +55,20 @@ class EconomicCalendarCrawler:
 
     def get_economic_calendar_data(self, nation_types=None):
         """
-        Investing.com에서 이번 주(월~일) 글로벌 경제 캘린더 데이터 수집
+        이번 주(월~일) 글로벌 경제 캘린더 데이터 수집
+        1. Investing.com 시도
+        2. 차단/부족 시 ForexFactory + 한국 거시지표(TradingEconomics/네이버) 자동 병합
         """
         events = self._fetch_investing()
-        if events:
+        if len(events) >= 3:
             logger.info(f"Investing.com 수집 성공: {len(events)}건")
             return events
 
-        logger.warning("Investing.com 수집 실패 → 네이버 + ForexFactory로 대체합니다.")
-        events = self._fetch_naver()
-        events = self._merge(events, self._fetch_forexfactory())
+        logger.info("ForexFactory 및 한국 거시경제 지표로 수집/보강합니다.")
+        fallback = self._fetch_forexfactory()
+        fallback = self._merge(fallback, self._fetch_korea_indicators())
+        fallback = self._merge(fallback, self._fetch_naver())
+        events = self._merge(events, fallback)
         return events
 
     # ---------------- Investing.com ----------------
@@ -136,36 +140,136 @@ class EconomicCalendarCrawler:
                                       fmt(it.get('previousValue')), actual, fmt(it.get('forecastValue'))))
         return events
 
-    # ---------------- ForexFactory ----------------
+    # ---------------- ForexFactory & 한국 경제지표 ----------------
     FF_URL = "https://nfs.faireconomy.media/ff_calendar_thisweek.json"
 
+    FOREXFACTORY_TITLE_MAP = {
+        'Unemployment Claims': '신규 실업수당청구건수',
+        'Flash Manufacturing PMI': '제조업 구매관리자지수 (PMI 속보치)',
+        'Flash Services PMI': '서비스업 구매관리자지수 (PMI 속보치)',
+        'Revised UoM Consumer Sentiment': '미시간대 소비자심리지수',
+        'Revised UoM Inflation Expectations': '미시간대 기대인플레이션',
+        'Crude Oil Inventories': 'EIA 원유재고',
+        'Building Permits': '건축승인건수',
+        'Housing Starts': '주택착공건수',
+        'Existing Home Sales': '기존주택판매',
+        'New Home Sales': '신규주택판매',
+        'Pending Home Sales m/m': '잠정주택판매 (MoM)',
+        'Core CPI m/m': '근원 소비자물가지수 (MoM)',
+        'CPI m/m': '소비자물가지수 (MoM)',
+        'CPI y/y': '소비자물가지수 (YoY)',
+        'Core PCE Price Index m/m': '근원 개인소비지출(PCE) 물가지수 (MoM)',
+        'Non-Farm Employment Change': '비농업고용지수',
+        'Unemployment Rate': '실업률',
+        'Federal Funds Rate': '기준금리 결정 (FOMC)',
+        'FOMC Statement': 'FOMC 성명서',
+        'FOMC Press Conference': 'FOMC 기자회견',
+        'GDP q/q': 'GDP 성장률 (QoQ)',
+        'Advance GDP q/q': 'GDP 성장률 (속보치)',
+        'Retail Sales m/m': '소매판매 (MoM)',
+        'Core Retail Sales m/m': '근원 소매판매 (MoM)',
+        'PPI m/m': '생산자물가지수 (MoM)',
+        'ISM Manufacturing PMI': 'ISM 제조업 구매관리자지수',
+        'ISM Services PMI': 'ISM 서비스업 구매관리자지수',
+        'CB Consumer Confidence': 'CB 소비자신뢰지수',
+        'JOLTS Job Openings': 'JOLTS 구인구직보고서',
+    }
+
     def _fetch_forexfactory(self):
-        """ForexFactory 주간 JSON (미국 High 지표, 실제값은 제공 안 됨)"""
+        """ForexFactory 주간 JSON (curl_cffi로 429 우회, 미국 주요 지표 수집)"""
+        items = []
         try:
-            r = requests.get(self.FF_URL, headers={'User-Agent': self.HEADERS['User-Agent']}, timeout=15)
-            r.raise_for_status()
-            items = r.json()
+            if self.session:
+                r = self.session.get(self.FF_URL, timeout=15)
+            else:
+                r = requests.get(self.FF_URL, headers={'User-Agent': self.HEADERS['User-Agent']}, timeout=15)
+            if r.status_code == 200:
+                items = r.json()
         except Exception as e:
             logger.error(f"ForexFactory API 오류: {e}")
-            return []
 
         events = []
-        for it in items:
-            if it.get('country') != 'USD' or it.get('impact') != 'High':
+        for it in items if isinstance(items, list) else []:
+            if it.get('country') != 'USD':
                 continue
-            try:
-                dt = datetime.fromisoformat(it['date']).astimezone(KST)
-            except (KeyError, ValueError):
-                continue
-            events.append(self._event(dt.date(), dt.time().replace(second=0), '미국', it.get('title', ''),
-                                      it.get('previous') or '-', '-', it.get('forecast') or '-'))
+            imp = it.get('impact')
+            title = it.get('title', '')
+            # High/Medium 영향도 또는 주요 핵심 지표 수집
+            if imp in ('High', 'Medium') or title in ('Crude Oil Inventories', 'Existing Home Sales', 'Building Permits', 'Housing Starts', 'New Home Sales'):
+                try:
+                    dt = datetime.fromisoformat(it['date']).astimezone(KST)
+                except (KeyError, ValueError):
+                    continue
+                kr_name = self.FOREXFACTORY_TITLE_MAP.get(title, title)
+                display_name = f"{kr_name} ({title})" if kr_name != title else title
+                events.append(self._event(dt.date(), dt.time().replace(second=0), '미국', display_name,
+                                          it.get('previous') or '-', '-', it.get('forecast') or '-'))
+        return events
+
+    def _fetch_korea_indicators(self):
+        """한국 주요 거시경제지표 수집 (TradingEconomics 등)"""
+        start_of_week, end_of_week = _week_range()
+        events = []
+        try:
+            r = requests.get('https://tradingeconomics.com/south-korea/calendar',
+                             headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}, timeout=10)
+            if r.status_code == 200 and self.BeautifulSoup:
+                soup = self.BeautifulSoup(r.text, 'html.parser')
+                table = soup.find('table', id='calendar')
+                if table:
+                    cur_date = None
+                    KR_MAP = {
+                        'Interest Rate Decision': '한국은행 기준금리 결정',
+                        'Consumer Confidence': '소비자심리지수',
+                        'GDP Growth Rate QoQ Adv': 'GDP 성장률 (QoQ 속보치)',
+                        'GDP Growth Rate YoY Adv': 'GDP 성장률 (YoY 속보치)',
+                        'Business Confidence': '기업경기실사지수 (BSI)',
+                        'PPI MoM': '생산자물가지수 (MoM)',
+                        'PPI YoY': '생산자물가지수 (YoY)',
+                        'Inflation Rate YoY': '소비자물가지수 (YoY)',
+                        'Balance of Trade': '무역수지',
+                    }
+                    for tr in table.find_all('tr'):
+                        th = tr.find('th')
+                        if th and th.text.strip() and any(m in th.text for m in [
+                            'January','February','March','April','May','June','July','August','September','October','November','December']):
+                            try:
+                                cur_date = datetime.strptime(th.text.strip(), '%A %B %d %Y').date()
+                            except Exception:
+                                pass
+                        if not cur_date or not (start_of_week <= cur_date <= end_of_week):
+                            continue
+                        tds = tr.find_all('td')
+                        if len(tds) >= 4:
+                            for en_key, kr_name in KR_MAP.items():
+                                if any(en_key in td.text for td in tds):
+                                    t_str = tds[0].text.strip()
+                                    t_obj = datetime.strptime('09:00', '%H:%M').time()
+                                    try:
+                                        t_obj = datetime.strptime(t_str, '%I:%M %p').time()
+                                    except Exception:
+                                        pass
+                                    actual = tds[-4].text.strip() if len(tds) >= 4 else '-'
+                                    prev = tds[-3].text.strip() if len(tds) >= 3 else '-'
+                                    fc = tds[-2].text.strip() if len(tds) >= 2 else '-'
+                                    events.append(self._event(cur_date, t_obj, '한국', kr_name,
+                                                              prev or '-', actual or '-', fc or '-'))
+                                    break
+        except Exception as e:
+            logger.warning(f"한국 경제지표 수집 예외: {e}")
         return events
 
     @staticmethod
     def _merge(primary, extra):
-        """같은 국가/날짜/시각 이벤트는 primary(네이버, 한글명) 우선"""
-        keys = {(e['country'], e['parsed_date'], e['parsed_time']) for e in primary}
-        return primary + [e for e in extra if (e['country'], e['parsed_date'], e['parsed_time']) not in keys]
+        """같은 국가/날짜/시각/이벤트는 primary 우선 병합"""
+        keys = {(e['country'], e['parsed_date'], e['event'][:8]) for e in primary}
+        result = list(primary)
+        for e in extra:
+            key = (e['country'], e['parsed_date'], e['event'][:8])
+            if key not in keys:
+                keys.add(key)
+                result.append(e)
+        return result
 
     @staticmethod
     def _event(d, t, country, name, previous, actual, forecast):
@@ -175,13 +279,13 @@ class EconomicCalendarCrawler:
             'country': country,
             'event': name,
             'importance': 3,
-            'actual': actual,
-            'forecast': forecast,
-            'previous': previous,
+            'actual': actual if actual and actual != '-' else '-',
+            'forecast': forecast if forecast and forecast != '-' else '-',
+            'previous': previous if previous and previous != '-' else '-',
             'parsed_date': d,
             'parsed_time': t,
             'unit': '',
-            'is_release': actual != '-',
+            'is_release': bool(actual and actual not in ('-', 'None', '')),
         }
 
     def _parse_html(self, html_content):
@@ -265,45 +369,39 @@ class EconomicCalendarCrawler:
 
         return events
 
+    WEEKDAY_KOR = ['월', '화', '수', '목', '금', '토', '일']
+
     def filter_high_impact_events(self, events, days=7):
         """
-        매우 높은 영향도의 이벤트만 이번 주 월~일 필터링하여 반환
+        주요 영향도 이벤트만 이번 주 월~일 필터링하여 반환
         """
         filtered_events = []
         kst = timezone(timedelta(hours=9))
         today = datetime.now(kst).date()
-        
+
         # 이번주 월요일부터 일요일까지
         start_of_week = today - timedelta(days=today.weekday())
         end_of_week = start_of_week + timedelta(days=6)
 
         for event in events:
             event_date = event.get('parsed_date')
-            
-            # 중요도 3(최상)이고 타겟 국가이며 날짜가 이번 주 내에 포함될 경우
-            country_en = 'United States' if event.get('country') == '미국' else 'South Korea' if event.get('country') == '한국' else ''
-            
-            if event.get('importance', 0) >= 3 and country_en in self.TARGET_COUNTRIES:
-                if event_date and start_of_week <= event_date <= end_of_week:
+            country = event.get('country', '')
+
+            # 타겟 국가(미국, 한국) 및 이번 주 범위 필터링
+            if country in ('미국', '한국', 'United States', 'South Korea') and event_date:
+                if start_of_week <= event_date <= end_of_week:
                     filtered_events.append(event)
 
-        # 날짜순 정렬
-        kst = timezone(timedelta(hours=9))
+        # 날짜순 및 시간순 정렬
         filtered_events.sort(key=lambda x: (x.get('parsed_date') or today, x.get('parsed_time') or datetime.now(kst).time()))
         return filtered_events
 
     def format_events_for_message(self, events):
         """
-        이벤트를 메시지 형식으로 변환
-
-        Args:
-            events (list): 경제 이벤트 리스트
-
-        Returns:
-            str: 포맷된 메시지
+        이벤트를 가독성 높은 메시지 형식으로 변환 (요일 및 이전치/예측치/실제치 명확화)
         """
         if not events:
-            return "이번주 시장 영향력 매우 높은 경제지표가 없습니다."
+            return "이번주 시장 영향력 높은 주요 경제지표가 없습니다."
 
         message = "📊 <b>이번주 주요 경제지표</b>\n\n"
 
@@ -311,40 +409,47 @@ class EconomicCalendarCrawler:
         for event in events:
             event_date = event.get('parsed_date') or event.get('date')
 
-            # 날짜가 변경되었을 때
+            # 날짜가 변경되었을 때 요일 표기 추가
             if event_date != current_date:
                 current_date = event_date
-                # MM/DD 형식으로 날짜 축소
                 try:
                     if hasattr(event_date, 'strftime'):
-                        date_str = event_date.strftime('%m/%d')
+                        w = self.WEEKDAY_KOR[event_date.weekday()]
+                        date_str = f"{event_date.strftime('%m/%d')}({w})"
                     else:
-                        date_str = str(event_date)[5:10] if len(str(event_date)) >= 10 else str(event_date)
+                        date_str = str(event_date)
                 except Exception:
                     date_str = str(event_date)
                 message += f"📅 <b>{date_str}</b>\n"
 
-            release_status = '완료' if event.get('is_release') else '예정'
-            
-            # 국가 표시 간소화
+            # 국가 표시
             country = event.get('country', 'N/A')
-            if country == '한국':
+            if country in ('한국', 'South Korea'):
                 country_display = '🇰🇷'
-            elif country == '미국':
+            elif country in ('미국', 'United States'):
                 country_display = '🇺🇸'
             else:
                 country_display = f"[{country}]"
 
-            # 이벤트 시간은 HH:MM만 표시되므로 그대로 사용
-            message += f"▫️ {event.get('time', 'N/A')} {country_display} <b>{event.get('event', 'N/A')}</b>\n"
-            
+            time_str = event.get('time', 'N/A')
+            event_name = event.get('event', 'N/A')
+            message += f"▫️ {time_str} {country_display} <b>{event_name}</b>\n"
+
             unit = event.get('unit', '')
-            unit_str = f"({unit})" if unit and unit.strip() else ""
+            unit_str = f" {unit}" if unit and unit.strip() else ""
             prev_val = event.get('previous', '-')
             actual_val = event.get('actual', '-')
-            
-            # 기간 표시 생략하고 단순화
-            message += f"   📊 {prev_val} ➡️ {actual_val} {unit_str} 📣{release_status}\n\n"
+            fc_val = event.get('forecast', '-')
+
+            is_released = event.get('is_release', False)
+            if is_released:
+                # 발표 완료된 경우
+                fc_text = f" (예측: {fc_val})" if fc_val != '-' else ""
+                message += f"   📊 이전: {prev_val} ➡️ 실제: <b>{actual_val}</b>{unit_str}{fc_text} 📣완료\n\n"
+            else:
+                # 발표 예정인 경우
+                fc_text = f"예측: {fc_val}" if fc_val != '-' else "예측: 미정"
+                message += f"   📊 이전: {prev_val} ➡️ {fc_text}{unit_str} 📣예정\n\n"
 
         return message.strip()
 

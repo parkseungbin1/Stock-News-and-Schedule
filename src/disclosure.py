@@ -9,6 +9,7 @@ import io
 import json
 import logging
 import re
+import time
 import zipfile
 from datetime import datetime, timedelta, timezone
 from html import escape
@@ -83,23 +84,27 @@ class Dart:
             page += 1
         return out
 
-    def document_text(self, rcept_no):
-        """공시 원문(XML) 텍스트"""
-        r = requests.get(DART_DOC_URL, params={'crtfc_key': self.key, 'rcept_no': rcept_no}, timeout=30)
-        try:
-            z = zipfile.ZipFile(io.BytesIO(r.content))
-        except zipfile.BadZipFile:
-            raise RuntimeError(f"원문 조회 실패: {r.text[:200]}")
-        texts = []
-        for name in z.namelist():
-            raw = z.read(name)
-            for enc in ('utf-8', 'euc-kr', 'cp949'):
-                try:
-                    texts.append(raw.decode(enc))
-                    break
-                except UnicodeDecodeError:
+    def document_text(self, rcept_no, max_retries=3):
+        """공시 원문(XML) 텍스트 - DART 문서 생성 지연 시 재시도 포함"""
+        for attempt in range(1, max_retries + 1):
+            r = requests.get(DART_DOC_URL, params={'crtfc_key': self.key, 'rcept_no': rcept_no}, timeout=30)
+            try:
+                z = zipfile.ZipFile(io.BytesIO(r.content))
+                texts = []
+                for name in z.namelist():
+                    raw = z.read(name)
+                    for enc in ('utf-8', 'euc-kr', 'cp949'):
+                        try:
+                            texts.append(raw.decode(enc))
+                            break
+                        except UnicodeDecodeError:
+                            continue
+                return '\n'.join(texts)
+            except zipfile.BadZipFile:
+                if '<status>014</status>' in r.text and attempt < max_retries:
+                    time.sleep(1.5 * attempt)
                     continue
-        return '\n'.join(texts)
+                raise RuntimeError(f"원문 조회 실패: {r.text[:200]}")
 
 
 def _rows(xml):
@@ -127,43 +132,145 @@ def _num(s):
 UNIT_TO_EOK = {'원': 1e-8, '천원': 1e-5, '백만원': 1e-2, '십억원': 10, '억원': 1}
 
 
+def parse_metrics_row(cells, unit):
+    """표 행에서 당해 수치(억원), QoQ(%), YoY(%), 흑자/적자전환 여부 추출"""
+    row_text = ' '.join(cells)
+    val = None
+    qoq_pct = None
+    yoy_pct = None
+    turnaround = None
+
+    for kw in ('흑자전환', '적자전환', '적자지속'):
+        if kw in row_text:
+            turnaround = kw
+            break
+
+    nums = []
+    for c in cells[1:]:
+        n = _num(c)
+        if n is not None:
+            nums.append(n)
+
+    if nums:
+        val = nums[0] * unit
+
+    if len(cells) >= 8:
+        q = _num(cells[4])
+        if q is not None:
+            qoq_pct = q
+        y = _num(cells[7])
+        if y is not None:
+            yoy_pct = y
+
+    return {'val': val, 'qoq': qoq_pct, 'yoy': yoy_pct, 'turnaround': turnaround}
+
+
 def parse_preliminary_earnings(xml):
-    """잠정실적 원문에서 당기 매출액/영업이익/순이익(억원) 추출"""
+    """잠정실적 원문에서 매출액/영업이익/순이익 및 YoY, QoQ, 흑자전환 등 입체적 수치 추출"""
     unit = 1e-2  # 기본 백만원
     m = re.search(r'단위\s*[:：]?\s*(십억원|백만원|천원|억원|원)', re.sub(r'<[^>]+>', ' ', xml))
     if m:
         unit = UNIT_TO_EOK[m.group(1)]
 
     result = {}
-    keys = {'매출액': 'sales', '영업이익': 'op', '당기순이익': 'net', '법인세비용차감전계속사업이익': None}
     rows = _rows(xml)
-    for i, cells in enumerate(rows):
+    for cells in rows:
         label = cells[0].replace(' ', '')
-        for k, field in keys.items():
-            if field and label.startswith(k) and field not in result:
-                # '당해실적' 행: 라벨 다음 셀이 '당해실적'이면 그 뒤부터 숫자
-                nums = [_num(c) for c in cells[1:]]
-                nums = [n for n in nums if n is not None]
-                if nums:
-                    result[field] = nums[0] * unit
+        if label.startswith('영업이익') and 'op' not in result:
+            result['op'] = parse_metrics_row(cells, unit)
+        elif label.startswith('매출액') and 'sales' not in result:
+            result['sales'] = parse_metrics_row(cells, unit)
+        elif label.startswith('당기순이익') and 'net' not in result:
+            result['net'] = parse_metrics_row(cells, unit)
+
     return result
 
 
-IR_DATE_RE = re.compile(r'(20\d{2})\s*[.\-년/]\s*(\d{1,2})\s*[.\-월/]\s*(\d{1,2})')
+def parse_buyback_info(xml):
+    """자기주식취득결정 또는 신탁계약 공시에서 금액, 주식수, 기간, 목적, 방법 상세 추출"""
+    info = {
+        'amount': None,
+        'shares': None,
+        'start': None,
+        'end': None,
+        'purpose': '',
+        'method': '',
+    }
+    date_re = re.compile(r'(\d{4})\s*년\s*(\d{1,2})\s*월\s*(\d{1,2})\s*일')
+    rows = _rows(xml)
+    for cells in rows:
+        label = cells[0].replace(' ', '')
+        val = ' '.join(cells[1:])
+        if ('취득예정금액' in label or '계약금액' in label) and info['amount'] is None:
+            for c in cells[1:]:
+                n = _num(c)
+                if n and n > 0:
+                    info['amount'] = n
+                    break
+        elif ('취득예정주식' in label) and info['shares'] is None:
+            for c in cells[1:]:
+                n = _num(c)
+                if n and n > 0:
+                    info['shares'] = n
+                    break
+        elif ('취득예상기간' in label or '계약기간' in label):
+            dates = date_re.findall(val)
+            if len(dates) >= 2:
+                info['start'] = f"{dates[0][0]}.{int(dates[0][1]):02d}.{int(dates[0][2]):02d}"
+                info['end'] = f"{dates[1][0]}.{int(dates[1][1]):02d}.{int(dates[1][2]):02d}"
+            elif len(dates) == 1 and not info['start']:
+                info['start'] = f"{dates[0][0]}.{int(dates[0][1]):02d}.{int(dates[0][2]):02d}"
+        elif label in ('종료일', '취득종료예상일자') and not info['end']:
+            m2 = date_re.search(val)
+            if m2:
+                info['end'] = f"{m2.group(1)}.{int(m2.group(2)):02d}.{int(m2.group(3)):02d}"
+        elif '목적' in label and not info['purpose']:
+            info['purpose'] = val.strip()[:60]
+        elif ('방법' in label or '계약체결기관' in label or '수탁기관' in label) and not info['method']:
+            info['method'] = val.strip()[:40]
+
+    return info
 
 
 def parse_ir_info(xml):
-    """기업설명회 공시에서 개최일자/목적 추출"""
-    info = {'date': None, 'purpose': ''}
+    """기업설명회 공시에서 개최일자, 시간, 방식, 대상, 목적 추출"""
+    info = {'date': None, 'time': '', 'purpose': '', 'method': '', 'target': ''}
+    date_re = re.compile(r'(20\d{2})\s*[.\-년/]\s*(\d{1,2})\s*[.\-월/]\s*(\d{1,2})')
+    time_re = re.compile(r'(\d{1,2})\s*[:시]\s*(\d{2})?')
+
     for cells in _rows(xml):
         label = cells[0].replace(' ', '')
         val = ' '.join(cells[1:])
-        if not info['date'] and ('일자' in label or '일시' in label):
-            m = IR_DATE_RE.search(val)
+        if not info['date'] and any(k in label for k in ('일시', '일자')):
+            m = date_re.search(val)
             if m:
                 info['date'] = '%s%02d%02d' % (m.group(1), int(m.group(2)), int(m.group(3)))
-        if not info['purpose'] and '목적' in label:
-            info['purpose'] = val[:80]
+            tm = time_re.search(val)
+            if tm:
+                hour = int(tm.group(1))
+                minute = int(tm.group(2)) if tm.group(2) else 0
+                info['time'] = f"{hour:02d}:{minute:02d}"
+        if not info['purpose'] and any(k in label for k in ('주요내용', '목적', '설명회내용')):
+            info['purpose'] = val[:60]
+        if not info['method'] and any(k in label for k in ('진행방식', '방식', '개최방법')):
+            m_txt = val[:30]
+            if '컨퍼런스' in m_txt or 'Conference' in m_txt:
+                info['method'] = '컨퍼런스 콜'
+            elif '온라인' in m_txt:
+                info['method'] = '온라인 생중계'
+            elif '대면' in m_txt:
+                info['method'] = '대면 미팅'
+            else:
+                info['method'] = m_txt.strip()
+        if not info['target'] and any(k in label for k in ('참석대상', '대상자', '대상')):
+            t_txt = val[:30]
+            if '기관' in t_txt or '애널리스트' in t_txt:
+                info['target'] = '기관투자자/애널리스트'
+            elif '주주' in t_txt:
+                info['target'] = '일반주주'
+            else:
+                info['target'] = t_txt.strip()
+
     return info
 
 
@@ -215,9 +322,19 @@ def _link(item):
     return f"<a href=\"{DART_VIEW_URL.format(item['rcept_no'])}\">{name}</a>"
 
 
+WEEKDAYS_KOR = ['월', '화', '수', '목', '금', '토', '일']
+
+
 def format_earnings(item, actual, cons, watch):
     line = f"{_star(item, watch)}<b>{_link(item)}</b> 잠정실적\n"
-    op = actual.get('op')
+    op_info = actual.get('op', {})
+    sales_info = actual.get('sales', {})
+    net_info = actual.get('net', {})
+
+    op = op_info.get('val')
+    sales = sales_info.get('val')
+    net = net_info.get('val')
+
     verdict = ''
     if cons and op is not None and cons.get('op'):
         diff = (op - cons['op']) / abs(cons['op']) * 100
@@ -230,11 +347,103 @@ def format_earnings(item, actual, cons, watch):
         line += f"   영업이익 {_fmt_eok(op)} (컨센 {_fmt_eok(cons['op'])}, {escape(cons['period'])})\n"
     else:
         line += f"   영업이익 {_fmt_eok(op)} (컨센서스 없음)\n"
-    if actual.get('sales') is not None:
-        cs = f" (컨센 {_fmt_eok(cons['sales'])})" if cons and cons.get('sales') else ''
-        line += f"   매출액 {_fmt_eok(actual['sales'])}{cs}\n"
+
+    # 영업이익 입체 분석 태그 (서프라이즈 여부, YoY 증감률, QoQ 증감률, 흑자/적자전환)
+    tags = []
     if verdict:
-        line += f"   {verdict}\n"
+        tags.append(verdict)
+    if op_info.get('turnaround'):
+        tags.append(f"🔄 <b>{op_info['turnaround']}</b>")
+    if op_info.get('yoy') is not None:
+        tags.append(f"YoY {op_info['yoy']:+.1f}%")
+    if op_info.get('qoq') is not None and not op_info.get('turnaround'):
+        tags.append(f"QoQ {op_info['qoq']:+.1f}%")
+    if tags:
+        line += f"   {' | '.join(tags)}\n"
+
+    # 매출액
+    if sales is not None:
+        cs = f" (컨센 {_fmt_eok(cons['sales'])})" if cons and cons.get('sales') else ''
+        sales_growth = f" [YoY {sales_info['yoy']:+.1f}%]" if sales_info.get('yoy') is not None else ''
+        line += f"   매출액 {_fmt_eok(sales)}{cs}{sales_growth}\n"
+
+    # 당기순이익
+    if net is not None:
+        net_turn = f" ({net_info['turnaround']})" if net_info.get('turnaround') else (
+            f" [YoY {net_info['yoy']:+.1f}%]" if net_info.get('yoy') is not None else "")
+        line += f"   당기순이익 {_fmt_eok(net)}{net_turn}\n"
+
+    return line
+
+
+def format_buyback(item, info, watch):
+    """자사주 취득 공시를 금액, 주식수, 목적, 기간까지 입체적으로 포맷"""
+    line = f"{_star(item, watch)}<b>{_link(item)}</b> 💰 <b>자사주 취득 결정</b>\n"
+    amount_str = ""
+    if info.get('amount'):
+        amt_eok = info['amount'] / 1e8
+        if amt_eok >= 10000:
+            amount_str = f"{amt_eok / 10000:.1f}조원"
+        else:
+            amount_str = f"{amt_eok:,.0f}억원"
+
+    shares_str = ""
+    if info.get('shares'):
+        sh = info['shares']
+        if sh >= 10000:
+            shares_str = f"{sh / 10000:,.1f}만주"
+        else:
+            shares_str = f"{sh:,.0f}주"
+
+    if amount_str or shares_str:
+        sh_part = f" (보통주 {shares_str})" if shares_str else ""
+        line += f"   • 취득예정: <b>{amount_str or '-'}</b>{sh_part}\n"
+
+    extra_tags = []
+    if info.get('method'):
+        m_short = info['method']
+        if '장내' in m_short:
+            m_short = '장내매수'
+        elif '신탁' in m_short:
+            m_short = '신탁계약'
+        extra_tags.append(f"방식: {m_short}")
+    if info.get('purpose'):
+        extra_tags.append(f"목적: {info['purpose']}")
+    if extra_tags:
+        line += f"   • {' | '.join(extra_tags)}\n"
+
+    if info.get('start') and info.get('end'):
+        line += f"   • 기간: {info['start']} ~ {info['end']}\n"
+    elif info.get('start'):
+        line += f"   • 시작일: {info['start']}\n"
+
+    return line
+
+
+def format_ir(item, info, watch):
+    """IR 공시를 개최 일시(요일 포함), 진행 방식, 대상까지 입체적으로 포맷"""
+    d = info.get('date')
+    when = '일자 미상'
+    if d and len(d) == 8:
+        try:
+            dt = datetime.strptime(d, '%Y%m%d').date()
+            w = WEEKDAYS_KOR[dt.weekday()]
+            when = f"{d[4:6]}/{d[6:8]}({w})"
+        except Exception:
+            when = f"{d[4:6]}/{d[6:8]}"
+    if info.get('time'):
+        when += f" {info['time']}"
+
+    line = f"{_star(item, watch)}<b>{_link(item)}</b> 🎤 IR <b>{when}</b>\n"
+    details = []
+    if info.get('method'):
+        details.append(f"방식: {info['method']}")
+    if info.get('target'):
+        details.append(f"대상: {info['target']}")
+    if details:
+        line += f"   • {' | '.join(details)}\n"
+    if info.get('purpose'):
+        line += f"   • 내용: {escape(info['purpose'])}\n"
     return line
 
 
@@ -270,30 +479,48 @@ def collect_new_disclosures(dart, state, watch):
         kind = classify(it['report_nm'])
         if not kind or it['rcept_no'] in seen:
             continue
+
+        try:
+            xml_text = dart.document_text(it['rcept_no'])
+        except Exception as e:
+            logger.warning(f"원문 조회 실패 {it['corp_name']} {it['report_nm']}: {e}")
+            # DART 서버에 아직 파일 준비가 안 된 014인 경우 다음 번에 재수집하도록 seen에 넣지 않음
+            continue
+
         state['seen'].append(it['rcept_no'])
         seen.add(it['rcept_no'])
+
         try:
             if kind == 'earnings':
                 if '정정' in it['report_nm']:
                     continue
-                actual = parse_preliminary_earnings(dart.document_text(it['rcept_no']))
+                actual = parse_preliminary_earnings(xml_text)
                 cons = naver_consensus(it['stock_code']) if it.get('stock_code') else None
                 earnings.append((it, format_earnings(it, actual, cons, watch)))
             elif kind == 'buyback':
-                buyback.append((it, format_simple(it, watch, '💰 자사주 취득 결정')))
+                info = parse_buyback_info(xml_text)
+                buyback.append((it, format_buyback(it, info, watch)))
             elif kind == 'ir':
-                info = parse_ir_info(dart.document_text(it['rcept_no']))
+                info = parse_ir_info(xml_text)
                 if info['date']:
                     state['ir_dates'][it['rcept_no']] = {
-                        'date': info['date'], 'corp': it['corp_name'], 'code': it.get('stock_code', ''),
-                        'purpose': info['purpose']}
-                d = info['date']
-                when = f"{d[4:6]}/{d[6:8]}" if d else '일자 미상'
-                ir.append((it, format_simple(it, watch, f"🎤 IR {when} {escape(info['purpose'][:40])}")))
+                        'date': info['date'],
+                        'time': info.get('time', ''),
+                        'corp': it['corp_name'],
+                        'code': it.get('stock_code', ''),
+                        'purpose': info.get('purpose', ''),
+                        'method': info.get('method', ''),
+                        'target': info.get('target', ''),
+                    }
+                ir.append((it, format_ir(it, info, watch)))
         except Exception as e:
-            logger.warning(f"공시 처리 실패 {it['corp_name']} {it['report_nm']}: {e}")
+            logger.warning(f"공시 파싱 실패 {it['corp_name']} {it['report_nm']}: {e}")
             if kind == 'earnings':
-                earnings.append((it, format_simple(it, watch, '잠정실적 (수치 파싱 실패)')))
+                earnings.append((it, format_simple(it, watch, '잠정실적 공시 [상세보기 🔗]')))
+            elif kind == 'buyback':
+                buyback.append((it, format_simple(it, watch, '💰 자사주 취득 결정 공시')))
+            elif kind == 'ir':
+                ir.append((it, format_simple(it, watch, '🎤 기업설명회(IR) 개최 공시')))
 
     def order(lst):  # 관심종목 먼저
         return [b for _, b in sorted(lst, key=lambda x: x[0].get('stock_code') not in watch)]
@@ -322,10 +549,16 @@ def backfill_ir(dart, state, days=14):
         try:
             info = parse_ir_info(dart.document_text(it['rcept_no']))
         except Exception:
-            info = {'date': None, 'purpose': ''}
+            info = {'date': None, 'purpose': '', 'time': '', 'method': '', 'target': ''}
         state['ir_dates'][it['rcept_no']] = {
-            'date': info['date'], 'corp': it['corp_name'], 'code': it.get('stock_code', ''),
-            'purpose': info['purpose']}
+            'date': info['date'],
+            'time': info.get('time', ''),
+            'corp': it['corp_name'],
+            'code': it.get('stock_code', ''),
+            'purpose': info.get('purpose', ''),
+            'method': info.get('method', ''),
+            'target': info.get('target', ''),
+        }
 
 
 def today_ir_blocks(state, watch):
@@ -337,5 +570,8 @@ def today_ir_blocks(state, watch):
     blocks = []
     for corp, (v, rcept) in sorted(rows.items(), key=lambda x: x[1][0].get('code') not in watch):
         star = '⭐ ' if v.get('code') in watch else ''
-        blocks.append(f"{star}<b><a href=\"{DART_VIEW_URL.format(rcept)}\">{escape(corp)}</a></b> {escape(v.get('purpose', '')[:50])}")
+        time_part = f" {v['time']}" if v.get('time') else ""
+        method_part = f" ({v['method']})" if v.get('method') else ""
+        purpose = f" - {v.get('purpose', '')}" if v.get('purpose') else ""
+        blocks.append(f"{star}<b><a href=\"{DART_VIEW_URL.format(rcept)}\">{escape(corp)}</a></b>{time_part}{method_part}{escape(purpose[:50])}")
     return blocks
