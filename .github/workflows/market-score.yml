@@ -1,13 +1,26 @@
-name: Market Score Alert
+name: Market Score & Betting Alert
 
 on:
   schedule:
-    # UTC 기준. KST = UTC + 9
-    # 15:10 KST = 06:10 UTC (월~금 정규장 마감 직전/직후 시황 점검)
-    # 19:40 KST = 10:40 UTC (월~금 외인/기관 최종 수급 집계 & 미 야간 프리마켓 점검)
+    # UTC 기준 (KST = UTC + 9)
+    # 1. [아침 08:35 KST] = 23:35 UTC (일~목 -> 월~금 아침 장전 시초가 매도 가이드)
+    - cron: '35 23 * * 0-4'
+    # 2. [오후 15:10 KST] = 06:10 UTC (월~금 -> 장 마감 종가베팅 진입 가이드)
     - cron: '10 6 * * 1-5'
+    # 3. [저녁 19:40 KST] = 10:40 UTC (월~금 -> 종가베팅 야간 리스크 점검)
     - cron: '40 10 * * 1-5'
   workflow_dispatch:
+    inputs:
+      mode:
+        description: '발송 모드 선택'
+        required: false
+        default: 'auto'
+        type: choice
+        options:
+          - auto
+          - morning
+          - closing
+          - night
 
 jobs:
   alert:
@@ -24,8 +37,13 @@ jobs:
 
       - run: pip install -r requirements.txt
 
-      - name: Send Market Score
+      - name: Send Market Alert
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        run: python market_alert.py
+        run: |
+          if [ "${{ github.event.inputs.mode }}" != "" ] && [ "${{ github.event.inputs.mode }}" != "auto" ]; then
+            python market_alert.py --mode ${{ github.event.inputs.mode }}
+          else
+            python market_alert.py
+          fi
