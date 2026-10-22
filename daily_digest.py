@@ -5,6 +5,13 @@ import sys
 import time
 from pathlib import Path
 
+# Windows 콘솔 출력 시 이모지 인코딩 오류 방지
+if hasattr(sys.stdout, 'reconfigure'):
+    try:
+        sys.stdout.reconfigure(encoding='utf-8')
+    except Exception:
+        pass
+
 # 현재 디렉토리를 Python 경로에 추가
 sys.path.insert(0, str(Path(__file__).parent))
 
@@ -26,29 +33,39 @@ def main():
         print("\n전송할 메시지:")
         print("[날씨]\n", digest['weather_message'])
         print("-" * 30)
+        print("[시황 스코어]\n", digest['market_message'])
+        print("-" * 30)
         print("[경제]\n", digest['economic_message'])
         print("-" * 30)
 
         print("\n텔레그램으로 전송 중...")
-        # 날씨 전송
+        # 1. 날씨 전송
         success_w = send_economic_calendar_to_telegram_sync(
             digest['weather_message'],
             Config.TELEGRAM_BOT_TOKEN,
             Config.TELEGRAM_CHAT_ID,
         )
         
-        # 메시지 간 간격을 두기 위해 3초 대기
-        time.sleep(3)
+        time.sleep(2)
+
+        # 2. 오늘의 시황 스코어 & 해설 전송
+        success_m = send_economic_calendar_to_telegram_sync(
+            digest['market_message'],
+            Config.TELEGRAM_BOT_TOKEN,
+            Config.TELEGRAM_CHAT_ID,
+        )
+
+        time.sleep(2)
         
-        # 경제 지표 전송
+        # 3. 경제 지표 전송
         success_e = send_economic_calendar_to_telegram_sync(
             digest['economic_message'],
             Config.TELEGRAM_BOT_TOKEN,
             Config.TELEGRAM_CHAT_ID,
         )
 
-        if success_w and success_e:
-            print("✓ 날씨 + 경제 캘린더 전송 성공!")
+        if success_w and success_m and success_e:
+            print("✓ 날씨 + 시황 스코어 + 경제 캘린더 전송 성공!")
         else:
             print("✗ 텔레그램 전송 실패")
             sys.exit(1)
