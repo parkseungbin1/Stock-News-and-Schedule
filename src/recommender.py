@@ -176,17 +176,18 @@ def get_recommendations(dart_disclosures=None, market_context=None):
 
     # =========================================================================
     # Track 2: 🚀 2~5일 스윙 (추세 파동)
-    # 4대 기준: 1) 시총 4,000억+ 중·대형 우량주 (소형주/작전주 원천 배제),
+    # 4대 기준: 1) 시총 4,000억 ~ 10조원 알짜 중형주 (소형주/초대형 지수주 배제),
     #           2) 20일선 우상향 & 5% 이내 눌림목 지지,
     #           3) 스마트머니 수급 & 거래량 수축 후 변곡점 반등,
     #           4) 정량적 손익비 (익절 +5~9%, 손절 -3%)
     # =========================================================================
     swing_picks = []
     swing_pool = common[
-        (common['Marcap'] >= 4000 * 1e8) &  # 시총 4,000억 이상 (진짜 중·대형주!)
-        (common['Amount'] >= 30 * 1e8) &    # 당일 거래대금 30억 이상
+        (common['Marcap'] >= 4000 * 1e8) &     # 시총 4,000억 이상 (소형주 배제)
+        (common['Marcap'] <= 100000 * 1e8) &   # 시총 10조원 이하 (초대형 지수주 배제)
+        (common['Amount'] >= 30 * 1e8) &       # 당일 거래대금 30억 이상
         (common['ChagesRatio'] >= -2.0) &
-        (common['ChagesRatio'] <= 6.5)      # 과열되지 않은 눌림목/초입 양봉
+        (common['ChagesRatio'] <= 6.5)         # 과열되지 않은 눌림목/초입 양봉
     ].copy()
 
     swing_pool = swing_pool.sort_values(by='Amount', ascending=False).head(40)
