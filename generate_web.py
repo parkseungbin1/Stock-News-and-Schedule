@@ -27,6 +27,7 @@ from src.market_score import (
     fetch_us10y,
     get_market_score_message,
 )
+from src import recommender
 
 KST = timezone(timedelta(hours=9))
 
@@ -60,6 +61,74 @@ def generate_html():
     g0840_js = guide_0840.replace(bt, bt_esc)
     g1510_js = guide_1510.replace(bt, bt_esc)
     g1940_js = guide_1940.replace(bt, bt_esc)
+
+    # 2-1. AI 실전 추천 종목 수집 (종가베팅 & 2~5일 스윙)
+    try:
+        rec_data = recommender.get_recommendations()
+        closing_picks = rec_data.get('closing', [])
+        swing_picks = rec_data.get('swing', [])
+    except Exception as e:
+        print(f"추천 종목 수집 실패: {e}")
+        fallback = recommender.get_fallback_recommendations()
+        closing_picks = fallback['closing']
+        swing_picks = fallback['swing']
+
+    def render_rec_card(pick, card_theme):
+        tags_html = "".join([f'<span class="rec-tag">{t}</span>' for t in pick.get('tags', [])])
+        change_val = pick['change_pct']
+        change_class = 'up' if change_val > 0 else ('down' if change_val < 0 else '')
+        sign = '+' if change_val > 0 else ''
+        return f"""
+        <div class="rec-card {card_theme}">
+            <div class="rec-card-top">
+                <div class="rec-stock-title">
+                    <a href="https://finance.naver.com/item/main.naver?code={pick['code']}" target="_blank" rel="noopener noreferrer">
+                        {pick['name']} <span class="rec-code">{pick['code']}</span>
+                    </a>
+                    <span class="rec-market-badge">{pick['market']}</span>
+                </div>
+                <div class="rec-score-badge">⭐ AI 적중도 {pick['score']}점</div>
+            </div>
+
+            <div class="rec-price-row">
+                <div>
+                    <span class="rec-label">추천 매수가</span>
+                    <span class="rec-price">{pick['price']:,}원</span>
+                </div>
+                <div class="rec-change-box {change_class}">
+                    {sign}{change_val:.2f}% ({pick['amount_eok']:,}억)
+                </div>
+            </div>
+
+            <div class="rec-target-box">
+                <div class="target-col col-t1">
+                    <div class="t-label">1차 목표가 ({pick['target_1_pct']})</div>
+                    <div class="t-val">{pick['target_1']:,}원</div>
+                </div>
+                <div class="target-col col-t2">
+                    <div class="t-label">2차 목표가 ({pick['target_2_pct']})</div>
+                    <div class="t-val">{pick['target_2']:,}원</div>
+                </div>
+                <div class="target-col col-sl">
+                    <div class="t-label">손절 기준 ({pick['stop_loss_pct']})</div>
+                    <div class="t-val">{pick['stop_loss']:,}원</div>
+                </div>
+            </div>
+
+            <div class="rec-desc-box">
+                <div class="rec-desc-title">💡 AI 포착 근거:</div>
+                <div class="rec-desc-text">{pick['reason']}</div>
+                <div class="rec-period-tag">⏱️ 매매 타이밍: {pick['holding_period']}</div>
+            </div>
+
+            <div class="rec-tags-row">
+                {tags_html}
+            </div>
+        </div>
+        """
+
+    closing_cards_html = "".join([render_rec_card(p, "theme-closing") for p in closing_picks])
+    swing_cards_html = "".join([render_rec_card(p, "theme-swing") for p in swing_picks])
 
     # 3. 최근 공시 수집 및 카테고리별 분리
     earnings_cards = []
@@ -499,6 +568,222 @@ def generate_html():
             gap: 8px;
         }}
 
+        /* AI 추천 종목 레이더 */
+        .rec-nav {{
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            padding-bottom: 8px;
+            margin-bottom: 14px;
+        }}
+        .rec-tab {{
+            background: var(--surface);
+            border: 1px solid var(--border);
+            color: var(--text-sub);
+            padding: 12px 18px;
+            border-radius: 12px;
+            font-size: 0.92rem;
+            font-weight: 700;
+            cursor: pointer;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.2s;
+        }}
+        .rec-tab:hover {{
+            border-color: rgba(255, 255, 255, 0.25);
+            color: #ffffff;
+        }}
+        .rec-tab.active {{
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(37, 99, 235, 0.15));
+            border-color: #f59e0b;
+            color: #ffffff;
+            box-shadow: 0 4px 14px rgba(245, 158, 11, 0.25);
+        }}
+        .rec-tag-pill {{
+            font-size: 0.74rem;
+            padding: 3px 8px;
+            border-radius: 999px;
+            background: rgba(245, 158, 11, 0.2);
+            color: #fbbf24;
+            border: 1px solid rgba(245, 158, 11, 0.35);
+        }}
+        .pill-purple {{
+            background: rgba(139, 92, 246, 0.2);
+            color: #c084fc;
+            border-color: rgba(139, 92, 246, 0.35);
+        }}
+        .rec-strategy-banner {{
+            border-radius: 12px;
+            padding: 12px 16px;
+            font-size: 0.85rem;
+            line-height: 1.5;
+            margin-bottom: 16px;
+        }}
+        .banner-orange {{
+            background: rgba(245, 158, 11, 0.08);
+            border: 1px solid rgba(245, 158, 11, 0.25);
+            color: #fde68a;
+        }}
+        .banner-purple {{
+            background: rgba(139, 92, 246, 0.08);
+            border: 1px solid rgba(139, 92, 246, 0.25);
+            color: #e9d5ff;
+        }}
+        .rec-grid {{
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 16px;
+            margin-bottom: 28px;
+        }}
+        .rec-card {{
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 18px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            transition: all 0.25s;
+            position: relative;
+        }}
+        .rec-card:hover {{
+            transform: translateY(-3px);
+            box-shadow: 0 10px 28px rgba(0, 0, 0, 0.4);
+        }}
+        .rec-card.theme-closing {{
+            border-top: 3px solid #f59e0b;
+        }}
+        .rec-card.theme-swing {{
+            border-top: 3px solid #8b5cf6;
+        }}
+        .rec-card-top {{
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }}
+        .rec-stock-title a {{
+            font-size: 1.15rem;
+            font-weight: 800;
+            color: #ffffff !important;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }}
+        .rec-stock-title a:hover {{
+            text-decoration: underline;
+        }}
+        .rec-code {{
+            font-size: 0.8rem;
+            color: #9ca3af;
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 600;
+        }}
+        .rec-market-badge {{
+            font-size: 0.7rem;
+            padding: 2px 6px;
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.08);
+            color: #d1d5db;
+            margin-left: 4px;
+        }}
+        .rec-score-badge {{
+            font-size: 0.74rem;
+            font-weight: 700;
+            padding: 3px 9px;
+            border-radius: 999px;
+            background: rgba(16, 185, 129, 0.15);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.35);
+        }}
+        .rec-price-row {{
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 14px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        }}
+        .rec-label {{
+            font-size: 0.78rem;
+            color: var(--text-sub);
+            margin-right: 6px;
+        }}
+        .rec-price {{
+            font-size: 1.35rem;
+            font-weight: 800;
+            font-family: 'JetBrains Mono', monospace;
+            color: #ffffff;
+        }}
+        .rec-change-box {{
+            font-size: 0.88rem;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+        }}
+        .rec-target-box {{
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 6px;
+            background: rgba(0, 0, 0, 0.35);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 10px;
+            padding: 10px;
+            margin-bottom: 12px;
+            text-align: center;
+        }}
+        .target-col .t-label {{
+            font-size: 0.68rem;
+            color: #9ca3af;
+            margin-bottom: 4px;
+        }}
+        .target-col .t-val {{
+            font-size: 0.88rem;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+        }}
+        .col-t1 .t-val {{ color: #f87171; }}
+        .col-t2 .t-val {{ color: #ef4444; }}
+        .col-sl .t-val {{ color: #60a5fa; }}
+        .rec-desc-box {{
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            border-radius: 8px;
+            padding: 10px;
+            font-size: 0.8rem;
+            line-height: 1.5;
+            margin-bottom: 10px;
+        }}
+        .rec-desc-title {{
+            color: #9ca3af;
+            font-weight: 600;
+            font-size: 0.74rem;
+            margin-bottom: 3px;
+        }}
+        .rec-desc-text {{
+            color: #f3f4f6;
+            margin-bottom: 6px;
+        }}
+        .rec-period-tag {{
+            font-size: 0.72rem;
+            color: #fbbf24;
+            font-weight: 600;
+        }}
+        .rec-tags-row {{
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }}
+        .rec-tag {{
+            font-size: 0.7rem;
+            padding: 2px 7px;
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.06);
+            color: #9ca3af;
+        }}
+
         /* 가이드 탭 & 박스 */
         .tabs {{
             display: flex;
@@ -896,7 +1181,49 @@ def generate_html():
         </div>
     </div>
 
-    <!-- 2. 실전 4대 종가베팅/매도 가이드 -->
+    <!-- 2. AI 실전 추천 레이더 (라씨 벤치마킹) -->
+    <div class="section-title">
+        <span>🎯 AI 실전 추천 레이더 (라씨 벤치마킹)</span>
+    </div>
+    <div style="font-size: 0.85rem; color: #9ca3af; margin-top: -8px; margin-bottom: 16px;">
+        💡 코스피·코스닥 2,800개 전 종목의 수급, 거래대금, 20일선 눌림목을 분석하여 <b>[당일 종가베팅]</b>과 <b>[2~5일 스윙]</b> 최우량주를 엄선합니다.
+    </div>
+
+    <!-- 추천 트랙 선택 탭 -->
+    <div class="rec-nav">
+        <button class="rec-tab active" onclick="switchRecTrack('closing', this)">
+            ⚡ 오늘 15:10 종가베팅 <span class="rec-tag-pill">익일 갭상승 +3%~+5%</span>
+        </button>
+        <button class="rec-tab" onclick="switchRecTrack('swing', this)">
+            🌊 2~5일 스윙 추천 <span class="rec-tag-pill pill-purple">추세 파동 +5%~+10%</span>
+        </button>
+    </div>
+
+    <!-- 1) 종가베팅 컨테이너 -->
+    <div id="rec-closing-container" class="rec-container">
+        <div class="rec-strategy-banner banner-orange">
+            <div>
+                <b>🎯 종가베팅 전략 핵심 가이드</b>: 오후 15:10~15:30 매수 → 익일 아침 09:00~09:20 시초가 갭상승 시 전량 분할 익절 (+3%~+5%)
+            </div>
+        </div>
+        <div class="rec-grid">
+            {closing_cards_html}
+        </div>
+    </div>
+
+    <!-- 2) 2~5일 스윙 컨테이너 -->
+    <div id="rec-swing-container" class="rec-container" style="display: none;">
+        <div class="rec-strategy-banner banner-purple">
+            <div>
+                <b>🌊 2~5일 스윙 전략 핵심 가이드</b>: 20일선 우상향 눌림목 지지 종목 매수 → 2~5영업일간 +5%~+10% 추세 파동 누적 익절 (손절 -3%)
+            </div>
+        </div>
+        <div class="rec-grid">
+            {swing_cards_html}
+        </div>
+    </div>
+
+    <!-- 3. 실전 4대 종가베팅/매도 가이드 -->
     <div class="section-title">⏱️ 실전 4대 트레이딩 라이프사이클 가이드</div>
     <div class="tabs">
         <button class="tab-btn" onclick="showGuide('g0740', this)">🌅 07:40 NXT 매도</button>
@@ -1012,6 +1339,18 @@ def generate_html():
 
         // 기본 활성 탭
         showGuide('g1940', document.querySelectorAll('.tab-btn')[3]);
+
+        function switchRecTrack(track, btn) {{
+            document.querySelectorAll('.rec-tab').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            if (track === 'closing') {{
+                document.getElementById('rec-closing-container').style.display = 'block';
+                document.getElementById('rec-swing-container').style.display = 'none';
+            }} else {{
+                document.getElementById('rec-closing-container').style.display = 'none';
+                document.getElementById('rec-swing-container').style.display = 'block';
+            }}
+        }}
     </script>
 </body>
 </html>
