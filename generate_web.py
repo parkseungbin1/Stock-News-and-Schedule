@@ -1387,22 +1387,22 @@ def generate_html():
                 <div class="criteria-item">
                     <div class="ci-num">01</div>
                     <div class="ci-content">
-                        <div class="ci-title">거래대금 폭발 (50억~1,000억+ 집중)</div>
-                        <div class="ci-desc">시장의 유동성이 가장 강하게 쏠린 최상위 주도주만 선별 (거래 없는 소형 잡주/품절주 원천 배제)</div>
+                        <div class="ci-title">거래대금 최우선 집중 (수백억~1,000억+)</div>
+                        <div class="ci-desc">시장의 메이저 자금이 쏠린 최상위 주도주만 선별 (호가창이 얇아 매도 시 손해보는 소형 거래량 종목 원천 배제)</div>
                     </div>
                 </div>
                 <div class="criteria-item">
                     <div class="ci-num">02</div>
                     <div class="ci-content">
-                        <div class="ci-title">마감 양봉 완성도 (윗꼬리 28% 이하)</div>
+                        <div class="ci-title">마감 양봉 완성도 (윗꼬리 38% 이하)</div>
                         <div class="ci-desc">15:10 장마감까지 차익실현 매물에 밀리지 않고 고가 부근을 단단하게 지켜낸 최상위 매수세 검증</div>
                     </div>
                 </div>
                 <div class="criteria-item">
                     <div class="ci-num">03</div>
                     <div class="ci-content">
-                        <div class="ci-title">과열 없는 최적 상승률 (+3.5% ~ +8.5%)</div>
-                        <div class="ci-desc">너무 적게 오르면(+3% 미만) 힘이 없고, 너무 많이 폭등하면(+9% 이상) 다음 날 아침 차익 매물(상투)을 맞기 때문에 갭상승 확률이 가장 높은 '딱 좋은 상승 구간'만 선별</div>
+                        <div class="ci-title">과열 없는 최적 상승률 (+3.5% ~ +10.0%)</div>
+                        <div class="ci-desc">너무 적게 오르면(+3% 미만) 힘이 없고, 너무 많이 폭등하면(+10% 초과) 다음 날 아침 차익 매물(상투)을 맞기 때문에 갭상승 확률이 가장 높은 '딱 좋은 상승 구간'만 선별</div>
                     </div>
                 </div>
                 <div class="criteria-item">

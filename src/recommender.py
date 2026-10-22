@@ -105,15 +105,17 @@ def get_recommendations(dart_disclosures=None, market_context=None):
 
     # =========================================================================
     # Track 1: 🎯 오늘 15:10 종가베팅 (오버나잇)
-    # 4대 기준: 1) 거래대금 50억~1,000억+ 집중, 2) 윗꼬리 28% 이하 단단한 양봉,
-    #           3) 과열 없는 최적 상승률 (+3.5%~+8.5%), 4) 과열(>9%) 및 저탄력(<3.5%) 배제
+    # 4대 기준: 1) 거래대금 100억~500억+ 최우선 집중 (소형 거래량 원천 배제),
+    #           2) 윗꼬리 38% 이하 단단한 양봉 (장마감 매수세 유지),
+    #           3) 과열 없는 최적 상승률 (+3.5%~+10.0%),
+    #           4) 익일 시초가 갭상승(+3%~+5%) 기계적 분할 익절
     # =========================================================================
     closing_picks = []
     closing_pool = common[
-        (common['Marcap'] >= 2000 * 1e8) &  # 시총 2,000억 이상
-        (common['Amount'] >= 50 * 1e8) &    # 당일 거래대금 50억 이상
+        (common['Marcap'] >= 1500 * 1e8) &  # 시총 1,500억 이상
+        (common['Amount'] >= 80 * 1e8) &    # 당일 거래대금 최소 80억 이상 (저유동성 배제)
         (common['ChagesRatio'] >= 3.5) &    # 최소 +3.5% 이상 (저탄력 잡음 배제)
-        (common['ChagesRatio'] <= 8.5)      # 최대 +8.5% 이하 (과열/익일 시초 상투 배제)
+        (common['ChagesRatio'] <= 10.0)     # 최대 +10.0% 이하 (과열/익일 시초 상투 배제)
     ].copy()
 
     # 거래대금 상위 60개 종목 압축
@@ -138,13 +140,14 @@ def get_recommendations(dart_disclosures=None, market_context=None):
         # 몸통 비율 (시초가 대비 종가 상승 탄력)
         body_ratio = (close_p - open_p) / (high_p - low_p)
 
-        # 윗꼬리 28% 이하 & 양봉 몸통 40% 이상 엄격 필터링
-        if head_ratio <= 0.28 and body_ratio >= 0.40:
-            # 점수 산정: 기본 60 + 거래대금(최대 16) + 윗꼬리 억제(최대 16) + 최적 탄력점(+5.5~+6.5% 중심 최고점)
-            sweet_spot_score = 10.0 - abs(change_pct - 6.0) * 1.5
-            score = 60.0 + min(amount_eok / 80, 16.0) + (1.0 - head_ratio) * 16.0 + max(sweet_spot_score, 3.0)
+        # 윗꼬리 38% 이하 & 양봉 몸통 35% 이상 엄격 필터링
+        if head_ratio <= 0.38 and body_ratio >= 0.35:
+            # 점수 산정: 거래대금 가중치 최우선 (거래대금이 클수록 압도적 고득점) + 윗꼬리 억제
+            volume_score = min(amount_eok / 10, 35.0)
+            candle_score = (1.0 - head_ratio) * 15.0
+            score = 50.0 + volume_score + candle_score
             
-            reasons = [f"거래대금 {int(amount_eok):,}억 집중", f"고가 마감 양봉(윗꼬리 {int(head_ratio*100)}%)"]
+            reasons = [f"거래대금 {int(amount_eok):,}억 폭발 주도주", f"고가 마감 양봉(윗꼬리 {int(head_ratio*100)}%)"]
             tags = ['거래대금폭발', '단단한양봉', '익일시초가노림']
 
             if code in catalyst_codes:
