@@ -1452,8 +1452,8 @@ def generate_html():
                 <div class="criteria-item">
                     <div class="ci-num num-purple">03</div>
                     <div class="ci-content">
-                        <div class="ci-title">시총 4,000억 이상 중·대형 우량주</div>
-                        <div class="ci-desc">시총 4,000억 미만 소형주/작전주를 원천 배제하고, 기관·외국인 메이저 수급이 유입되는 견고한 중·대형 펀더멘털 기업만 선별하여 급락 리스크 차단</div>
+                        <div class="ci-title">시총 4천억 ~ 10조원 알짜 중형주</div>
+                        <div class="ci-desc">초대형 지수주(10조 초과)의 무거운 둔화와 소형주(4천억 미만)의 급락 리스크를 모두 피하고, 2~5일 파동 탄력이 가장 뛰어난 알짜 중형 우량주만 선별</div>
                     </div>
                 </div>
                 <div class="criteria-item">
