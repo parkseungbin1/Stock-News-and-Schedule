@@ -1,7 +1,10 @@
 """
-오늘의 시황 종합 점수 및 해설 텔레그램 발송 스크립트
-(매일 오후 3시 10분, 오후 7시 40분 자동 실행)
+종가베팅 & 시초가 매도 타이밍 전문 시황 알림 텔레그램 발송 스크립트
+1. [아침 08:35] 🌅 장전 시초가 매도 가이드
+2. [오후 15:10] 🎯 장 마감 종가베팅 진입 가이드
+3. [저녁 19:40] 🌙 종가베팅 야간 리스크 점검
 """
+import argparse
 import logging
 import os
 import sys
@@ -22,6 +25,11 @@ from src.telegram_sender import send_economic_calendar_to_telegram_sync
 
 
 def main():
+    parser = argparse.ArgumentParser(description="종가베팅 & 시초가 매도 시황 알림 발송")
+    parser.add_argument('--mode', choices=['morning', 'closing', 'night'], default=None,
+                        help="발송 모드 강제 지정 (미지정 시 KST 시간 자동 판별)")
+    args = parser.parse_args()
+
     logging.basicConfig(level=logging.INFO, format='%(levelname)s %(message)s')
     load_dotenv()
 
@@ -31,8 +39,8 @@ def main():
         print("TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID가 설정되지 않았습니다.")
         sys.exit(1)
 
-    print("시황 점수 및 해설 생성 중...")
-    msg = get_market_score_message()
+    print(f"시황 가이드 생성 중... (모드: {args.mode or '시간대 자동 판별'})")
+    msg = get_market_score_message(mode=args.mode)
     print("-" * 40)
     print(msg)
     print("-" * 40)
