@@ -248,16 +248,83 @@ def get_recommendations(dart_disclosures=None, market_context=None):
     swing_picks.sort(key=lambda x: x['score'], reverse=True)
     swing_picks = swing_picks[:3]
 
+    # =========================================================================
+    # Track 3: 🔥 당일 +15% 돌파 대장주 (기준봉 포착)
+    # 4대 기준: 1) 당일 등락률 +14% 이상 장대양봉 돌파,
+    #           2) 거래대금 최소 200억~500억+ 메이저 수급 집중 (잡주 배제),
+    #           3) 윗꼬리 35% 이하 단단한 마감 (상방 탄력 유지),
+    #           4) 향후 2~5일 5일선/눌림목 지지 시 분할 매수 타겟 (당일 추격매수 금지)
+    # =========================================================================
+    breakout_picks = []
+    breakout_pool = common[
+        (common['ChagesRatio'] >= 14.0) &
+        (common['Amount'] >= 200 * 1e8) &  # 최소 200억 이상 (소형 가짜 돌파 배제)
+        (common['Marcap'] >= 1000 * 1e8)
+    ].copy()
+
+    breakout_pool = breakout_pool.sort_values(by='Amount', ascending=False).head(30)
+
+    for _, row in breakout_pool.iterrows():
+        code = str(row['Code'])
+        name = str(row['Name'])
+        market = str(row['Market'])
+        close_p = float(row['Close'])
+        open_p = float(row['Open'])
+        high_p = float(row['High'])
+        low_p = float(row['Low'])
+        amount_eok = float(row['Amount']) / 1e8
+        change_pct = float(row['ChagesRatio'])
+
+        if high_p <= low_p:
+            continue
+
+        head_ratio = (high_p - close_p) / (high_p - low_p)
+
+        if head_ratio <= 0.35:  # 윗꼬리 35% 이하 유지
+            score = 70.0 + min(amount_eok / 100, 20.0) + (1.0 - head_ratio) * 10.0
+            reasons = [f"거래대금 {int(amount_eok):,}억 폭발", f"+{change_pct:.1f}% 강력 돌파 장대양봉", f"윗꼬리 {int(head_ratio*100)}% 유지"]
+            tags = ['강력기준봉', '거래대금폭발', '눌림목공략대기']
+
+            if code in catalyst_codes:
+                score += 10.0
+                reasons.append("실적/호재 공시 수반")
+                tags.append("호재수반")
+
+            breakout_picks.append({
+                'code': code,
+                'name': name,
+                'market': market,
+                'price': int(close_p),
+                'change_pct': round(change_pct, 2),
+                'amount_eok': int(amount_eok),
+                'target_1': int(close_p * 1.07),
+                'target_1_pct': '+7.0%',
+                'target_2': int(close_p * 1.15),
+                'target_2_pct': '+15.0%',
+                'stop_loss': int(open_p),
+                'stop_loss_pct': '기준봉 시초가 이탈',
+                'holding_period': '당일 추격매수 금지 ⚠️ → 향후 2~5일 5일선/눌림목 지지 시 분할 매수 타겟',
+                'score': int(min(score, 99)),
+                'reason': " · ".join(reasons),
+                'tags': tags
+            })
+
+    breakout_picks.sort(key=lambda x: x['score'], reverse=True)
+    breakout_picks = breakout_picks[:3]
+
     # 급락장 또는 휴장일 등으로 후보가 부족할 경우 안전 보강
     if not closing_picks:
         closing_picks = get_fallback_recommendations()['closing']
     if not swing_picks:
         swing_picks = get_fallback_recommendations()['swing']
+    if not breakout_picks:
+        breakout_picks = get_fallback_recommendations()['breakout']
 
     return {
         'regime': regime,
         'closing': closing_picks,
-        'swing': swing_picks
+        'swing': swing_picks,
+        'breakout': breakout_picks
     }
 
 
@@ -289,6 +356,16 @@ def get_fallback_recommendations():
                 'holding_period': '2~5영업일 분할 매도',
                 'score': 91, 'reason': '20일선(191,000원) 눌림목 지지 · 이격도 1.3% 안정 구간 · 주주환원 자사주',
                 'tags': ['20일선눌림목', '추세우상향', '안정적손익비']
+            }
+        ],
+        'breakout': [
+            {
+                'code': '028050', 'name': '삼성E&A', 'market': 'KOSPI', 'price': 27500,
+                'change_pct': 16.14, 'amount_eok': 6789, 'target_1': 29400, 'target_1_pct': '+7.0%',
+                'target_2': 31600, 'target_2_pct': '+15.0%', 'stop_loss': 24000, 'stop_loss_pct': '기준봉 시초가 이탈',
+                'holding_period': '당일 추격매수 금지 ⚠️ → 향후 2~5일 5일선/눌림목 지지 시 분할 매수 타겟',
+                'score': 98, 'reason': '거래대금 6,789억 폭발 · +16.1% 강력 돌파 장대양봉 · 사우디 수주 호재',
+                'tags': ['강력기준봉', '거래대금폭발', '눌림목공략대기']
             }
         ]
     }

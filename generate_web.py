@@ -75,12 +75,14 @@ def generate_html():
         rec_regime = rec_data.get('regime', {})
         closing_picks = rec_data.get('closing', [])
         swing_picks = rec_data.get('swing', [])
+        breakout_picks = rec_data.get('breakout', [])
     except Exception as e:
         print(f"추천 종목 수집 실패: {e}")
         fallback = recommender.get_fallback_recommendations()
         rec_regime = fallback.get('regime', {})
         closing_picks = fallback['closing']
         swing_picks = fallback['swing']
+        breakout_picks = fallback.get('breakout', [])
 
     def render_rec_card(pick, card_theme):
         tags_html = "".join([f'<span class="rec-tag">{t}</span>' for t in pick.get('tags', [])])
@@ -138,6 +140,7 @@ def generate_html():
 
     closing_cards_html = "".join([render_rec_card(p, "theme-closing") for p in closing_picks])
     swing_cards_html = "".join([render_rec_card(p, "theme-swing") for p in swing_picks])
+    breakout_cards_html = "".join([render_rec_card(p, "theme-breakout") for p in breakout_picks])
 
     # 3. 최근 공시 수집 및 카테고리별 분리
     earnings_cards = []
@@ -748,6 +751,19 @@ def generate_html():
             color: #c084fc;
             border-color: rgba(139, 92, 246, 0.35);
         }}
+        .pill-red {{
+            background: rgba(239, 68, 68, 0.2);
+            color: #f87171;
+            border-color: rgba(239, 68, 68, 0.35);
+        }}
+        .ci-num.num-red {{
+            color: #ef4444;
+        }}
+        .criteria-sub-tag.tag-red {{
+            background: rgba(239, 68, 68, 0.15);
+            color: #f87171;
+            border-color: rgba(239, 68, 68, 0.3);
+        }}
         .rec-strategy-banner {{
             border-radius: 12px;
             padding: 12px 16px;
@@ -764,6 +780,11 @@ def generate_html():
             background: rgba(139, 92, 246, 0.08);
             border: 1px solid rgba(139, 92, 246, 0.25);
             color: #e9d5ff;
+        }}
+        .banner-red {{
+            background: rgba(239, 68, 68, 0.08);
+            border: 1px solid rgba(239, 68, 68, 0.25);
+            color: #fca5a5;
         }}
         .rec-grid {{
             display: grid;
@@ -791,6 +812,9 @@ def generate_html():
         }}
         .rec-card.theme-swing {{
             border-top: 3px solid #8b5cf6;
+        }}
+        .rec-card.theme-breakout {{
+            border-top: 3px solid #ef4444;
         }}
         .rec-card-top {{
             display: flex;
@@ -1340,6 +1364,9 @@ def generate_html():
         <button class="rec-tab" onclick="switchRecTrack('swing', this)">
             🌊 2~5일 스윙 추천 <span class="rec-tag-pill pill-purple">추세 파동 +5%~+10%</span>
         </button>
+        <button class="rec-tab" onclick="switchRecTrack('breakout', this)">
+            🔥 당일 +15% 돌파 대장주 <span class="rec-tag-pill pill-red">기준봉 포착</span>
+        </button>
     </div>
 
     <!-- 1) 종가베팅 컨테이너 -->
@@ -1441,6 +1468,57 @@ def generate_html():
 
         <div class="rec-grid">
             {swing_cards_html}
+        </div>
+    </div>
+
+    <!-- 3) 당일 +15% 돌파 대장주 컨테이너 -->
+    <div id="rec-breakout-container" class="rec-container" style="display: none;">
+        <div class="rec-strategy-banner banner-red">
+            <div>
+                <b>🔥 돌파 대장주 실전 매매 가이드</b>: 당일 종가에 섣불리 추격매수하지 마시고, 향후 2~5영업일간 주가가 5일선/눌림목까지 숨고르기할 때 분할 매수로 공략하는 '기준봉' 관심종목입니다.
+            </div>
+        </div>
+
+        <!-- 🔍 돌파 대장주 4대 선별 기준 설명 박스 -->
+        <div class="criteria-card">
+            <div class="criteria-head">
+                <span>🔍 AI 당일 +15% 돌파 대장주 4대 엄격 선별 기준 (기준봉 포착 모델)</span>
+                <span class="criteria-sub-tag tag-red">시장 주도 대장주 모델</span>
+            </div>
+            <div class="criteria-grid">
+                <div class="criteria-item">
+                    <div class="ci-num num-red">01</div>
+                    <div class="ci-content">
+                        <div class="ci-title">당일 상승률 +14% 이상 장대양봉 돌파</div>
+                        <div class="ci-desc">전고점 및 강력한 매물대를 시원하게 뚫어버린 당일 시장 최강 모멘텀 주도주 포착</div>
+                    </div>
+                </div>
+                <div class="criteria-item">
+                    <div class="ci-num num-red">02</div>
+                    <div class="ci-content">
+                        <div class="ci-title">거래대금 200억~500억+ 폭발 (메이저 수급)</div>
+                        <div class="ci-desc">시장 자금이 총집결하여 소형 잡주의 가짜 돌파가 아닌 '진짜 메이저 세력/기관 매집' 검증</div>
+                    </div>
+                </div>
+                <div class="criteria-item">
+                    <div class="ci-num num-red">03</div>
+                    <div class="ci-content">
+                        <div class="ci-title">마감 양봉 완성도 (윗꼬리 35% 이하)</div>
+                        <div class="ci-desc">장마감까지 차익실현에 무너지지 않고 고가 권역을 견고하게 지켜낸 진짜 대장주만 선별</div>
+                    </div>
+                </div>
+                <div class="criteria-item">
+                    <div class="ci-num num-red">04</div>
+                    <div class="ci-content">
+                        <div class="ci-title">향후 2~5일 눌림목 공략 타겟 (기준봉 활용)</div>
+                        <div class="ci-desc">당일 고점 추격매수 절대 금지! 며칠 뒤 5일선·눌림목 반등 시 큰 파동을 안겨줄 핵심 기준봉 후보</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="rec-grid">
+            {breakout_cards_html}
         </div>
     </div>
 
@@ -1564,13 +1642,9 @@ def generate_html():
         function switchRecTrack(track, btn) {{
             document.querySelectorAll('.rec-tab').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
-            if (track === 'closing') {{
-                document.getElementById('rec-closing-container').style.display = 'block';
-                document.getElementById('rec-swing-container').style.display = 'none';
-            }} else {{
-                document.getElementById('rec-closing-container').style.display = 'none';
-                document.getElementById('rec-swing-container').style.display = 'block';
-            }}
+            document.getElementById('rec-closing-container').style.display = (track === 'closing') ? 'block' : 'none';
+            document.getElementById('rec-swing-container').style.display = (track === 'swing') ? 'block' : 'none';
+            document.getElementById('rec-breakout-container').style.display = (track === 'breakout') ? 'block' : 'none';
         }}
     </script>
 </body>
