@@ -63,13 +63,22 @@ def generate_html():
     g1940_js = guide_1940.replace(bt, bt_esc)
 
     # 2-1. AI 실전 추천 종목 수집 (종가베팅 & 2~5일 스윙)
+    market_ctx = {
+        'fut_ratio': fut_ratio,
+        'kp_for_num': kp_for_num,
+        'kd_for_num': kd_for_num,
+        'cnn_score': cnn_score,
+        'vix_close': vix_close,
+    }
     try:
-        rec_data = recommender.get_recommendations()
+        rec_data = recommender.get_recommendations(market_context=market_ctx)
+        rec_regime = rec_data.get('regime', {})
         closing_picks = rec_data.get('closing', [])
         swing_picks = rec_data.get('swing', [])
     except Exception as e:
         print(f"추천 종목 수집 실패: {e}")
         fallback = recommender.get_fallback_recommendations()
+        rec_regime = fallback.get('regime', {})
         closing_picks = fallback['closing']
         swing_picks = fallback['swing']
 
@@ -566,6 +575,131 @@ def generate_html():
             display: flex;
             align-items: center;
             gap: 8px;
+        }}
+
+        /* AI 시장 안전도 레짐 배너 */
+        .rec-market-alert {{
+            border-radius: 14px;
+            padding: 14px 18px;
+            margin-bottom: 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            border: 1px solid var(--border);
+            transition: all 0.2s;
+        }}
+        .regime-warning {{
+            background: rgba(239, 68, 68, 0.12);
+            border-color: rgba(239, 68, 68, 0.4);
+        }}
+        .regime-bull {{
+            background: rgba(16, 185, 129, 0.12);
+            border-color: rgba(16, 185, 129, 0.4);
+        }}
+        .regime-neutral {{
+            background: rgba(59, 130, 246, 0.08);
+            border-color: rgba(59, 130, 246, 0.28);
+        }}
+        .regime-header {{
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+        }}
+        .regime-badge {{
+            font-size: 0.95rem;
+            font-weight: 800;
+        }}
+        .regime-advice {{
+            font-size: 0.82rem;
+            color: #d1d5db;
+        }}
+        .regime-advice b {{
+            color: #ffffff;
+            background: rgba(255, 255, 255, 0.12);
+            padding: 3px 9px;
+            border-radius: 6px;
+        }}
+        .regime-msg {{
+            font-size: 0.85rem;
+            color: #f3f4f6;
+            line-height: 1.55;
+        }}
+
+        /* 종목 발굴 기준 설명 카드 */
+        .criteria-card {{
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 14px;
+            padding: 16px 18px;
+            margin-bottom: 18px;
+        }}
+        .criteria-head {{
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            font-weight: 700;
+            font-size: 0.95rem;
+            color: #ffffff;
+        }}
+        .criteria-sub-tag {{
+            font-size: 0.72rem;
+            padding: 2px 8px;
+            border-radius: 999px;
+            background: rgba(59, 130, 246, 0.15);
+            color: #60a5fa;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+        }}
+        .criteria-sub-tag.tag-purple {{
+            background: rgba(139, 92, 246, 0.15);
+            color: #c084fc;
+            border-color: rgba(139, 92, 246, 0.3);
+        }}
+        .criteria-grid {{
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 12px;
+        }}
+        .criteria-item {{
+            display: flex;
+            gap: 10px;
+            background: rgba(0, 0, 0, 0.25);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            border-radius: 10px;
+            padding: 10px 12px;
+        }}
+        .ci-num {{
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.95rem;
+            font-weight: 800;
+            color: #f59e0b;
+            flex-shrink: 0;
+            line-height: 1.2;
+            padding-top: 2px;
+        }}
+        .ci-num.num-purple {{
+            color: #a78bfa;
+        }}
+        .ci-content {{
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }}
+        .ci-title {{
+            font-size: 0.84rem;
+            font-weight: 700;
+            color: #f9fafb;
+        }}
+        .ci-desc {{
+            font-size: 0.76rem;
+            color: #9ca3af;
+            line-height: 1.45;
         }}
 
         /* AI 추천 종목 레이더 */
@@ -1189,6 +1323,15 @@ def generate_html():
         💡 코스피·코스닥 2,800개 전 종목의 수급, 거래대금, 20일선 눌림목을 분석하여 <b>[당일 종가베팅]</b>과 <b>[2~5일 스윙]</b> 최우량주를 엄선합니다.
     </div>
 
+    <!-- 시장 안전도(Market Regime) 레짐 배너 -->
+    <div class="rec-market-alert {rec_regime.get('badge_class', 'regime-neutral')}">
+        <div class="regime-header">
+            <span class="regime-badge">{rec_regime.get('badge', '🔵 시장 환경 분석')}</span>
+            <span class="regime-advice">AI 권장 포지션: <b>{rec_regime.get('position_advice', '원칙 분할 매매')}</b></span>
+        </div>
+        <div class="regime-msg">{rec_regime.get('message', '')}</div>
+    </div>
+
     <!-- 추천 트랙 선택 탭 -->
     <div class="rec-nav">
         <button class="rec-tab active" onclick="switchRecTrack('closing', this)">
@@ -1206,6 +1349,45 @@ def generate_html():
                 <b>🎯 종가베팅 전략 핵심 가이드</b>: 오후 15:10~15:30 매수 → 익일 아침 09:00~09:20 시초가 갭상승 시 전량 분할 익절 (+3%~+5%)
             </div>
         </div>
+
+        <!-- 🔍 15:10 종가베팅 4대 선별 기준 설명 박스 -->
+        <div class="criteria-card">
+            <div class="criteria-head">
+                <span>🔍 AI 15:10 종가베팅 4대 엄격 선별 기준 (당일 승률 극대화)</span>
+                <span class="criteria-sub-tag">오버나잇 승률 모델</span>
+            </div>
+            <div class="criteria-grid">
+                <div class="criteria-item">
+                    <div class="ci-num">01</div>
+                    <div class="ci-content">
+                        <div class="ci-title">거래대금 폭발 (50억~1,000억+ 집중)</div>
+                        <div class="ci-desc">시장의 유동성이 가장 강하게 쏠린 최상위 주도주만 선별 (거래 없는 소형 잡주/품절주 원천 배제)</div>
+                    </div>
+                </div>
+                <div class="criteria-item">
+                    <div class="ci-num">02</div>
+                    <div class="ci-content">
+                        <div class="ci-title">마감 양봉 완성도 (윗꼬리 28% 이하)</div>
+                        <div class="ci-desc">15:10 장마감까지 차익실현 매물에 밀리지 않고 고가 부근을 단단하게 지켜낸 최상위 매수세 검증</div>
+                    </div>
+                </div>
+                <div class="criteria-item">
+                    <div class="ci-num">03</div>
+                    <div class="ci-content">
+                        <div class="ci-title">상승률 골디락스 (+2% ~ +14% 구간)</div>
+                        <div class="ci-desc">이미 15~20% 이상 폭등하여 다음 날 개파락/상투 위험이 있는 종목을 피하고, 갭상승 확률이 가장 높은 탄력 구간만 공략</div>
+                    </div>
+                </div>
+                <div class="criteria-item">
+                    <div class="ci-num">04</div>
+                    <div class="ci-content">
+                        <div class="ci-title">익일 시초가 기계적 익절 (+3%~+5%)</div>
+                        <div class="ci-desc">익일 아침 09:00~09:20 시초가 갭상승 파동에서 욕심 없이 전량 분할 매도하는 오버나잇 단기 승부 원칙</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="rec-grid">
             {closing_cards_html}
         </div>
@@ -1218,6 +1400,45 @@ def generate_html():
                 <b>🌊 2~5일 스윙 전략 핵심 가이드</b>: 20일선 우상향 눌림목 지지 종목 매수 → 2~5영업일간 +5%~+10% 추세 파동 누적 익절 (손절 -3%)
             </div>
         </div>
+
+        <!-- 🔍 2~5일 스윙 4대 선별 기준 설명 박스 -->
+        <div class="criteria-card">
+            <div class="criteria-head">
+                <span>🔍 AI 2~5일 스윙 4대 엄격 선별 기준 (추세 파동 승률 모델)</span>
+                <span class="criteria-sub-tag tag-purple">안정적 손익비 모델</span>
+            </div>
+            <div class="criteria-grid">
+                <div class="criteria-item">
+                    <div class="ci-num num-purple">01</div>
+                    <div class="ci-content">
+                        <div class="ci-title">20일선 우상향 & 5% 이내 눌림목 지지</div>
+                        <div class="ci-desc">중기 추세가 살아있는 종목이 20일선 부근까지 건강하게 조정을 마치고 하방 경직성을 확보한 골든 변곡점 포착</div>
+                    </div>
+                </div>
+                <div class="criteria-item">
+                    <div class="ci-num num-purple">02</div>
+                    <div class="ci-content">
+                        <div class="ci-title">스마트머니 지지 & 거래량 수축</div>
+                        <div class="ci-desc">주가가 조정을 받을 때는 매도세가 마르고, 반등할 때 거래대금이 재차 실리는 세력/기관 매집 패턴 확인</div>
+                    </div>
+                </div>
+                <div class="criteria-item">
+                    <div class="ci-num num-purple">03</div>
+                    <div class="ci-content">
+                        <div class="ci-title">시총 1,500억 이상 중대형 우량주</div>
+                        <div class="ci-desc">실적과 펀더멘털을 갖춘 기업만 선별하여 테마 소멸로 인한 급락 리스크를 사전에 원천 차단</div>
+                    </div>
+                </div>
+                <div class="criteria-item">
+                    <div class="ci-num num-purple">04</div>
+                    <div class="ci-content">
+                        <div class="ci-title">정량적 손익비 (목표 +5%~+9%, 손절 -3%)</div>
+                        <div class="ci-desc">손실은 -3%로 타이트하게 제한하고, 파동 상승 시 +5%~+9% 분할 익절하여 계좌 수익 곡선을 우상향시키는 전략</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="rec-grid">
             {swing_cards_html}
         </div>
