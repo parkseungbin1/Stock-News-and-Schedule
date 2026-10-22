@@ -179,7 +179,7 @@ def get_morning_sell_guide(time_label="07:40", is_nxt=True):
     if fut_price:
         sign = '+' if fut_ratio > 0 else ''
         arr = '🔺' if fut_ratio > 0 else ('🔻' if fut_ratio < 0 else '➖')
-        msg += f"• 🌐 <b>실시간 미 선물</b>: {fut_price:.1f} ({sign}{fut_ratio:.2f}%) {arr}\n"
+        msg += f"• 🇺🇸 <b>E-mini 나스닥100 선물</b>: {fut_price:,.1f} ({sign}{fut_ratio:.2f}%) {arr}\n"
     if fx_close:
         sign = '+' if fx_ratio > 0 else ''
         fx_desc = '원화 강세' if fx_ratio < 0 else '원화 약세'
@@ -251,7 +251,7 @@ def get_closing_betting_guide():
     if fut_price:
         sign = '+' if fut_ratio > 0 else ''
         arr = '🔺' if fut_ratio > 0 else ('🔻' if fut_ratio < 0 else '➖')
-        msg += f"• 🇺🇸 <b>실시간 미 선물</b>: {fut_price:.1f} ({sign}{fut_ratio:.2f}%) {arr}\n"
+        msg += f"• 🇺🇸 <b>E-mini 나스닥100 선물</b>: {fut_price:,.1f} ({sign}{fut_ratio:.2f}%) {arr}\n"
     if kp_close:
         kp_sign = '+' if kp_ratio > 0 else ''
         msg += f"• 🇰🇷 <b>코스피</b>: {kp_close} ({kp_sign}{kp_ratio:.2f}%) | 외인 {kp_for}억, 기관 {kp_inst}억\n"
@@ -327,7 +327,7 @@ def get_evening_betting_guide():
     if fut_price:
         sign = '+' if fut_ratio > 0 else ''
         arr = '🔺' if fut_ratio > 0 else ('🔻' if fut_ratio < 0 else '➖')
-        msg += f"• 🇺🇸 <b>실시간 나스닥 선물</b>: {fut_price:.1f} ({sign}{fut_ratio:.2f}%) {arr}\n"
+        msg += f"• 🇺🇸 <b>E-mini 나스닥100 선물</b>: {fut_price:,.1f} ({sign}{fut_ratio:.2f}%) {arr}\n"
     if dax_close:
         sign = '+' if dax_ratio > 0 else ''
         arr = '🔺' if dax_ratio > 0 else ('🔻' if dax_ratio < 0 else '➖')
