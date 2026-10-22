@@ -57,8 +57,36 @@ def generate_html():
     g1510_js = guide_1510.replace(bt, bt_esc)
     g1940_js = guide_1940.replace(bt, bt_esc)
 
-    # 3. 최근 공시 수집
-    disclosures_html = ""
+    # 3. 최근 공시 수집 및 카테고리별 분리
+    earnings_cards = []
+    buyback_cards = []
+    ir_cards = []
+
+    def render_disc_card(block, badge_class, badge_label, card_type):
+        b = block.replace('<a href=', '<a target="_blank" rel="noopener noreferrer" href=')
+        is_watch = '⭐' in b
+        b_clean = b.replace('⭐', '').strip()
+        lines = [l.strip() for l in b_clean.split('\n') if l.strip()]
+        if not lines:
+            return ""
+        header_text = lines[0]
+        details_html = ""
+        if len(lines) > 1:
+            details_joined = "<br>".join(lines[1:])
+            details_html = f"<div class='card-details'>{details_joined}</div>"
+        watch_tag = '<span class="watch-tag">⭐ 관심종목</span>' if is_watch else ''
+        watch_card_class = " is-watchlist" if is_watch else ""
+        return f"""
+        <div class="disclosure-card {card_type}{watch_card_class}">
+            <div class="card-top-row">
+                <span class="badge {badge_class}">{badge_label}</span>
+                {watch_tag}
+            </div>
+            <div class="card-main-title">{header_text}</div>
+            {details_html}
+        </div>
+        """
+
     try:
         from dotenv import load_dotenv
         load_dotenv()
@@ -72,30 +100,26 @@ def generate_html():
             sections = d.collect_new_disclosures(dart, temp_state, watch)
             if sections:
                 for title, blocks in sections:
-                    badge_class = "badge-blue"
                     if "실적" in title:
-                        badge_class = "badge-green"
+                        for block in blocks:
+                            earnings_cards.append(render_disc_card(block, "badge-green", "📈 실적공시", "type-earnings"))
                     elif "자사주" in title:
-                        badge_class = "badge-gold"
+                        for block in blocks:
+                            buyback_cards.append(render_disc_card(block, "badge-gold", "💰 자사주", "type-buyback"))
                     elif "IR" in title:
-                        badge_class = "badge-purple"
-
-                    for block in blocks[:6]:
-                        clean_block = block.replace('\n', '<br>')
-                        disclosures_html += f"""
-                        <div class="disclosure-card">
-                            <div class="card-header">
-                                <span class="badge {badge_class}">{title}</span>
-                            </div>
-                            <div class="card-body">{clean_block}</div>
-                        </div>
-                        """
-            else:
-                disclosures_html = "<div class='empty-card'>최근 등록된 관심종목 핵심 공시가 없습니다.</div>"
-        else:
-            disclosures_html = "<div class='empty-card'>DART_API_KEY가 설정되지 않았습니다.</div>"
+                        for block in blocks:
+                            ir_cards.append(render_disc_card(block, "badge-purple", "🎤 IR일정", "type-ir"))
     except Exception as e:
-        disclosures_html = f"<div class='empty-card'>공시 데이터를 조회하는 중입니다 ({e})</div>"
+        print(f"공시 수집 중 오류: {e}")
+
+    earnings_count = len(earnings_cards)
+    buyback_count = len(buyback_cards)
+    ir_count = len(ir_cards)
+    total_disc_count = earnings_count + buyback_count + ir_count
+
+    earnings_html = "".join(earnings_cards)
+    buyback_html = "".join(buyback_cards)
+    ir_html = "".join(ir_cards)
 
     # 지표 카드 도우미
     def format_ratio(val):
@@ -290,28 +314,141 @@ def generate_html():
             box-shadow: 0 10px 30px rgba(0,0,0,0.3);
         }}
 
-        /* 공시 카드 그리드 */
+        /* 공시 카테고리 탭 네비게이션 */
+        .disclosure-nav {{
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            padding-bottom: 8px;
+            margin-bottom: 20px;
+        }}
+        .disc-tab {{
+            background: var(--surface);
+            border: 1px solid var(--border);
+            color: var(--text-sub);
+            padding: 10px 18px;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }}
+        .disc-tab:hover {{
+            border-color: rgba(255,255,255,0.2);
+            color: var(--text-main);
+        }}
+        .disc-tab.active {{
+            background: rgba(59, 130, 246, 0.15);
+            border-color: #3b82f6;
+            color: #60a5fa;
+            box-shadow: 0 4px 14px rgba(59, 130, 246, 0.25);
+        }}
+        .tab-count {{
+            display: inline-block;
+            font-size: 0.75rem;
+            padding: 2px 7px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text-sub);
+            font-family: 'JetBrains Mono', monospace;
+        }}
+        .disc-tab.active .tab-count {{
+            background: #3b82f6;
+            color: #fff;
+        }}
+        .count-green {{ background: rgba(16, 185, 129, 0.2); color: #34d399; }}
+        .count-gold {{ background: rgba(245, 158, 11, 0.2); color: #fbbf24; }}
+        .count-purple {{ background: rgba(139, 92, 246, 0.2); color: #a78bfa; }}
+
+        /* 카테고리 그룹 컨테이너 */
+        .category-group {{
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 24px;
+            transition: all 0.3s;
+        }}
+        .category-header {{
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+            padding-bottom: 14px;
+            margin-bottom: 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        }}
+        .cat-title {{
+            font-size: 1.1rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }}
+        .cat-badge {{
+            font-size: 0.78rem;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 999px;
+        }}
+        .header-green .cat-title {{ color: #34d399; }}
+        .header-green .cat-badge {{ background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }}
+        .header-gold .cat-title {{ color: #fbbf24; }}
+        .header-gold .cat-badge {{ background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }}
+        .header-purple .cat-title {{ color: #c084fc; }}
+        .header-purple .cat-badge {{ background: rgba(139, 92, 246, 0.15); color: #c084fc; border: 1px solid rgba(139, 92, 246, 0.3); }}
+
+        /* 공시 카드 스타일 */
         .disclosure-grid {{
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
             gap: 14px;
         }}
         .disclosure-card {{
-            background: var(--surface);
+            background: rgba(17, 24, 39, 0.7);
             border: 1px solid var(--border);
-            border-radius: 14px;
-            padding: 18px;
+            border-radius: 12px;
+            padding: 16px;
+            transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+            position: relative;
         }}
-        .card-header {{
+        .disclosure-card:hover {{
+            transform: translateY(-2px);
+            border-color: rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+        }}
+        .disclosure-card.type-earnings {{
+            border-left: 4px solid #10b981;
+        }}
+        .disclosure-card.type-buyback {{
+            border-left: 4px solid #f59e0b;
+        }}
+        .disclosure-card.type-ir {{
+            border-left: 4px solid #8b5cf6;
+        }}
+        .disclosure-card.is-watchlist {{
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.06), rgba(17, 24, 39, 0.95));
+            border-color: rgba(245, 158, 11, 0.35);
+        }}
+        .card-top-row {{
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 10px;
         }}
-        .corp-name {{
+        .watch-tag {{
+            font-size: 0.74rem;
             font-weight: 700;
-            font-size: 1.05rem;
-            color: #fff;
+            color: #fbbf24;
+            background: rgba(245, 158, 11, 0.15);
+            padding: 2px 8px;
+            border-radius: 6px;
+            border: 1px solid rgba(245, 158, 11, 0.3);
         }}
         .badge {{
             font-size: 0.75rem;
@@ -322,27 +459,41 @@ def generate_html():
         .badge-green {{ background: rgba(16,185,129,0.2); color: #34d399; }}
         .badge-gold {{ background: rgba(245,158,11,0.2); color: #fbbf24; }}
         .badge-purple {{ background: rgba(139,92,246,0.2); color: #a78bfa; }}
-        .badge-blue {{ background: rgba(59,130,246,0.2); color: #60a5fa; }}
-        .card-title a {{
-            color: var(--text-main);
-            text-decoration: none;
-            font-size: 0.92rem;
-            font-weight: 600;
+        .card-main-title {{
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 8px;
+            line-height: 1.45;
         }}
-        .card-title a:hover {{ text-decoration: underline; color: #60a5fa; }}
-        .card-body {{
-            font-size: 0.85rem;
+        .card-main-title a {{
+            color: #60a5fa;
+            text-decoration: none;
+        }}
+        .card-main-title a:hover {{
+            text-decoration: underline;
+        }}
+        .card-details {{
+            font-size: 0.84rem;
             color: var(--text-sub);
-            margin-top: 8px;
-            line-height: 1.6;
+            line-height: 1.65;
+            background: rgba(0, 0, 0, 0.25);
+            padding: 10px 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+        }}
+        .card-details b {{
+            color: var(--text-main);
         }}
         .empty-card {{
             padding: 30px;
             text-align: center;
             color: var(--text-sub);
-            background: var(--surface);
-            border-radius: 14px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            border: 1px dashed rgba(255, 255, 255, 0.08);
             grid-column: 1 / -1;
+            font-size: 0.88rem;
         }}
 
         footer {{
@@ -410,10 +561,58 @@ def generate_html():
 
     <div id="guide-box" class="guide-content"></div>
 
-    <!-- 3. 관심종목 핵심 공시 -->
-    <div class="section-title">📢 관심종목 핵심 공시 레이더 (실적 · 자사주 · IR)</div>
-    <div class="disclosure-grid">
-        {disclosures_html}
+    <!-- 3. 관심종목 핵심 공시 레이더 (실적 · 자사주 · IR 카테고리 분리) -->
+    <div class="section-title">
+        <span>📢 관심종목 핵심 공시 레이더</span>
+    </div>
+
+    <!-- 카테고리 필터 탭 -->
+    <div class="disclosure-nav">
+        <button class="disc-tab active" onclick="filterDisclosures('all', this)">
+            🌐 전체 공시 <span class="tab-count">{total_disc_count}</span>
+        </button>
+        <button class="disc-tab" onclick="filterDisclosures('earnings', this)">
+            📈 실적 발표 <span class="tab-count count-green">{earnings_count}</span>
+        </button>
+        <button class="disc-tab" onclick="filterDisclosures('buyback', this)">
+            💰 자사주 취득 <span class="tab-count count-gold">{buyback_count}</span>
+        </button>
+        <button class="disc-tab" onclick="filterDisclosures('ir', this)">
+            🎤 IR 일정 <span class="tab-count count-purple">{ir_count}</span>
+        </button>
+    </div>
+
+    <!-- 1) 실적 발표 섹션 -->
+    <div id="section-earnings" class="category-group">
+        <div class="category-header header-green">
+            <div class="cat-title">📈 <span>잠정실적 & 어닝 서프라이즈 레이더</span></div>
+            <div class="cat-badge">컨센서스 대비 ±10% 판정 · {earnings_count}건</div>
+        </div>
+        <div class="disclosure-grid">
+            {earnings_html or "<div class='empty-card'>최근 24시간 내 등록된 잠정실적 공시가 없습니다.</div>"}
+        </div>
+    </div>
+
+    <!-- 2) 자사주 취득 섹션 -->
+    <div id="section-buyback" class="category-group">
+        <div class="category-header header-gold">
+            <div class="cat-title">💰 <span>자사주 취득 결정 레이더</span></div>
+            <div class="cat-badge">주주환원 · 취득규모 · {buyback_count}건</div>
+        </div>
+        <div class="disclosure-grid">
+            {buyback_html or "<div class='empty-card'>최근 24시간 내 등록된 자사주 취득 공시가 없습니다.</div>"}
+        </div>
+    </div>
+
+    <!-- 3) IR 일정 섹션 -->
+    <div id="section-ir" class="category-group">
+        <div class="category-header header-purple">
+            <div class="cat-title">🎤 <span>실적발표 및 기업설명회(IR) 일정 레이더</span></div>
+            <div class="cat-badge">개최 일시 · 대상 · 방식 · {ir_count}건</div>
+        </div>
+        <div class="disclosure-grid">
+            {ir_html or "<div class='empty-card'>최근 24시간 내 등록된 IR 일정 공시가 없습니다.</div>"}
+        </div>
     </div>
 
     <footer>
@@ -433,6 +632,33 @@ def generate_html():
             if(btn) btn.classList.add('active');
             const cleanText = guides[key].replace(/<[^>]*>?/gm, '');
             document.getElementById('guide-box').innerText = cleanText;
+        }}
+
+        function filterDisclosures(type, btn) {{
+            document.querySelectorAll('.disc-tab').forEach(b => b.classList.remove('active'));
+            if(btn) btn.classList.add('active');
+
+            const secEarnings = document.getElementById('section-earnings');
+            const secBuyback = document.getElementById('section-buyback');
+            const secIr = document.getElementById('section-ir');
+
+            if (type === 'all') {{
+                secEarnings.style.display = 'block';
+                secBuyback.style.display = 'block';
+                secIr.style.display = 'block';
+            }} else if (type === 'earnings') {{
+                secEarnings.style.display = 'block';
+                secBuyback.style.display = 'none';
+                secIr.style.display = 'none';
+            }} else if (type === 'buyback') {{
+                secEarnings.style.display = 'none';
+                secBuyback.style.display = 'block';
+                secIr.style.display = 'none';
+            }} else if (type === 'ir') {{
+                secEarnings.style.display = 'none';
+                secBuyback.style.display = 'none';
+                secIr.style.display = 'block';
+            }}
         }}
 
         // 기본 활성 탭
