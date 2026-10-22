@@ -78,7 +78,18 @@ def generate_html():
         if len(lines) > 1:
             details_joined = "<br>".join(lines[1:])
             details_html = f"<div class='card-details'>{details_joined}</div>"
-        watch_tag = '<span class="watch-tag">⭐ 관심종목</span>' if is_watch else ''
+        watch_tag = ""
+        if is_watch:
+            if "어닝서프라이즈" in b:
+                watch_tag = '<span class="watch-tag tag-surprise">⭐ 어닝 서프라이즈</span>'
+            elif "흑자전환" in b:
+                watch_tag = '<span class="watch-tag tag-turnaround">⭐ 흑자전환</span>'
+            elif "YoY +" in b:
+                watch_tag = '<span class="watch-tag tag-growth">⭐ 실적 급증</span>'
+            elif "자사주" in b:
+                watch_tag = '<span class="watch-tag tag-buyback">⭐ 대규모 자사주</span>'
+            else:
+                watch_tag = '<span class="watch-tag">⭐ 핵심 포착</span>'
         watch_card_class = " is-watchlist" if is_watch else ""
         return f"""
         <div class="disclosure-card {card_type}{watch_card_class}">
@@ -657,9 +668,29 @@ def generate_html():
             font-weight: 700;
             color: #fbbf24;
             background: rgba(245, 158, 11, 0.15);
-            padding: 2px 8px;
+            padding: 3px 8px;
             border-radius: 6px;
-            border: 1px solid rgba(245, 158, 11, 0.3);
+            border: 1px solid rgba(245, 158, 11, 0.35);
+        }}
+        .watch-tag.tag-surprise {{
+            color: #34d399;
+            background: rgba(16, 185, 129, 0.18);
+            border-color: rgba(16, 185, 129, 0.4);
+        }}
+        .watch-tag.tag-turnaround {{
+            color: #60a5fa;
+            background: rgba(59, 130, 246, 0.18);
+            border-color: rgba(59, 130, 246, 0.4);
+        }}
+        .watch-tag.tag-growth {{
+            color: #a78bfa;
+            background: rgba(139, 92, 246, 0.18);
+            border-color: rgba(139, 92, 246, 0.4);
+        }}
+        .watch-tag.tag-buyback {{
+            color: #fbbf24;
+            background: rgba(245, 158, 11, 0.18);
+            border-color: rgba(245, 158, 11, 0.4);
         }}
         .badge {{
             font-size: 0.75rem;
@@ -876,9 +907,12 @@ def generate_html():
 
     <div id="guide-box" class="guide-content"></div>
 
-    <!-- 3. 관심종목 핵심 공시 레이더 (실적 · 자사주 · IR 카테고리 분리) -->
+    <!-- 3. 핵심 공시 레이더 (실적 · 자사주 · IR 카테고리 분리) -->
     <div class="section-title">
-        <span>📢 관심종목 핵심 공시 레이더</span>
+        <span>📢 핵심 공시 레이더 (실적 · 자사주 · IR)</span>
+    </div>
+    <div style="font-size: 0.8rem; color: #9ca3af; margin-top: -8px; margin-bottom: 16px;">
+        💡 <b>⭐ 배지</b>는 알고리즘이 '어닝서프라이즈(+10% 초과)', '흑자전환', '대규모 자사주 취득' 등 강력한 상승 모멘텀을 자동 포착한 공시입니다.
     </div>
 
     <!-- 카테고리 필터 탭 -->

@@ -326,7 +326,6 @@ WEEKDAYS_KOR = ['월', '화', '수', '목', '금', '토', '일']
 
 
 def format_earnings(item, actual, cons, watch):
-    line = f"{_star(item, watch)}<b>{_link(item)}</b> 잠정실적\n"
     op_info = actual.get('op', {})
     sales_info = actual.get('sales', {})
     net_info = actual.get('net', {})
@@ -336,17 +335,30 @@ def format_earnings(item, actual, cons, watch):
     net = net_info.get('val')
 
     verdict = ''
+    is_star = item.get('stock_code') in watch
     if cons and op is not None and cons.get('op'):
         diff = (op - cons['op']) / abs(cons['op']) * 100
         if diff >= SURPRISE_PCT:
             verdict = f"🚀 <b>어닝서프라이즈 {diff:+.0f}%</b>"
+            is_star = True  # 알고리즘 자동 선별: 컨센서스 +10% 초과 달성
         elif diff <= -SURPRISE_PCT:
             verdict = f"🧊 <b>어닝쇼크 {diff:+.0f}%</b>"
         else:
             verdict = f"➖ 컨센 부합 {diff:+.0f}%"
-        line += f"   영업이익 {_fmt_eok(op)} (컨센 {_fmt_eok(cons['op'])}, {escape(cons['period'])})\n"
+        detail_head = f"   영업이익 {_fmt_eok(op)} (컨센 {_fmt_eok(cons['op'])}, {escape(cons['period'])})\n"
     else:
-        line += f"   영업이익 {_fmt_eok(op)} (컨센서스 없음)\n"
+        detail_head = f"   영업이익 {_fmt_eok(op)} (컨센서스 없음)\n"
+
+    turnaround = op_info.get('turnaround') or net_info.get('turnaround')
+    if turnaround and '흑자전환' in str(turnaround):
+        is_star = True  # 알고리즘 자동 선별: 흑자전환 턴어라운드
+
+    yoy = op_info.get('yoy')
+    if yoy is not None and yoy >= 100.0 and op is not None and op > 0:
+        is_star = True  # 알고리즘 자동 선별: 영업이익 전년대비 +100% 이상 폭증
+
+    star_prefix = '⭐ ' if is_star else ''
+    line = f"{star_prefix}<b>{_link(item)}</b> 잠정실적\n{detail_head}"
 
     # 영업이익 입체 분석 태그 (서프라이즈 여부, YoY 증감률, QoQ 증감률, 흑자/적자전환)
     tags = []
@@ -378,10 +390,16 @@ def format_earnings(item, actual, cons, watch):
 
 def format_buyback(item, info, watch):
     """자사주 취득 공시를 금액, 주식수, 목적, 기간까지 입체적으로 포맷"""
-    line = f"{_star(item, watch)}<b>{_link(item)}</b> 💰 <b>자사주 취득 결정</b>\n"
+    amt_eok = (info.get('amount') or 0) / 1e8
+    is_star = item.get('stock_code') in watch
+    # 50억원 이상 대규모 자사주 취득 또는 주주가치 제고/소각 목적이면 알고리즘 자동 선별
+    if amt_eok >= 50 or '소각' in str(info.get('purpose', '')):
+        is_star = True
+
+    star_prefix = '⭐ ' if is_star else ''
+    line = f"{star_prefix}<b>{_link(item)}</b> 💰 <b>자사주 취득 결정</b>\n"
     amount_str = ""
     if info.get('amount'):
-        amt_eok = info['amount'] / 1e8
         if amt_eok >= 10000:
             amount_str = f"{amt_eok / 10000:.1f}조원"
         else:
@@ -522,8 +540,8 @@ def collect_new_disclosures(dart, state, watch):
             elif kind == 'ir':
                 ir.append((it, format_simple(it, watch, '🎤 기업설명회(IR) 개최 공시')))
 
-    def order(lst):  # 관심종목 먼저
-        return [b for _, b in sorted(lst, key=lambda x: x[0].get('stock_code') not in watch)]
+    def order(lst):  # 핵심 포착 공시(⭐) 먼저
+        return [b for _, b in sorted(lst, key=lambda x: '⭐' not in x[1])]
 
     sections = []
     if earnings:
