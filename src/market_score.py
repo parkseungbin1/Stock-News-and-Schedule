@@ -1,8 +1,9 @@
 """
 종가베팅 & 시초가 매도 타이밍 전문 시황 분석 모듈 (KRX + Nextrade 대체거래소 반영)
-1. [아침 07:40] 🌅 장전 시초가 매도 가이드 (08:00 NXT 프리마켓 & 09:00 정규장 대비 매도/익절 전략)
-2. [오후 15:10] 🎯 정규장 1차 종가베팅 가이드 (15:30 마감 20분 전 종가베팅 진입 판단)
-3. [오후 19:40] 🎯 NXT 8시 마감 최종 종가베팅 가이드 (20:00 NXT/시간외 마감 20분 전 최종 오버나잇 결정)
+1. [아침 07:40] 🌅 08:00 NXT 프리마켓 개장 전 시초가 매도 가이드
+2. [아침 08:40] 🌅 09:00 정규장 개장 전 최종 매도 & 동시호가 가이드
+3. [오후 15:10] 🎯 15:30 정규장 마감 1차 종가베팅 가이드
+4. [저녁 19:40] 🎯 20:00 NXT 8시 마감 최종 종가베팅 가이드
 """
 import logging
 from datetime import datetime, timezone, timedelta
@@ -104,10 +105,9 @@ def make_gauge_bar(score, total_blocks=10):
 
 
 # ==========================================================
-# 1. [아침 07:40] 시초가 매도 타이밍 & 대응 가이드
-#    (08:00 NXT 프리마켓 & 09:00 KRX 정규장 개장 대비)
+# 1 & 2. [아침 07:40 / 08:40] 시초가 매도 타이밍 & 대응 가이드
 # ==========================================================
-def get_morning_sell_guide():
+def get_morning_sell_guide(time_label="07:40", is_nxt=True):
     nas_close, nas_ratio = fetch_naver_index('.IXIC')
     sox_close, sox_ratio = fetch_naver_index('.SOX')
     fut_price, fut_ratio = fetch_nasdaq_futures()
@@ -124,43 +124,46 @@ def get_morning_sell_guide():
 
     gauge = make_gauge_bar(score)
 
+    target_text = "08:00 NXT 프리마켓" if is_nxt else "09:00 정규장"
+
     if score >= 75:
         status_label = "🔥 강한 갭상승 출발 예상 (적극 분할 익절)"
         icon = "🟢"
         guide = (
-            "👉 <b>[시초가 슈팅 적극 분할 익절]</b>\n"
-            "미 증시 및 반도체 지수 강세로 08:00 NXT 프리마켓부터 강한 갭상승이 유력합니다.\n"
-            "• <b>매도 타이밍</b>: 개장 직후(08:00~08:10 또는 09:00~09:10) 시초 갭을 띄울 때 욕심부리지 말고 보유 물량의 <b>50~70%를 1차 익절</b>하세요.\n"
-            "• <b>홀딩 기준</b>: 잔여 물량은 '시초가'를 손절선(본절스탑)으로 잡고 상방 추세를 추종하세요."
+            f"👉 <b>[{target_text} 시초가 슈팅 적극 분할 익절]</b>\n"
+            f"미 증시 및 반도체 지수 강세로 {target_text} 개장 직후 강한 갭상승이 유력합니다.\n"
+            f"• <b>매도 타이밍</b>: 개장 직후 5~10분간 시초 갭을 띄울 때 욕심부리지 말고 보유 물량의 <b>50~70%를 1차 익절</b>하세요.\n"
+            f"• <b>홀딩 기준</b>: 잔여 물량은 '시초가'를 손절선(본절스탑)으로 잡고 상방 추세를 추종하세요."
         )
     elif score >= 55:
         status_label = "📈 완만한 상승/보합 출발 (슈팅 시 분할 익절)"
         icon = "🟢"
         guide = (
-            "👉 <b>[수급 확인 후 분할 익절]</b>\n"
-            "대외 환경이 완만하게 상승세를 뒷받침하고 있습니다.\n"
-            "• <b>매도 타이밍</b>: 개장 직후 체결강도와 수급 유입을 확인한 뒤 <b>+2~+4% 구간에서 분할 익절</b>을 시작하세요.\n"
-            "• <b>주의점</b>: 거래량이 줄며 시초가를 깨는 흐름이 나오면 미련 없이 남은 물량을 본절/약익절로 정리하세요."
+            f"👉 <b>[수급 확인 후 분할 익절]</b>\n"
+            f"대외 환경이 완만하게 상승세를 뒷받침하고 있습니다.\n"
+            f"• <b>매도 타이밍</b>: 개장 직후 체결강도와 수급 유입을 확인한 뒤 <b>+2~+4% 구간에서 분할 익절</b>을 시작하세요.\n"
+            f"• <b>주의점</b>: 거래량이 줄며 시초가를 깨는 흐름이 나오면 미련 없이 남은 물량을 본절/약익절로 정리하세요."
         )
     elif score >= 40:
         status_label = "⚖️ 혼조/보합 출발 (개장 초 수급 확인 필수)"
         icon = "🟡"
         guide = (
-            "👉 <b>[장 초반 뇌동매매 자제 & 본절 방어]</b>\n"
-            "대외 지표가 엇갈리며 시초가 방향성이 팽팽합니다.\n"
-            "• <b>매도 타이밍</b>: 개장 정각에 섣불리 던지지 마시고, 첫 5분간 메이저 수급 방향을 지켜보세요.\n"
-            "• <b>원칙</b>: 전일 종가를 지지하면 1~2% 짧은 반등에 익절하고, 전일 종가를 하향 이탈하면 즉시 비중을 줄이세요."
+            f"👉 <b>[장 초반 뇌동매매 자제 & 본절 방어]</b>\n"
+            f"대외 지표가 엇갈리며 시초가 방향성이 팽팽합니다.\n"
+            f"• <b>매도 타이밍</b>: 개장 정각에 섣불리 던지지 마시고, 첫 5분간 메이저 수급 방향을 지켜보세요.\n"
+            f"• <b>원칙</b>: 전일 종가를 지지하면 1~2% 짧은 반등에 익절하고, 전일 종가를 하향 이탈하면 즉시 비중을 줄이세요."
         )
     else:
         status_label = "😨 갭하락 출발 우려 (투매 동참 금지, 반등 매도)"
         icon = "🔴"
         guide = (
-            "👉 <b>[시초가 패닉셀 금지 & 첫 반등 시 매도]</b>\n"
-            "미 증시 조정 여파로 시초가 갭하락 출발 가능성이 높습니다.\n"
-            "• <b>매도 타이밍</b>: 개장 직후 공포에 동참해 최저점에 던지지 마세요. 통상 개장 후 10~20분경 나오는 <b>'첫 기술적 반등 파동'</b>에서 비중을 축소하거나 분할 정리하는 것이 유리합니다."
+            f"👉 <b>[시초가 패닉셀 금지 & 첫 반등 시 매도]</b>\n"
+            f"미 증시 조정 여파로 시초가 갭하락 출발 가능성이 높습니다.\n"
+            f"• <b>매도 타이밍</b>: 개장 직후 공포에 동참해 최저점에 던지지 마세요. 통상 개장 후 10~20분경 나오는 <b>'첫 기술적 반등 파동'</b>에서 비중을 축소하거나 분할 정리하는 것이 유리합니다."
         )
 
-    msg = f"🌅 <b>[장전 시초가 매도 가이드] 07:40</b>\n"
+    title_desc = "08:00 NXT 프리마켓 개장 전" if is_nxt else "09:00 정규장 개장 전 최종"
+    msg = f"🌅 <b>[{title_desc} 시초가 매도 가이드] {time_label}</b>\n"
     msg += f"점수: <b>{score}점</b> [{gauge}] {icon}\n"
     msg += f"<b>상태</b>: {status_label}\n\n"
 
@@ -187,7 +190,7 @@ def get_morning_sell_guide():
 
 
 # ==========================================================
-# 2. [오후 15:10] 정규장 1차 종가베팅 가이드
+# 3. [오후 15:10] 정규장 1차 종가베팅 가이드
 #    (15:30 KRX 정규장 마감 20분 전 판단)
 # ==========================================================
 def get_closing_betting_guide():
@@ -265,7 +268,7 @@ def get_closing_betting_guide():
 
 
 # ==========================================================
-# 3. [오후 19:40] NXT 20:00 마감 최종 종가베팅 가이드
+# 4. [오후 19:40] NXT 20:00 마감 최종 종가베팅 가이드
 #    (Nextrade 대체거래소/시간외 20:00 종료 20분 전 최종 오버나잇 판정)
 # ==========================================================
 def get_evening_betting_guide():
@@ -274,13 +277,11 @@ def get_evening_betting_guide():
     fx_close, fx_ratio, _ = fetch_usdkrw()
     cnn_score, cnn_rating = fetch_cnn_fear_greed()
 
-    # 야간 최종 종가베팅 적합도 점수 (0~100점)
-    # 20:00 NXT 마감 전 내일 아침까지 오버나잇할 수 있는 환경인지 판정
     score = 50.0
-    score += (fut_ratio * 18) * 0.45   # 실시간 미 선물이 야간 종가베팅 성공률의 핵심 (45%)
-    score += (dax_ratio * 12) * 0.20   # 유럽 증시 (20%)
-    score += (cnn_score - 50) * 0.15  # 글로벌 투자심리 (15%)
-    score -= (fx_ratio * 15) * 0.20    # 야간 환율 (20%)
+    score += (fut_ratio * 18) * 0.45
+    score += (dax_ratio * 12) * 0.20
+    score += (cnn_score - 50) * 0.15
+    score -= (fx_ratio * 15) * 0.20
     score = min(max(round(score), 0), 100)
 
     gauge = make_gauge_bar(score)
@@ -346,23 +347,30 @@ def get_evening_betting_guide():
 # ==========================================================
 def get_market_score_message(mode=None):
     """
-    지정된 mode 또는 현재 KST 시간에 맞춰 적절한 가이드 반환
-    - mode='morning' 또는 KST 06:00~10:59 -> [장전 시초가 매도 가이드] 07:40
-    - mode='closing' 또는 KST 11:00~16:59 -> [정규장 1차 종가베팅 가이드] 15:10
-    - mode='night'   또는 KST 17:00~05:59 -> [NXT 8시 마감 최종 종가베팅 가이드] 19:40
+    지정된 mode 또는 현재 KST 시간에 맞춰 4대 가이드 반환
+    1. 07:40 타임 (06:00~08:15 KST) -> [08:00 NXT 프리마켓 시초가 매도 가이드]
+    2. 08:40 타임 (08:15~10:59 KST) -> [09:00 정규장 개장 최종 매도 가이드]
+    3. 15:10 타임 (11:00~16:59 KST) -> [정규장 1차 종가베팅 가이드]
+    4. 19:40 타임 (17:00~05:59 KST) -> [NXT 8시 마감 최종 종가베팅 가이드]
     """
-    if not mode:
+    if not mode or mode == 'auto':
         now_kst = datetime.now(KST)
         hour = now_kst.hour
-        if 6 <= hour < 11:
-            mode = 'morning'
+        minute = now_kst.minute
+
+        if (hour == 6) or (hour == 7) or (hour == 8 and minute < 15):
+            mode = 'morning_740'
+        elif 8 <= hour < 11:
+            mode = 'morning_840'
         elif 11 <= hour < 17:
             mode = 'closing'
         else:
             mode = 'night'
 
-    if mode == 'morning':
-        return get_morning_sell_guide()
+    if mode in ('morning_740', 'morning'):
+        return get_morning_sell_guide(time_label="07:40", is_nxt=True)
+    elif mode == 'morning_840':
+        return get_morning_sell_guide(time_label="08:40", is_nxt=False)
     elif mode == 'closing':
         return get_closing_betting_guide()
     else:
