@@ -1374,8 +1374,8 @@ def generate_html():
                 <div class="criteria-item">
                     <div class="ci-num">03</div>
                     <div class="ci-content">
-                        <div class="ci-title">상승률 골디락스 (+3.5% ~ +8.5% 구간)</div>
-                        <div class="ci-desc">+3% 미만은 당일 수급 탄력이 약하고, +10% 이상은 익일 아침 차익실현 매물 폭탄(상투) 위험이 크므로 승률이 가장 높은 핵심 탄력 구간만 선별</div>
+                        <div class="ci-title">과열 없는 최적 상승률 (+3.5% ~ +8.5%)</div>
+                        <div class="ci-desc">너무 적게 오르면(+3% 미만) 힘이 없고, 너무 많이 폭등하면(+9% 이상) 다음 날 아침 차익 매물(상투)을 맞기 때문에 갭상승 확률이 가장 높은 '딱 좋은 상승 구간'만 선별</div>
                     </div>
                 </div>
                 <div class="criteria-item">
