@@ -23,6 +23,8 @@ from src.market_score import (
     fetch_usdkrw,
     fetch_cnn_fear_greed,
     fetch_kr_market,
+    fetch_vix,
+    fetch_us10y,
     get_market_score_message,
 )
 
@@ -40,6 +42,8 @@ def generate_html():
     dax_close, dax_ratio = fetch_naver_index('.GDAXI')
     fx_close, fx_ratio, fx_diff = fetch_usdkrw()
     cnn_score, cnn_rating = fetch_cnn_fear_greed()
+    vix_close, vix_ratio = fetch_vix()
+    us10y_price, us10y_diff = fetch_us10y()
 
     kp_close, kp_ratio, kp_for, kp_inst, kp_for_num, kp_inst_num = fetch_kr_market('KOSPI')
     kd_close, kd_ratio, kd_for, kd_inst, kd_for_num, kd_inst_num = fetch_kr_market('KOSDAQ')
@@ -146,6 +150,17 @@ def generate_html():
 
     kd_display = kd_close or "-"
     kd_badge = format_ratio(kd_ratio)
+
+    vix_display = vix_close or "-"
+    vix_badge = format_ratio(vix_ratio) if vix_close else "<span>-</span>"
+
+    us10y_display = f"{us10y_price:.2f}%" if us10y_price else "-"
+    if us10y_diff and us10y_diff > 0:
+        us10y_badge = f"<span class='up'>+{us10y_diff:.2f}%p 🔺</span>"
+    elif us10y_diff and us10y_diff < 0:
+        us10y_badge = f"<span class='down'>{us10y_diff:.2f}%p 🔻</span>"
+    else:
+        us10y_badge = "<span>0.00%p ➖</span>"
 
     # HTML 템플릿
     html = f"""<!DOCTYPE html>
@@ -547,6 +562,16 @@ def generate_html():
             <div class="metric-label">🧭 CNN 공포/탐욕</div>
             <div class="metric-value">{cnn_score:.0f}점</div>
             <div class="metric-sub">{cnn_rating.upper()}</div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-label">🌪️ VIX 변동성 지수</div>
+            <div class="metric-value">{vix_display}</div>
+            <div class="metric-sub">{vix_badge} (월가 공포)</div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-label">📈 미국 10년물 국채금리</div>
+            <div class="metric-value">{us10y_display}</div>
+            <div class="metric-sub">{us10y_badge} (글로벌 긴축)</div>
         </div>
     </div>
 
