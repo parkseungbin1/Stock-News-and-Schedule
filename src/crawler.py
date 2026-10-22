@@ -1,12 +1,26 @@
 """
 Investing.com 글로벌 경제 캘린더 크롤러
 시장 영향력이 매우 높음인 항목만 수집
+
+수집 순서:
+1. Investing.com (curl_cffi 브라우저 위장으로 Cloudflare 우회)
+2. 실패 시 네이버 증권(한국/미국) + ForexFactory(미국 High) 병합
 """
+import time
 import requests
+from urllib.parse import urlencode
 from datetime import datetime, timedelta, timezone
 import logging
 
 logger = logging.getLogger(__name__)
+
+KST = timezone(timedelta(hours=9))
+
+
+def _week_range():
+    today = datetime.now(KST).date()
+    start = today - timedelta(days=today.weekday())
+    return start, start + timedelta(days=6)
 
 class EconomicCalendarCrawler:
     """Investing.com 경제 캘린더 크롤러 클래스"""
@@ -24,14 +38,13 @@ class EconomicCalendarCrawler:
     }
 
     def __init__(self):
+        self.session = None
         try:
-            import cloudscraper
-            self.session = cloudscraper.create_scraper()
+            # curl_cffi: 실제 크롬 TLS 지문을 흉내내 Cloudflare 403 차단을 우회
+            from curl_cffi import requests as curl_requests
+            self.session = curl_requests.Session(impersonate="chrome")
         except ImportError:
-            logger.warning("cloudscraper가 설치되지 않았습니다. 기본 requests를 사용합니다.")
-            self.session = requests.Session()
-            
-        self.session.headers.update(self.HEADERS)
+            logger.warning("curl_cffi가 설치되지 않았습니다. Investing.com은 건너뜁니다.")
         # BeautifulSoup 사용을 위해 선언 (설치된 패키지 확인 완료)
         try:
             from bs4 import BeautifulSoup
@@ -44,44 +57,132 @@ class EconomicCalendarCrawler:
         """
         Investing.com에서 이번 주(월~일) 글로벌 경제 캘린더 데이터 수집
         """
-        if not self.BeautifulSoup:
+        events = self._fetch_investing()
+        if events:
+            logger.info(f"Investing.com 수집 성공: {len(events)}건")
+            return events
+
+        logger.warning("Investing.com 수집 실패 → 네이버 + ForexFactory로 대체합니다.")
+        events = self._fetch_naver()
+        events = self._merge(events, self._fetch_forexfactory())
+        return events
+
+    # ---------------- Investing.com ----------------
+    def _fetch_investing(self, retries=3):
+        if not self.BeautifulSoup or self.session is None:
             return []
 
-        kst = timezone(timedelta(hours=9))
-        today = datetime.now(kst)
-        start_of_week = today - timedelta(days=today.weekday())
-        end_of_week = start_of_week + timedelta(days=6)
+        start_of_week, end_of_week = _week_range()
+        # 배열 파라미터는 반드시 (key, value) 튜플로 반복 인코딩해야 함
+        data = urlencode([
+            ('timeZone', '88'),  # Seoul (GMT+9)
+            ('timeFilter', 'timeOnly'),
+            ('currentTab', 'custom'),
+            ('limit_from', '0'),
+            ('dateFrom', start_of_week.strftime('%Y-%m-%d')),
+            ('dateTo', end_of_week.strftime('%Y-%m-%d')),
+            ('country[]', '5'),   # USA
+            ('country[]', '11'),  # South Korea
+            ('importance[]', '3'),
+        ])
 
-        data = {
-            'timeZone': '54', # Seoul Time
-            'timeFilter': 'timeOnly',
-            'currentTab': 'custom',
-            'limit_from': '0',
-            'dateFrom': start_of_week.strftime('%Y-%m-%d'),
-            'dateTo': end_of_week.strftime('%Y-%m-%d'),
-            # 5: USA, 11: South Korea
-            'country[]': ['5', '11'],
-            'importance[]': ['3']
-        }
+        for attempt in range(1, retries + 1):
+            try:
+                self.session.get('https://kr.investing.com/economic-calendar/', timeout=20)
+                response = self.session.post(self.BASE_URL, data=data, headers={
+                    **self.HEADERS,
+                    'Referer': 'https://kr.investing.com/economic-calendar/',
+                }, timeout=20)
+                if response.status_code != 200:
+                    raise RuntimeError(f"HTTP {response.status_code}")
+                return self._parse_html(response.json().get('data', ''))
+            except Exception as e:
+                logger.warning(f"Investing.com 접근 실패({attempt}/{retries}): {e}")
+                if attempt < retries:
+                    time.sleep(5 * attempt)
+        return []
 
+    # ---------------- 네이버 증권 ----------------
+    NAVER_URL = "https://stock.naver.com/api/securityService/economic/indicator/nations/upcoming"
+
+    def _fetch_naver(self):
+        """네이버 증권 경제지표 (오늘 이후 예정 지표, 중요도 4 이상)"""
         try:
-            response = self.session.post(self.BASE_URL, data=data, timeout=10)
-            response.raise_for_status()
-
-            json_data = response.json()
-            html_content = json_data.get('data', '')
-            
-            return self._parse_html(html_content)
-
-        except requests.RequestException as e:
-            logger.error(f"Investing.com API 접근 오류: {e}")
-            return []
-        except ValueError as e:
-            logger.error(f"JSON 파싱 오류: {e}")
-            return []
+            r = requests.get(self.NAVER_URL, params=[
+                ('nationTypeList', 'KOR'), ('nationTypeList', 'USA'), ('gteImportance', '4'),
+            ], headers={'User-Agent': self.HEADERS['User-Agent']}, timeout=15)
+            r.raise_for_status()
+            items = r.json()
         except Exception as e:
-            logger.error(f"데이터 파싱 오류: {e}")
+            logger.error(f"네이버 경제지표 API 오류: {e}")
             return []
+
+        def fmt(v):
+            if v in (None, '', 0, 0.0):
+                return '-'
+            if isinstance(v, float) and v.is_integer():
+                return str(int(v))
+            return str(v)
+
+        events = []
+        for it in items if isinstance(items, list) else []:
+            try:
+                d = datetime.strptime(str(it.get('releaseDate')), '%Y%m%d').date()
+                t = datetime.strptime(str(it.get('releaseTime', '')).zfill(6), '%H%M%S').time()
+            except ValueError:
+                continue
+            actual = fmt(it.get('actualValue')) if it.get('isRelease') else '-'
+            events.append(self._event(d, t, it.get('nationKoreanName', ''), it.get('name', ''),
+                                      fmt(it.get('previousValue')), actual, fmt(it.get('forecastValue'))))
+        return events
+
+    # ---------------- ForexFactory ----------------
+    FF_URL = "https://nfs.faireconomy.media/ff_calendar_thisweek.json"
+
+    def _fetch_forexfactory(self):
+        """ForexFactory 주간 JSON (미국 High 지표, 실제값은 제공 안 됨)"""
+        try:
+            r = requests.get(self.FF_URL, headers={'User-Agent': self.HEADERS['User-Agent']}, timeout=15)
+            r.raise_for_status()
+            items = r.json()
+        except Exception as e:
+            logger.error(f"ForexFactory API 오류: {e}")
+            return []
+
+        events = []
+        for it in items:
+            if it.get('country') != 'USD' or it.get('impact') != 'High':
+                continue
+            try:
+                dt = datetime.fromisoformat(it['date']).astimezone(KST)
+            except (KeyError, ValueError):
+                continue
+            events.append(self._event(dt.date(), dt.time().replace(second=0), '미국', it.get('title', ''),
+                                      it.get('previous') or '-', '-', it.get('forecast') or '-'))
+        return events
+
+    @staticmethod
+    def _merge(primary, extra):
+        """같은 국가/날짜/시각 이벤트는 primary(네이버, 한글명) 우선"""
+        keys = {(e['country'], e['parsed_date'], e['parsed_time']) for e in primary}
+        return primary + [e for e in extra if (e['country'], e['parsed_date'], e['parsed_time']) not in keys]
+
+    @staticmethod
+    def _event(d, t, country, name, previous, actual, forecast):
+        return {
+            'date': d.strftime('%Y-%m-%d'),
+            'time': t.strftime('%H:%M'),
+            'country': country,
+            'event': name,
+            'importance': 3,
+            'actual': actual,
+            'forecast': forecast,
+            'previous': previous,
+            'parsed_date': d,
+            'parsed_time': t,
+            'unit': '',
+            'is_release': actual != '-',
+        }
 
     def _parse_html(self, html_content):
         """HTML 테이블에서 이벤트 파싱"""
