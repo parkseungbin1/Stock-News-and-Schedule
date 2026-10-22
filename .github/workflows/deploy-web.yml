@@ -1,0 +1,62 @@
+name: Deploy Web Dashboard to GitHub Pages
+
+on:
+  schedule:
+    # 07:40 KST (22:40 UTC)
+    - cron: '40 22 * * 0-4'
+    # 08:40 KST (23:40 UTC)
+    - cron: '40 23 * * 0-4'
+    # 15:10 KST (06:10 UTC)
+    - cron: '10 6 * * 1-5'
+    # 19:40 KST (10:40 UTC)
+    - cron: '40 10 * * 1-5'
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - 'generate_web.py'
+      - 'src/**'
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: 'pages'
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - run: pip install -r requirements.txt
+
+      - name: Build Web Dashboard
+        env:
+          DART_API_KEY: ${{ secrets.DART_API_KEY }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python generate_web.py
+
+      - name: Upload Artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: 'dist'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
