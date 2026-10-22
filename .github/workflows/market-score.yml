@@ -1,0 +1,31 @@
+name: Market Score Alert
+
+on:
+  schedule:
+    # UTC 기준. KST = UTC + 9
+    # 15:10 KST = 06:10 UTC (월~금 정규장 마감 직전/직후 시황 점검)
+    # 19:40 KST = 10:40 UTC (월~금 외인/기관 최종 수급 집계 & 미 야간 프리마켓 점검)
+    - cron: '10 6 * * 1-5'
+    - cron: '40 10 * * 1-5'
+  workflow_dispatch:
+
+jobs:
+  alert:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - run: pip install -r requirements.txt
+
+      - name: Send Market Score
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python market_alert.py
