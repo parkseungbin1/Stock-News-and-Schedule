@@ -50,6 +50,13 @@ def generate_html():
     guide_1510 = get_market_score_message('closing')
     guide_1940 = get_market_score_message('night')
 
+    # Python 3.12 미만 호환: f-string 표현식 내부 백슬래시 금지 → 미리 이스케이프
+    bt, bt_esc = '`', '\\`'
+    g0740_js = guide_0740.replace(bt, bt_esc)
+    g0840_js = guide_0840.replace(bt, bt_esc)
+    g1510_js = guide_1510.replace(bt, bt_esc)
+    g1940_js = guide_1940.replace(bt, bt_esc)
+
     # 3. 최근 공시 수집
     disclosures_html = ""
     try:
@@ -415,10 +422,10 @@ def generate_html():
 
     <script>
         const guides = {{
-            g0740: `{guide_0740.replace('`', '\\`')}`,
-            g0840: `{guide_0840.replace('`', '\\`')}`,
-            g1510: `{guide_1510.replace('`', '\\`')}`,
-            g1940: `{guide_1940.replace('`', '\\`')}`
+            g0740: `{g0740_js}`,
+            g0840: `{g0840_js}`,
+            g1510: `{g1510_js}`,
+            g1940: `{g1940_js}`
         }};
 
         function showGuide(key, btn) {{
