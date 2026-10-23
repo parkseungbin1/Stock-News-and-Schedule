@@ -44,6 +44,11 @@ def main():
     time_str = now.strftime('%H:%M')
 
     if not action or action == 'auto':
+        # 주말(토/일) 자동 스킵 (시장 휴장)
+        if now.weekday() >= 5:
+            logger.info(f"[{time_str} KST] 주말({now.strftime('%A')})은 주식 시장 휴장이므로 알림 발송을 건너뜁니다.")
+            return
+
         # 시간대별 자동 매핑
         if hour == 6 or (hour == 7 and minute < 15):
             action = 'digest_0700'
