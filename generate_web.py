@@ -435,8 +435,9 @@ def generate_html():
             background: var(--bg);
             color: var(--text-main);
             font-family: 'Pretendard', -apple-system, sans-serif;
-            padding: 16px;
-            max-width: 1200px;
+            padding: 16px 24px;
+            max-width: 1560px;
+            width: 96%;
             margin: 0 auto;
             line-height: 1.5;
         }}
@@ -730,23 +731,29 @@ def generate_html():
         .rec-nav {{
             display: flex;
             gap: 10px;
-            overflow-x: auto;
-            padding-bottom: 8px;
+            flex-wrap: wrap;
+            align-items: center;
+            padding-bottom: 4px;
             margin-bottom: 14px;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }}
+        .rec-nav::-webkit-scrollbar {{
+            display: none;
         }}
         .rec-tab {{
             background: var(--surface);
             border: 1px solid var(--border);
             color: var(--text-sub);
-            padding: 12px 18px;
+            padding: 10px 16px;
             border-radius: 12px;
-            font-size: 0.92rem;
+            font-size: 0.9rem;
             font-weight: 700;
             cursor: pointer;
             white-space: nowrap;
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
             transition: all 0.2s;
         }}
         .rec-tab:hover {{
@@ -1160,9 +1167,15 @@ def generate_html():
         .tabs {{
             display: flex;
             gap: 8px;
-            overflow-x: auto;
-            padding-bottom: 8px;
+            flex-wrap: wrap;
+            align-items: center;
+            padding-bottom: 4px;
             margin-bottom: 14px;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }}
+        .tabs::-webkit-scrollbar {{
+            display: none;
         }}
         .tab-btn {{
             background: var(--surface);
@@ -1197,9 +1210,15 @@ def generate_html():
         .disclosure-nav {{
             display: flex;
             gap: 10px;
-            overflow-x: auto;
-            padding-bottom: 8px;
+            flex-wrap: wrap;
+            align-items: center;
+            padding-bottom: 4px;
             margin-bottom: 20px;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }}
+        .disclosure-nav::-webkit-scrollbar {{
+            display: none;
         }}
         .disc-tab {{
             background: var(--surface);
