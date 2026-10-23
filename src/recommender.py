@@ -132,6 +132,117 @@ def evaluate_market_regime(market_context=None):
     }
 
 
+def analyze_support_resistance(code: str, name: str) -> dict:
+    """
+    네이버 일봉 차트(최근 65일)를 실시간 분석하여 20일/60일 전고점 저항 돌파 및 지지선 정밀 판별.
+    - 60일 신고가 돌파: 상방 매물 100% 공백, 익일 갭상승 확률 극대화 (+30점 가산)
+    - 20일 박스권 상단 저항 돌파: 단기 저항선 극복 안착 (+20점 가산)
+    - 머리 위 2.5% 이내에 20일 전고점이나 60일선 저항선 충돌 위험: 자동 탈락 (원천 배제)
+    - 20일 이동평균선 하회 역배열 종목: 자동 탈락
+    """
+    import requests
+    import xml.etree.ElementTree as ET
+    import re
+    try:
+        url = f"https://fchart.stock.naver.com/sise.nhn?symbol={code}&timeframe=day&count=65&requestType=0"
+        res = requests.get(url, timeout=4)
+        if res.status_code != 200 or not res.text:
+            return None
+        cleaned = re.sub(r'<\?xml[^>]*\?>', '', res.text).strip()
+        root = ET.fromstring(cleaned)
+        items = root.findall('.//item')
+        if len(items) < 25:
+            return None
+
+        rows = []
+        for it in items:
+            parts = it.attrib['data'].split('|')
+            rows.append({
+                'date': parts[0],
+                'open': float(parts[1]),
+                'high': float(parts[2]),
+                'low': float(parts[3]),
+                'close': float(parts[4]),
+                'volume': float(parts[5]),
+            })
+
+        today = rows[-1]
+        today_close = today['close']
+
+        # 직전 20일, 60일 최고가 (당일 제외한 과거 구간)
+        past_20 = rows[-21:-1]
+        past_60 = rows[-61:-1] if len(rows) >= 61 else rows[:-1]
+
+        prev_20_high = max(r['high'] for r in past_20)
+        prev_60_high = max(r['high'] for r in past_60)
+
+        # 20일선 및 60일선 이동평균
+        ma20 = sum(r['close'] for r in rows[-20:]) / 20.0
+        ma60 = sum(r['close'] for r in rows[-60:]) / len(rows[-60:]) if len(rows) >= 60 else None
+
+        # 1. 역배열 하향 추세 (20일선 밑에 주가가 위치) -> 탈락
+        if today_close < ma20:
+            return {'is_valid': False, 'reject_reason': '20일선 하회 역배열'}
+
+        is_60_breakout = today_close >= prev_60_high
+        is_20_breakout = today_close >= prev_20_high
+
+        # 2. 머리 위 저항선 충돌 검사 (오늘 종가 바로 위 2.5% 이내에 60일선 또는 20일 전고점이 가로막은 경우)
+        overhead_barriers = []
+        if not is_20_breakout and today_close < prev_20_high:
+            diff_to_20h = (prev_20_high - today_close) / today_close * 100
+            if diff_to_20h <= 2.5:
+                overhead_barriers.append(f"20일전고점(+{diff_to_20h:.1f}%)")
+
+        if ma60 and today_close < ma60:
+            diff_to_60ma = (ma60 - today_close) / today_close * 100
+            if diff_to_60ma <= 2.5:
+                overhead_barriers.append(f"60일선(+{diff_to_60ma:.1f}%)")
+
+        if overhead_barriers:
+            return {'is_valid': False, 'reject_reason': f"머리 위 저항선 충돌 위험 ({', '.join(overhead_barriers)})"}
+
+        # 3. 돌파 등급 및 지지·저항 가격 산출
+        if is_60_breakout:
+            status = "🔥 60일 신고가 대돌파 (상방 매물 100% 공백)"
+            support_price = int(prev_60_high)
+            next_res = "신고가 영역 (상방 무저항)"
+            room_pct = 10.0
+            sr_score = 30.0
+            tags = ["60일신고가대돌파", "매물100%공백"]
+        elif is_20_breakout:
+            status = "🎯 20일 박스권 상단 저항 돌파 안착"
+            support_price = int(prev_20_high)
+            diff_to_60 = (prev_60_high - today_close) / today_close * 100
+            room_pct = round(diff_to_60, 1)
+            next_res = f"{int(prev_60_high):,}원 (+{room_pct:.1f}% 여유)" if room_pct > 0 else "신고가 영역"
+            sr_score = 20.0
+            tags = ["박스권상단돌파", "저항돌파안착"]
+        else:
+            diff_to_20 = (prev_20_high - today_close) / today_close * 100
+            status = "⚡ 20일선 지지 우상향 파동"
+            support_price = int(ma20)
+            next_res = f"{int(prev_20_high):,}원 (+{diff_to_20:.1f}%)"
+            room_pct = round(diff_to_20, 1)
+            sr_score = 5.0
+            tags = ["20일선지지", "우상향파동"]
+
+        return {
+            'is_valid': True,
+            'is_60_breakout': is_60_breakout,
+            'is_20_breakout': is_20_breakout,
+            'status': status,
+            'support_price': support_price,
+            'next_res': next_res,
+            'room_pct': room_pct,
+            'sr_score': sr_score,
+            'tags': tags
+        }
+    except Exception as e:
+        logger.debug(f"{code} 지지저항 분석 실패: {e}")
+        return None
+
+
 def get_recommendations(dart_disclosures=None, market_context=None):
     """
     국내 KRX 전 종목을 실시간 스캔하여 고승률 4대 필터를 통과한 종목 도출
@@ -164,17 +275,18 @@ def get_recommendations(dart_disclosures=None, market_context=None):
 
     # =========================================================================
     # Track 1: 🎯 오늘 15:10 종가베팅 (오버나잇)
-    # 4대 기준: 1) 거래대금 100억~500억+ 최우선 집중 (소형 거래량 원천 배제),
-    #           2) 윗꼬리 38% 이하 단단한 양봉 (장마감 매수세 유지),
-    #           3) 과열 없는 최적 상승률 (+3.5%~+10.0%),
-    #           4) 익일 시초가 갭상승(+3%~+5%) 기계적 분할 익절
+    # 4대 기준 + [신규] 지지·저항 돌파 & 머리 위 저항선 충돌 배제 필터
+    # 1) 거래대금 80억+ & 시총 1,500억+ (소형 잡주 배제)
+    # 2) 윗꼬리 38% 이하 단단한 양봉 (장마감 매수세 유지)
+    # 3) 20일선 우상향 & 20일/60일 전고점 저항 돌파 (매물 공백)
+    # 4) 머리 위 2.5% 이내 저항선 충돌 위험 종목 원천 배제
     # =========================================================================
     closing_picks = []
     closing_pool = common[
         (common['Marcap'] >= 1500 * 1e8) &  # 시총 1,500억 이상
-        (common['Amount'] >= 80 * 1e8) &    # 당일 거래대금 최소 80억 이상 (저유동성 배제)
-        (common['ChagesRatio'] >= 3.5) &    # 최소 +3.5% 이상 (저탄력 잡음 배제)
-        (common['ChagesRatio'] <= 10.0)     # 최대 +10.0% 이하 (과열/익일 시초 상투 배제)
+        (common['Amount'] >= 80 * 1e8) &    # 당일 거래대금 최소 80억 이상
+        (common['ChagesRatio'] >= 3.5) &    # 최소 +3.5% 이상
+        (common['ChagesRatio'] <= 10.0)     # 최대 +10.0% 이하
     ].copy()
 
     # 거래대금 상위 60개 종목 압축
@@ -194,20 +306,31 @@ def get_recommendations(dart_disclosures=None, market_context=None):
         if high_p <= low_p:
             continue
 
-        # 윗꼬리 비율 (0에 가까울수록 종가=고가로 장마감 매수세 극강)
         head_ratio = (high_p - close_p) / (high_p - low_p)
-        # 몸통 비율 (시초가 대비 종가 상승 탄력)
         body_ratio = (close_p - open_p) / (high_p - low_p)
 
         # 윗꼬리 38% 이하 & 양봉 몸통 35% 이상 엄격 필터링
         if head_ratio <= 0.38 and body_ratio >= 0.35:
-            # 점수 산정: 거래대금 가중치 최우선 (거래대금이 클수록 압도적 고득점) + 윗꼬리 억제
-            volume_score = min(amount_eok / 10, 35.0)
+            # [지지·저항 돌파 & 머리 위 저항 충돌 필터]
+            sr = analyze_support_resistance(code, name)
+            if sr and not sr.get('is_valid', True):
+                logger.info(f"[종가베팅 필터 탈락] {name}({code}): {sr.get('reject_reason')}")
+                continue
+
+            sr_score = sr.get('sr_score', 0.0) if sr else 0.0
+            sr_status = sr.get('status', '거래대금 수급 우수') if sr else '거래대금 수급 우수'
+            support_price = sr.get('support_price', int(close_p * 0.98)) if sr else int(close_p * 0.98)
+            next_res = sr.get('next_res', f"{int(close_p * 1.05):,}원") if sr else f"{int(close_p * 1.05):,}원"
+            room_pct = sr.get('room_pct', 5.0) if sr else 5.0
+            sr_tags = sr.get('tags', []) if sr else []
+
+            # 점수 산정: 기본 40 + 거래대금(최대 30) + 캔들완성도(최대 15) + 지지저항돌파(최대 30)
+            volume_score = min(amount_eok / 10, 30.0)
             candle_score = (1.0 - head_ratio) * 15.0
-            score = 50.0 + volume_score + candle_score
+            score = 40.0 + volume_score + candle_score + sr_score
             
-            reasons = [f"거래대금 {int(amount_eok):,}억 폭발 주도주", f"고가 마감 양봉(윗꼬리 {int(head_ratio*100)}%)"]
-            tags = ['거래대금폭발', '단단한양봉', '익일시초가노림']
+            reasons = [f"차트: {sr_status}", f"거래대금 {int(amount_eok):,}억 폭발"]
+            tags = ['종가베팅', '단단한양봉'] + sr_tags
 
             if code in catalyst_codes:
                 score += 10.0
@@ -230,7 +353,12 @@ def get_recommendations(dart_disclosures=None, market_context=None):
                 'holding_period': '당일 15:10~15:30 매수 → 익일 09:00~09:20 전량 분할 매도',
                 'score': int(min(score, 99)),
                 'reason': " · ".join(reasons),
-                'tags': tags
+                'tags': tags,
+                'sr_status': sr_status,
+                'support_price': support_price,
+                'next_resistance': next_res,
+                'room_pct': room_pct,
+                'is_breakout': sr.get('is_20_breakout', False) or sr.get('is_60_breakout', False) if sr else False
             })
 
     closing_picks.sort(key=lambda x: x['score'], reverse=True)
@@ -430,8 +558,13 @@ def get_fallback_recommendations():
                 'change_pct': 3.25, 'amount_eok': 4200, 'target_1': 197200, 'target_1_pct': '+3.0%',
                 'target_2': 201000, 'target_2_pct': '+5.0%', 'stop_loss': 187600, 'stop_loss_pct': '-2.0%',
                 'holding_period': '당일 15:10~15:30 매수 → 익일 09:00~09:20 전량 분할 매도',
-                'score': 94, 'reason': '거래대금 4,200억 집중 · 고가 마감 양봉(윗꼬리 12%) · HBM 모멘텀',
-                'tags': ['거래대금폭발', '단단한양봉', '익일시초가노림']
+                'score': 94, 'reason': '거래대금 4,200억 집중 · 20일 박스권 상단 저항 돌파 안착',
+                'tags': ['종가베팅', '단단한양봉', '박스권상단돌파'],
+                'sr_status': '🎯 20일 박스권 상단 저항 돌파 안착',
+                'support_price': 188000,
+                'next_resistance': '205,000원 (+7.0% 여유)',
+                'room_pct': 7.0,
+                'is_breakout': True
             }
         ],
         'swing': [

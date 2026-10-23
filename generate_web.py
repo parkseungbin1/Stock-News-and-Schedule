@@ -102,6 +102,21 @@ def generate_html():
         cat_box = f'<div class="rec-cat-box">📰 <b>핵심재료</b>: {cat}</div>' if cat else ''
         chart_url = pick.get('chart_url', f"https://m.stock.naver.com/domestic/stock/{pick['code']}/total")
 
+        sr_status = pick.get('sr_status')
+        support_p = pick.get('support_price')
+        next_res = pick.get('next_resistance')
+        sr_box = ''
+        if sr_status:
+            sr_box = f"""
+            <div class="rec-sr-box">
+                <div class="sr-status-line">📊 <b>차트 분석</b>: <span class="sr-badge">{sr_status}</span></div>
+                <div class="sr-price-line">
+                    <span class="sr-pill pill-green">🛡️ 1차 지지선: <b>{support_p:,}원</b></span>
+                    <span class="sr-pill pill-gold">🚀 상단 저항선: <b>{next_res}</b></span>
+                </div>
+            </div>
+            """
+
         return f"""
         <div class="rec-card {card_theme}">
             <div class="rec-card-top">
@@ -143,6 +158,7 @@ def generate_html():
             <div class="rec-desc-box">
                 <div class="rec-desc-title">💡 AI 포착 근거:</div>
                 <div class="rec-desc-text">{pick['reason']}</div>
+                {sr_box}
                 {cat_box}
                 <div class="rec-period-tag">⏱️ 매매 타이밍: {pick['holding_period']}</div>
             </div>
@@ -839,6 +855,44 @@ def generate_html():
             padding: 7px 10px;
             margin: 8px 0;
             line-height: 1.4;
+        }}
+        .rec-sr-box {{
+            font-size: 0.78rem;
+            color: #f3f4f6;
+            background: rgba(16, 185, 129, 0.05);
+            border: 1px solid rgba(16, 185, 129, 0.22);
+            border-radius: 8px;
+            padding: 8px 10px;
+            margin: 8px 0;
+            line-height: 1.45;
+        }}
+        .sr-status-line {{
+            color: #f9fafb;
+            margin-bottom: 5px;
+        }}
+        .sr-badge {{
+            font-weight: 700;
+            color: #34d399;
+        }}
+        .sr-price-line {{
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }}
+        .sr-pill {{
+            font-size: 0.72rem;
+            padding: 2px 7px;
+            border-radius: 5px;
+        }}
+        .sr-pill.pill-green {{
+            background: rgba(16, 185, 129, 0.15);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }}
+        .sr-pill.pill-gold {{
+            background: rgba(245, 158, 11, 0.15);
+            color: #fbbf24;
+            border: 1px solid rgba(245, 158, 11, 0.3);
         }}
         .rec-bottom-action {{
             margin-top: 10px;
