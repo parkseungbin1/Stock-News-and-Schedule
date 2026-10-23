@@ -1,5 +1,8 @@
 # Stock-News-and-Schedule
 
+> ⏰ **스마트 자동 알림 스케줄러**: [cron-job.org](https://cron-job.org) 에서 6대 알림이 100% 클라우드로 자동 실행 중입니다.  
+> 세부 설정 및 관리 방법은 **[CRON_SETUP_GUIDE.md](file:///c:/Users/BINI/Desktop/news-stock/CRON_SETUP_GUIDE.md)** 문서를 참고하세요.
+
 네이버 증권 stock.naver.com의 경제 지표 API와 날씨 API를 이용해, 매일 아침 텔레그램으로 날씨와 경제 지표를 함께 전송하는 봇입니다.
 
 ## 기능
