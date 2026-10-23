@@ -84,18 +84,32 @@ def generate_html():
         swing_picks = fallback['swing']
         breakout_picks = fallback.get('breakout', [])
 
+    try:
+        from src.track_record import render_monthly_history_html
+        history_tab_html = render_monthly_history_html()
+    except Exception as e:
+        print(f"히스토리 탭 생성 실패: {e}")
+        history_tab_html = "<div class='empty-card'>기록을 불러오는 중입니다..</div>"
+
     def render_rec_card(pick, card_theme):
         tags_html = "".join([f'<span class="rec-tag">{t}</span>' for t in pick.get('tags', [])])
         change_val = pick['change_pct']
         change_class = 'up' if change_val > 0 else ('down' if change_val < 0 else '')
         sign = '+' if change_val > 0 else ''
+        sec = pick.get('sector')
+        sec_badge = f'<span class="rec-sector-badge">[{sec}]</span>' if sec else ''
+        cat = pick.get('catalyst')
+        cat_box = f'<div class="rec-cat-box">📰 <b>핵심재료</b>: {cat}</div>' if cat else ''
+        chart_url = pick.get('chart_url', f"https://m.stock.naver.com/domestic/stock/{pick['code']}/total")
+
         return f"""
         <div class="rec-card {card_theme}">
             <div class="rec-card-top">
                 <div class="rec-stock-title">
-                    <a href="https://finance.naver.com/item/main.naver?code={pick['code']}" target="_blank" rel="noopener noreferrer">
+                    <a href="{chart_url}" target="_blank" rel="noopener noreferrer">
                         {pick['name']} <span class="rec-code">{pick['code']}</span>
                     </a>
+                    {sec_badge}
                     <span class="rec-market-badge">{pick['market']}</span>
                 </div>
                 <div class="rec-score-badge">⭐ AI 적중도 {pick['score']}점</div>
@@ -129,7 +143,14 @@ def generate_html():
             <div class="rec-desc-box">
                 <div class="rec-desc-title">💡 AI 포착 근거:</div>
                 <div class="rec-desc-text">{pick['reason']}</div>
+                {cat_box}
                 <div class="rec-period-tag">⏱️ 매매 타이밍: {pick['holding_period']}</div>
+            </div>
+
+            <div class="rec-bottom-action">
+                <a href="{chart_url}" target="_blank" rel="noopener noreferrer" class="rec-chart-link">
+                    📱 실시간 호가 및 일봉 차트 확인 ↗
+                </a>
             </div>
 
             <div class="rec-tags-row">
@@ -786,6 +807,199 @@ def generate_html():
             border: 1px solid rgba(239, 68, 68, 0.25);
             color: #fca5a5;
         }}
+        .pill-blue {{
+            background: rgba(59, 130, 246, 0.2);
+            color: #60a5fa;
+            border-color: rgba(59, 130, 246, 0.35);
+        }}
+        .banner-blue {{
+            background: rgba(59, 130, 246, 0.08);
+            border: 1px solid rgba(59, 130, 246, 0.25);
+            color: #93c5fd;
+        }}
+        .rec-sector-badge {{
+            font-size: 0.74rem;
+            color: #a78bfa;
+            font-weight: 700;
+            margin-left: 4px;
+        }}
+        .rec-cat-box {{
+            font-size: 0.78rem;
+            color: #93c5fd;
+            background: rgba(59, 130, 246, 0.08);
+            border: 1px solid rgba(59, 130, 246, 0.18);
+            border-radius: 8px;
+            padding: 7px 10px;
+            margin: 8px 0;
+            line-height: 1.4;
+        }}
+        .rec-bottom-action {{
+            margin-top: 10px;
+            margin-bottom: 8px;
+        }}
+        .rec-chart-link {{
+            display: inline-block;
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: #38bdf8;
+            text-decoration: none;
+            background: rgba(56, 189, 248, 0.1);
+            border: 1px solid rgba(56, 189, 248, 0.25);
+            border-radius: 8px;
+            padding: 6px 12px;
+            transition: all 0.2s;
+        }}
+        .rec-chart-link:hover {{
+            background: rgba(56, 189, 248, 0.2);
+            border-color: #38bdf8;
+            color: #ffffff;
+        }}
+        /* 트랙 레코드 30일 히스토리 */
+        .track-summary-grid {{
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 14px;
+            margin-bottom: 20px;
+        }}
+        .track-stat-card {{
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 16px 20px;
+        }}
+        .track-stat-card.stat-winrate {{
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.12), rgba(17, 24, 39, 0.95));
+            border-color: rgba(16, 185, 129, 0.35);
+        }}
+        .stat-label {{
+            font-size: 0.82rem;
+            color: var(--text-sub);
+            font-weight: 600;
+            margin-bottom: 6px;
+        }}
+        .stat-value {{
+            font-size: 1.6rem;
+            font-weight: 800;
+            color: #ffffff;
+            margin-bottom: 4px;
+        }}
+        .stat-winrate .stat-value {{
+            color: #34d399;
+        }}
+        .stat-sub {{
+            font-size: 0.74rem;
+            color: #9ca3af;
+        }}
+        .history-timeline {{
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }}
+        .history-day-card {{
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 18px;
+        }}
+        .history-day-header {{
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            padding-bottom: 12px;
+            margin-bottom: 14px;
+        }}
+        .day-title {{
+            font-size: 0.95rem;
+            color: #f9fafb;
+        }}
+        .hist-badge {{
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 6px;
+        }}
+        .badge-done {{
+            background: rgba(16, 185, 129, 0.18);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }}
+        .badge-wait {{
+            background: rgba(245, 158, 11, 0.18);
+            color: #fbbf24;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }}
+        .history-day-body {{
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }}
+        .hist-item {{
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 12px 14px;
+        }}
+        .hist-item-header {{
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+        }}
+        .hist-name-box a {{
+            color: #ffffff;
+            font-size: 0.95rem;
+            text-decoration: none;
+        }}
+        .hist-name-box a:hover {{
+            color: #60a5fa;
+            text-decoration: underline;
+        }}
+        .hist-code {{
+            font-size: 0.76rem;
+            color: #9ca3af;
+            font-family: 'JetBrains Mono', monospace;
+        }}
+        .hist-sector {{
+            font-size: 0.75rem;
+            color: #a78bfa;
+            margin-left: 6px;
+            font-weight: 700;
+        }}
+        .hist-result {{
+            font-size: 0.85rem;
+            color: #d1d5db;
+        }}
+        .res-badge {{
+            font-size: 0.74rem;
+            font-weight: 700;
+            padding: 2px 7px;
+            border-radius: 5px;
+            margin-left: 6px;
+        }}
+        .res-badge.win {{
+            background: rgba(16, 185, 129, 0.2);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.35);
+        }}
+        .res-badge.even {{
+            background: rgba(59, 130, 246, 0.2);
+            color: #60a5fa;
+            border: 1px solid rgba(59, 130, 246, 0.35);
+        }}
+        .res-badge.loss {{
+            background: rgba(239, 68, 68, 0.2);
+            color: #f87171;
+            border: 1px solid rgba(239, 68, 68, 0.35);
+        }}
+        .hist-cat {{
+            font-size: 0.78rem;
+            color: #9ca3af;
+            margin-top: 6px;
+            padding-top: 6px;
+            border-top: 1px dashed rgba(255, 255, 255, 0.06);
+        }}
         .rec-grid {{
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
@@ -1367,6 +1581,9 @@ def generate_html():
         <button class="rec-tab" onclick="switchRecTrack('breakout', this)">
             🔥 당일 +15% 돌파 대장주 <span class="rec-tag-pill pill-red">기준봉 포착</span>
         </button>
+        <button class="rec-tab" onclick="switchRecTrack('history', this)">
+            📜 최근 1개월 종가베팅 성과 <span class="rec-tag-pill pill-blue">1달치 자동기록</span>
+        </button>
     </div>
 
     <!-- 1) 종가베팅 컨테이너 -->
@@ -1522,6 +1739,16 @@ def generate_html():
         </div>
     </div>
 
+    <!-- 4) 최근 1개월 종가베팅 성과 히스토리 컨테이너 (1달 경과 시 자동 삭제) -->
+    <div id="rec-history-container" class="rec-container" style="display: none;">
+        <div class="rec-strategy-banner banner-blue">
+            <div>
+                <b>📜 최근 30일(1개월) 종가베팅 실전 성과 히스토리</b>: 당일 15:10 추천 종목의 익일 시초가 갭상승 결과가 자동 검증·누적되며, 1달(30일)이 경과한 데이터는 자동으로 영구 삭제됩니다.
+            </div>
+        </div>
+        {history_tab_html}
+    </div>
+
     <!-- 3. 실전 4대 종가베팅/매도 가이드 -->
     <div class="section-title">⏱️ 실전 4대 트레이딩 라이프사이클 가이드</div>
     <div class="tabs">
@@ -1645,6 +1872,7 @@ def generate_html():
             document.getElementById('rec-closing-container').style.display = (track === 'closing') ? 'block' : 'none';
             document.getElementById('rec-swing-container').style.display = (track === 'swing') ? 'block' : 'none';
             document.getElementById('rec-breakout-container').style.display = (track === 'breakout') ? 'block' : 'none';
+            document.getElementById('rec-history-container').style.display = (track === 'history') ? 'block' : 'none';
         }}
     </script>
 </body>
