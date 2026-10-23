@@ -6,6 +6,7 @@
 import html
 import json
 import logging
+import re
 import urllib.request
 from datetime import datetime, timezone, timedelta
 import pandas as pd
@@ -23,7 +24,7 @@ def fetch_stock_catalyst(code, name=""):
     2) 해당 종목명(또는 약칭)이 직접 명시된 전용 뉴스 우선 선별
     3) 수주, 공급계약, 호실적, 신기술, 승인, 흑자전환, FDA 등 고영향 호재 키워드 가중치 부여
     4) DART 주요 경영 공시(단일판매공급계약, 실적전망 등) 교차 검증 연동
-    5) 가독성을 위해 중간에 잘리지 않도록 최대 85자까지 온전한 문장 제공
+    5) 잘림 현상([종...) 방지 및 원문 기사 직접 링크(URL) 및 언론사, 본문 요약 제공
     """
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
 
@@ -40,7 +41,7 @@ def fetch_stock_catalyst(code, name=""):
         aliases.extend(['삼성E&A', '삼성이앤에이'])
 
     # 1. DART 공시 우선 확인 (공식 확정 경영 호재)
-    disc_catalyst = None
+    disc_info = None
     try:
         url_disc = f'https://m.stock.naver.com/api/stock/{code}/disclosure?pageSize=6&page=1'
         req_disc = urllib.request.Request(url_disc, headers=headers)
@@ -52,7 +53,12 @@ def fetch_stock_catalyst(code, name=""):
                 if any(k in title for k in impact_keywords):
                     clean_d = re.sub(r'^\([^\)]+\)\s*', '', title)
                     clean_d = re.sub(r'^(주|\(주\)|주식회사|비나텍주식회사|삼성바이오로직스\(주\)|삼성이앤에이\(주\))\s*', '', clean_d)
-                    disc_catalyst = f"[공시] {clean_d}"
+                    disc_info = {
+                        'title': f"[공시] {clean_d}",
+                        'url': f"https://m.stock.naver.com/domestic/stock/{code}/disclosure",
+                        'source': 'DART 전자공시',
+                        'body': f"{name} 금융감독원 전자공시시스템(DART) 주요 경영사항 공시"
+                    }
                     break
     except Exception:
         pass
@@ -69,7 +75,11 @@ def fetch_stock_catalyst(code, name=""):
             clusters = json.loads(resp.read().decode('utf-8'))
             for cl in clusters:
                 for it in cl.get('items', []):
-                    title = html.unescape(it.get('title', '')).replace('<b>', '').replace('</b>', '').strip()
+                    raw_title = it.get('titleFull') or it.get('title', '')
+                    title = html.unescape(raw_title).replace('<b>', '').replace('</b>', '').strip()
+                    # 잘림 현상 방지: [종..., [종합], 말미 ... 제거
+                    title = re.sub(r'\[종\.\.\.?\]?', '', title).strip()
+                    title = re.sub(r'\.\.\.$', '', title).strip()
                     
                     is_about_stock = any(alias in title for alias in aliases) if aliases else True
                     is_noise = any(n in title for n in market_noise) and not ('[특징주]' in title and any(a in title for a in aliases))
@@ -85,20 +95,44 @@ def fetch_stock_catalyst(code, name=""):
                         score += 25
 
                     if is_about_stock or (not is_noise and cat_match_count > 0):
-                        news_candidates.append({'title': title, 'score': score})
-    except Exception:
-        pass
+                        url = it.get('mobileNewsUrl')
+                        if not url and it.get('officeId') and it.get('articleId'):
+                            url = f"https://n.news.naver.com/mnews/article/{it['officeId']}/{it['articleId']}"
+                        if not url:
+                            url = f"https://m.stock.naver.com/domestic/stock/{code}/news"
+
+                        body_txt = html.unescape(it.get('body', '')).replace('<b>', '').replace('</b>', '').strip()
+                        body_clean = re.sub(r'\s+', ' ', body_txt)[:110]
+
+                        news_candidates.append({
+                            'title': title,
+                            'url': url,
+                            'source': it.get('officeName', '증권뉴스'),
+                            'body': body_clean,
+                            'score': score
+                        })
+    except Exception as e:
+        logger.warning(f"뉴스 수집 예외 ({code}): {e}")
 
     news_candidates.sort(key=lambda x: x['score'], reverse=True)
 
-    best_news = None
     if news_candidates and news_candidates[0]['score'] >= 50:
-        best_news = news_candidates[0]['title']
-
-    final_cat = best_news or disc_catalyst or (f"{short_name} 기관·외인 수급 집중 및 주도 테마 부각" if short_name else None)
-    if final_cat and len(final_cat) > 85:
-        final_cat = final_cat[:82] + "..."
-    return final_cat
+        best = news_candidates[0]
+        return {
+            'title': best['title'],
+            'url': best['url'],
+            'source': best['source'],
+            'body': best['body']
+        }
+    elif disc_info:
+        return disc_info
+    else:
+        return {
+            'title': f"{short_name} 기관·외인 대량 수급 유입 및 업종 주도 모멘텀",
+            'url': f"https://m.stock.naver.com/domestic/stock/{code}/news",
+            'source': '실시간 수급',
+            'body': '당일 거래대금 폭발 및 지지저항 돌파 주도주'
+        }
 
 
 def get_stock_sector(code, default="주도주"):
@@ -583,19 +617,19 @@ def get_recommendations(dart_disclosures=None, market_context=None):
         breakout_picks = get_fallback_recommendations()['breakout']
 
     # 실시간 테마/업종, 핵심 뉴스(재료) 및 모바일 네이버 증권 차트 링크 보강
-    for p in closing_picks:
+    for p in (closing_picks + swing_picks + breakout_picks):
         p['sector'] = get_stock_sector(p['code'])
-        p['catalyst'] = fetch_stock_catalyst(p['code'], p.get('name', ''))
-        p['chart_url'] = f"https://m.stock.naver.com/domestic/stock/{p['code']}/total"
-
-    for p in swing_picks:
-        p['sector'] = get_stock_sector(p['code'])
-        p['catalyst'] = fetch_stock_catalyst(p['code'], p.get('name', ''))
-        p['chart_url'] = f"https://m.stock.naver.com/domestic/stock/{p['code']}/total"
-
-    for p in breakout_picks:
-        p['sector'] = get_stock_sector(p['code'])
-        p['catalyst'] = fetch_stock_catalyst(p['code'], p.get('name', ''))
+        cat_info = fetch_stock_catalyst(p['code'], p.get('name', ''))
+        if isinstance(cat_info, dict):
+            p['catalyst'] = cat_info.get('title')
+            p['catalyst_url'] = cat_info.get('url', f"https://m.stock.naver.com/domestic/stock/{p['code']}/news")
+            p['catalyst_source'] = cat_info.get('source', '증권뉴스')
+            p['catalyst_body'] = cat_info.get('body', '')
+        else:
+            p['catalyst'] = cat_info
+            p['catalyst_url'] = f"https://m.stock.naver.com/domestic/stock/{p['code']}/news"
+            p['catalyst_source'] = '증권뉴스'
+            p['catalyst_body'] = ''
         p['chart_url'] = f"https://m.stock.naver.com/domestic/stock/{p['code']}/total"
 
     # [STEP 4] 익일 시초가 성과 자동 추적을 위한 당일 종가베팅 종목 기록

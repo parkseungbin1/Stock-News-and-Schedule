@@ -99,7 +99,32 @@ def generate_html():
         sec = pick.get('sector')
         sec_badge = f'<span class="rec-sector-badge">[{sec}]</span>' if sec else ''
         cat = pick.get('catalyst')
-        cat_box = f'<div class="rec-cat-box"><span class="cat-label">📰 핵심재료</span><span class="cat-text">{cat}</span></div>' if cat else ''
+        cat_url = pick.get('catalyst_url', f"https://m.stock.naver.com/domestic/stock/{pick['code']}/news")
+        cat_src = pick.get('catalyst_source', '')
+        cat_body = pick.get('catalyst_body', '')
+        cat_box = ''
+        if cat:
+            src_tag = f'<span class="cat-source">{cat_src}</span>' if cat_src else ''
+            body_html = f'<div class="cat-body-snippet">{cat_body}...</div>' if cat_body else ''
+            cat_box = f'''
+            <div class="rec-cat-card">
+                <div class="cat-card-header">
+                    <div class="cat-badge-group">
+                        <span class="cat-label">📰 핵심재료</span>
+                        {src_tag}
+                    </div>
+                    <a href="{cat_url}" target="_blank" rel="noopener noreferrer" class="cat-link-btn">
+                        기사 원문 확인 ↗
+                    </a>
+                </div>
+                <div class="cat-headline">
+                    <a href="{cat_url}" target="_blank" rel="noopener noreferrer">
+                        {cat}
+                    </a>
+                </div>
+                {body_html}
+            </div>
+            '''
         chart_url = pick.get('chart_url', f"https://m.stock.naver.com/domestic/stock/{pick['code']}/total")
 
         sr_status = pick.get('sr_status')
@@ -846,20 +871,30 @@ def generate_html():
             font-weight: 700;
             margin-left: 4px;
         }}
-        .rec-cat-box {{
+        .rec-cat-box, .rec-cat-card {{
             font-size: 0.84rem;
             color: #f0f9ff;
             background: linear-gradient(135deg, rgba(30, 58, 138, 0.28), rgba(15, 23, 42, 0.75));
             border: 1px solid rgba(56, 189, 248, 0.35);
             border-left: 3px solid #38bdf8;
-            border-radius: 8px;
-            padding: 9px 12px;
+            border-radius: 10px;
+            padding: 10px 12px;
             margin: 10px 0;
             line-height: 1.5;
-            display: flex;
-            align-items: flex-start;
-            gap: 8px;
             word-break: keep-all;
+        }}
+        .cat-card-header {{
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 6px;
+        }}
+        .cat-badge-group {{
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }}
         .cat-label {{
             font-size: 0.74rem;
@@ -870,12 +905,66 @@ def generate_html():
             border-radius: 4px;
             padding: 2px 6px;
             white-space: nowrap;
-            flex-shrink: 0;
-            margin-top: 1px;
+        }}
+        .cat-source {{
+            font-size: 0.72rem;
+            font-weight: 600;
+            color: #94a3b8;
+            background: rgba(148, 163, 184, 0.12);
+            border-radius: 4px;
+            padding: 2px 6px;
+        }}
+        .cat-link-btn {{
+            font-size: 0.73rem;
+            font-weight: 700;
+            color: #38bdf8;
+            text-decoration: none;
+            padding: 2px 8px;
+            background: rgba(56, 189, 248, 0.1);
+            border: 1px solid rgba(56, 189, 248, 0.35);
+            border-radius: 6px;
+            transition: all 0.2s;
+        }}
+        .cat-link-btn:hover {{
+            background: rgba(56, 189, 248, 0.25);
+            color: #ffffff;
+            border-color: #38bdf8;
+        }}
+        .cat-headline {{
+            font-size: 0.86rem;
+            font-weight: 700;
+            line-height: 1.45;
+            margin-bottom: 4px;
+        }}
+        .cat-headline a {{
+            color: #f1f5f9;
+            text-decoration: none;
+            transition: color 0.15s;
+        }}
+        .cat-headline a:hover {{
+            color: #38bdf8;
+            text-decoration: underline;
+        }}
+        .cat-body-snippet {{
+            font-size: 0.76rem;
+            color: #94a3b8;
+            line-height: 1.4;
         }}
         .cat-text {{
             color: #e2e8f0;
             font-weight: 500;
+        }}
+        .hist-cat-link {{
+            color: #38bdf8;
+            text-decoration: none;
+            font-weight: 600;
+        }}
+        .hist-cat-link:hover {{
+            text-decoration: underline;
+        }}
+        .hist-cat-src {{
+            color: #94a3b8;
+            font-size: 0.75rem;
         }}
         .rec-sr-box {{
             font-size: 0.78rem;
