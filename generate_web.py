@@ -99,7 +99,7 @@ def generate_html():
         sec = pick.get('sector')
         sec_badge = f'<span class="rec-sector-badge">[{sec}]</span>' if sec else ''
         cat = pick.get('catalyst')
-        cat_box = f'<div class="rec-cat-box">📰 <b>핵심재료</b>: {cat}</div>' if cat else ''
+        cat_box = f'<div class="rec-cat-box"><span class="cat-label">📰 핵심재료</span><span class="cat-text">{cat}</span></div>' if cat else ''
         chart_url = pick.get('chart_url', f"https://m.stock.naver.com/domestic/stock/{pick['code']}/total")
 
         sr_status = pick.get('sr_status')
@@ -847,14 +847,35 @@ def generate_html():
             margin-left: 4px;
         }}
         .rec-cat-box {{
-            font-size: 0.78rem;
-            color: #93c5fd;
-            background: rgba(59, 130, 246, 0.08);
-            border: 1px solid rgba(59, 130, 246, 0.18);
+            font-size: 0.84rem;
+            color: #f0f9ff;
+            background: linear-gradient(135deg, rgba(30, 58, 138, 0.28), rgba(15, 23, 42, 0.75));
+            border: 1px solid rgba(56, 189, 248, 0.35);
+            border-left: 3px solid #38bdf8;
             border-radius: 8px;
-            padding: 7px 10px;
-            margin: 8px 0;
-            line-height: 1.4;
+            padding: 9px 12px;
+            margin: 10px 0;
+            line-height: 1.5;
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            word-break: keep-all;
+        }}
+        .cat-label {{
+            font-size: 0.74rem;
+            font-weight: 800;
+            color: #38bdf8;
+            background: rgba(56, 189, 248, 0.15);
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            border-radius: 4px;
+            padding: 2px 6px;
+            white-space: nowrap;
+            flex-shrink: 0;
+            margin-top: 1px;
+        }}
+        .cat-text {{
+            color: #e2e8f0;
+            font-weight: 500;
         }}
         .rec-sr-box {{
             font-size: 0.78rem;
