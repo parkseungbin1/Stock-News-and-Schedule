@@ -1,0 +1,56 @@
+name: Smart Stock Alert (cron-job.org Trigger)
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: '강제 실행할 작업 (기본값: auto - 현재 시각 기준 자동 판별)'
+        required: false
+        default: 'auto'
+        type: choice
+        options:
+          - auto
+          - digest_0700
+          - morning_735
+          - disclosure_0810
+          - morning_835
+          - closing_1510
+          - night_1940
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - run: pip install -r requirements.txt
+
+      # DART 공시 상태 캐시 복원
+      - name: Restore disclosure state
+        uses: actions/cache/restore@v4
+        with:
+          path: state
+          key: disclosure-state-${{ github.run_id }}
+          restore-keys: disclosure-state-
+
+      - name: Execute Smart Alert
+        env:
+          DART_API_KEY: ${{ secrets.DART_API_KEY }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          python scripts/smart_dispatcher.py --action "${{ github.event.inputs.action }}"
+
+      - name: Save disclosure state
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: state
+          key: disclosure-state-${{ github.run_id }}
