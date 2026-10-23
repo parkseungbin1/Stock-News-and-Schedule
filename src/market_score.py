@@ -227,6 +227,16 @@ def get_morning_sell_guide(time_label="07:40", is_nxt=True):
     msg += f"• 🧭 CNN 심리: <b>{cnn_score:.0f}점</b> ({cnn_rating.upper()})\n\n"
 
     msg += f"💡 <b>오늘의 실전 매매 액션 플랜</b>\n{guide}\n\n"
+
+    # [STEP 4] 전일 종가베팅 사후 성과 검증 피드백 자동 삽입
+    try:
+        from src.track_record import evaluate_latest_performance
+        track_feedback = evaluate_latest_performance()
+        if track_feedback:
+            msg += f"{track_feedback}\n"
+    except Exception as e:
+        logger.warning(f"트랙 레코드 피드백 생성 실패: {e}")
+
     msg += f"🔗 <b>실시간 대시보드</b>: {DASHBOARD_URL}"
     return msg
 
@@ -317,8 +327,16 @@ def get_closing_betting_guide():
         if closing_picks:
             msg += "\n🔥 <b>오늘의 AI 종가베팅 주도주 TOP 3</b>\n"
             for idx, s in enumerate(closing_picks[:3], 1):
-                msg += f"{idx}. <b>{s['name']}</b> ({s['change_pct']:+.2f}%) | 거래대금 <b>{s['amount_eok']:,}억</b>\n"
-                msg += f"   └ <i>{s['reason']}</i>\n"
+                chart_url = s.get('chart_url', f"https://m.stock.naver.com/domestic/stock/{s['code']}/total")
+                sec = s.get('sector', '주도주')
+                cat = s.get('catalyst')
+
+                msg += f"{idx}. <a href=\"{chart_url}\"><b>{s['name']}</b></a> (<b>{s['change_pct']:+.2f}%</b>) 🏷️ <code>[{sec}]</code>\n"
+                msg += f"   ├ 💰 거래대금: <b>{s['amount_eok']:,}억</b> (종가: {s['price']:,}원)\n"
+                if cat:
+                    msg += f"   ├ 📰 <b>핵심재료</b>: <i>{cat}</i>\n"
+                msg += f"   ├ 🎯 <b>목표가</b>: <b>{s['target_1']:,}원</b> (+3%) | 손절: {s['stop_loss']:,}원 (-2%)\n"
+                msg += f"   └ 📱 <a href=\"{chart_url}\">네이버 증권 차트/호가 바로보기 ↗</a>\n\n"
     except Exception as e:
         logger.warning(f"종가베팅 추천 종목 조회 실패: {e}")
 
@@ -426,8 +444,16 @@ def get_evening_betting_guide():
         if picks:
             msg += "\n🔥 <b>오늘의 주도 대장주 레이더</b>\n"
             for idx, s in enumerate(picks, 1):
-                msg += f"{idx}. <b>{s['name']}</b> ({s['change_pct']:+.2f}%) | 거래대금 <b>{s['amount_eok']:,}억</b>\n"
-                msg += f"   └ <i>{s['reason']}</i>\n"
+                chart_url = s.get('chart_url', f"https://m.stock.naver.com/domestic/stock/{s['code']}/total")
+                sec = s.get('sector', '주도주')
+                cat = s.get('catalyst')
+
+                msg += f"{idx}. <a href=\"{chart_url}\"><b>{s['name']}</b></a> (<b>{s['change_pct']:+.2f}%</b>) 🏷️ <code>[{sec}]</code>\n"
+                msg += f"   ├ 💰 거래대금: <b>{s['amount_eok']:,}억</b> (종가: {s['price']:,}원)\n"
+                if cat:
+                    msg += f"   ├ 📰 <b>핵심재료</b>: <i>{cat}</i>\n"
+                msg += f"   ├ 🎯 <b>목표가</b>: <b>{s['target_1']:,}원</b> (+3%) | 손절: {s['stop_loss']:,}원 (-2%)\n"
+                msg += f"   └ 📱 <a href=\"{chart_url}\">네이버 증권 차트/호가 바로보기 ↗</a>\n\n"
     except Exception as e:
         logger.warning(f"야간 추천 종목 조회 실패: {e}")
 

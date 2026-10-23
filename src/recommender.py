@@ -3,12 +3,71 @@
 1. 🎯 오늘 15:10 종가베팅 (오버나잇: 당일 종가 매수 -> 익일 시초가 +3%~+5% 갭상승 매도)
 2. 🚀 2~5일 스윙 (추세 파동: 20일선 눌림목 반등 -> 2~5일간 +5%~+10% 추세 익절)
 """
+import html
+import json
 import logging
+import urllib.request
 from datetime import datetime, timezone, timedelta
 import pandas as pd
 
 logger = logging.getLogger(__name__)
 KST = timezone(timedelta(hours=9))
+
+_SECTOR_MAP = {}
+
+
+def fetch_stock_catalyst(code):
+    """네이버 증권 모바일 API에서 해당 종목의 최신 1위 핵심 뉴스 헤드라인 추출 (재료)"""
+    url = f'https://m.stock.naver.com/api/news/stock/{code}?pageSize=3&page=1'
+    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
+    try:
+        req = urllib.request.Request(url, headers=headers)
+        with urllib.request.urlopen(req, timeout=3) as resp:
+            data = json.loads(resp.read().decode('utf-8'))
+            if data and isinstance(data, list) and len(data) > 0:
+                items = data[0].get('items', [])
+                if items:
+                    title = items[0].get('title', '')
+                    clean_title = html.unescape(title).replace('<b>', '').replace('</b>', '').strip()
+                    if len(clean_title) > 42:
+                        clean_title = clean_title[:40] + ".."
+                    return clean_title
+    except Exception:
+        pass
+    return None
+
+
+def get_stock_sector(code, default="주도주"):
+    """KRX-DESC 기반 종목별 업종/섹터 매핑 캐시"""
+    global _SECTOR_MAP
+    if not _SECTOR_MAP:
+        try:
+            import FinanceDataReader as fdr
+            desc = fdr.StockListing('KRX-DESC')
+            if not desc.empty and 'Code' in desc.columns and 'Industry' in desc.columns:
+                for _, r in desc.iterrows():
+                    c = str(r['Code'])
+                    ind = str(r['Industry']) if pd.notna(r['Industry']) else ''
+                    sec = str(r['Sector']) if ('Sector' in r and pd.notna(r['Sector'])) else ''
+                    val = ind or sec
+                    if '반도체' in val:
+                        val = '반도체'
+                    elif '전기' in val or '전력' in val:
+                        val = '전력/전기'
+                    elif '바이오' in val or '의약' in val or '제약' in val:
+                        val = '제약/바이오'
+                    elif '자동차' in val:
+                        val = '자동차/부품'
+                    elif '화학' in val or '배터리' in val or '전지' in val:
+                        val = '2차전지'
+                    elif '통신' in val or 'IT' in val or '소프트웨어' in val:
+                        val = 'IT/SW'
+                    elif len(val) > 8:
+                        val = val[:8]
+                    _SECTOR_MAP[c] = val or default
+        except Exception as e:
+            logger.warning(f"업종 매핑 로드 실패: {e}")
+    return _SECTOR_MAP.get(code, default)
 
 
 def is_common_stock(row):
@@ -323,6 +382,29 @@ def get_recommendations(dart_disclosures=None, market_context=None):
         swing_picks = get_fallback_recommendations()['swing']
     if not breakout_picks:
         breakout_picks = get_fallback_recommendations()['breakout']
+
+    # 실시간 테마/업종, 핵심 뉴스(재료) 및 모바일 네이버 증권 차트 링크 보강
+    for p in closing_picks:
+        p['sector'] = get_stock_sector(p['code'])
+        p['catalyst'] = fetch_stock_catalyst(p['code'])
+        p['chart_url'] = f"https://m.stock.naver.com/domestic/stock/{p['code']}/total"
+
+    for p in swing_picks:
+        p['sector'] = get_stock_sector(p['code'])
+        p['catalyst'] = fetch_stock_catalyst(p['code'])
+        p['chart_url'] = f"https://m.stock.naver.com/domestic/stock/{p['code']}/total"
+
+    for p in breakout_picks:
+        p['sector'] = get_stock_sector(p['code'])
+        p['catalyst'] = fetch_stock_catalyst(p['code'])
+        p['chart_url'] = f"https://m.stock.naver.com/domestic/stock/{p['code']}/total"
+
+    # [STEP 4] 익일 시초가 성과 자동 추적을 위한 당일 종가베팅 종목 기록
+    try:
+        from src.track_record import record_closing_picks
+        record_closing_picks(closing_picks)
+    except Exception as e:
+        logger.warning(f"트랙 레코드 기록 실패: {e}")
 
     return {
         'regime': regime,
