@@ -2,10 +2,9 @@ name: Disclosure Alert
 
 on:
   schedule:
-    # UTC 기준. 07:10 KST = 22:10 UTC(전날), 15:00 KST = 06:00 UTC
-    # 하루 2회 x 약 1~2분 → 월 100분 내외 (비공개 저장소 무료 2,000분 이내)
-    - cron: '10 22 * * 0-4'   # 월~금 아침 (IR 일정 요약 포함)
-    - cron: '0 6 * * 1-5'     # 월~금 오후 3시
+    # 깃허브 대기열 지연 감안하여 1시간 앞당겨 예약
+    - cron: '45 21 * * 0-4'   # 06:45 KST 예약 -> 지연 후 07:30~07:50 KST 발송 (IR 일정 요약 포함)
+    - cron: '45 5 * * 1-5'     # 14:45 KST 예약 -> 지연 후 15:00 KST 발송 (장 마감 신규 공시)
   workflow_dispatch:
     inputs:
       morning:
@@ -42,7 +41,7 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
-          if [ "${{ github.event.schedule }}" = "10 22 * * 0-4" ] || [ "${{ inputs.morning }}" = "true" ]; then
+          if [ "${{ github.event.schedule }}" = "45 21 * * 0-4" ] || [ "${{ inputs.morning }}" = "true" ]; then
             python disclosure_alert.py --morning
           else
             python disclosure_alert.py
