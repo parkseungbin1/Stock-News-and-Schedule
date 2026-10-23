@@ -33,8 +33,6 @@ def main():
         print("\n전송할 메시지:")
         print("[날씨]\n", digest['weather_message'])
         print("-" * 30)
-        print("[시황 스코어]\n", digest['market_message'])
-        print("-" * 30)
         print("[경제]\n", digest['economic_message'])
         print("-" * 30)
 
@@ -47,25 +45,16 @@ def main():
         )
         
         time.sleep(2)
-
-        # 2. 오늘의 시황 스코어 & 해설 전송
-        success_m = send_economic_calendar_to_telegram_sync(
-            digest['market_message'],
-            Config.TELEGRAM_BOT_TOKEN,
-            Config.TELEGRAM_CHAT_ID,
-        )
-
-        time.sleep(2)
         
-        # 3. 경제 지표 전송
+        # 2. 경제 지표 전송
         success_e = send_economic_calendar_to_telegram_sync(
             digest['economic_message'],
             Config.TELEGRAM_BOT_TOKEN,
             Config.TELEGRAM_CHAT_ID,
         )
 
-        if success_w and success_m and success_e:
-            print("✓ 날씨 + 시황 스코어 + 경제 캘린더 전송 성공!")
+        if success_w and success_e:
+            print("✓ 날씨 + 경제 캘린더 전송 성공!")
         else:
             print("✗ 텔레그램 전송 실패")
             sys.exit(1)

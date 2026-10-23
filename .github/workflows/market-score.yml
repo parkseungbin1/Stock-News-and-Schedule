@@ -28,7 +28,7 @@ on:
 jobs:
   alert:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 8
 
     steps:
       - uses: actions/checkout@v5
@@ -40,13 +40,26 @@ jobs:
 
       - run: pip install -r requirements.txt
 
+      - name: Determine Alert Mode
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ github.event.inputs.mode }}" != "auto" ] && [ "${{ github.event.inputs.mode }}" != "" ]; then
+            MODE="${{ github.event.inputs.mode }}"
+          elif [ "${{ github.event.schedule }}" = "40 22 * * 0-4" ]; then
+            MODE="morning_740"
+          elif [ "${{ github.event.schedule }}" = "40 23 * * 0-4" ]; then
+            MODE="morning_840"
+          elif [ "${{ github.event.schedule }}" = "10 6 * * 1-5" ]; then
+            MODE="closing"
+          elif [ "${{ github.event.schedule }}" = "40 10 * * 1-5" ]; then
+            MODE="night"
+          else
+            MODE="auto"
+          fi
+          echo "Selected mode: $MODE (event: ${{ github.event_name }}, schedule: ${{ github.event.schedule }})"
+          echo "MODE=$MODE" >> $GITHUB_ENV
+
       - name: Send Market Alert
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        run: |
-          if [ "${{ github.event.inputs.mode }}" != "" ] && [ "${{ github.event.inputs.mode }}" != "auto" ]; then
-            python market_alert.py --mode ${{ github.event.inputs.mode }}
-          else
-            python market_alert.py
-          fi
+        run: python market_alert.py --mode $MODE
