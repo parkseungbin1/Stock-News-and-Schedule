@@ -33,6 +33,11 @@ def main():
         default='auto',
         help="발송 모드 지정 (기본값: auto - 현재 KST 시간 자동 판별)"
     )
+    parser.add_argument(
+        '--force',
+        action='store_true',
+        help="만료 시간 가드를 무시하고 강제 발송 (수동 테스트용)"
+    )
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO, format='%(levelname)s %(message)s')
@@ -43,6 +48,29 @@ def main():
     if not (token and chat_id):
         print("TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID가 설정되지 않았습니다.")
         sys.exit(1)
+
+    # [만료 가드] 서버 지연으로 이미 장이 개장/마감된 이후 늦게 켜졌다면 발송 취소 (뒷북 알림 방지)
+    if not args.force:
+        from datetime import datetime, timezone, timedelta
+        kst = timezone(timedelta(hours=9))
+        now = datetime.now(kst)
+        time_str = now.strftime('%H:%M')
+
+        if args.mode in ('morning_740', 'morning') and (now.hour > 8 or (now.hour == 8 and now.minute > 5)):
+            print(f"⚠️ [발송 건너뜀] 현재 시각({time_str} KST)은 08:00 NXT 개장 이후입니다. 지연 실행된 07:40 가이드 발송을 취소합니다.")
+            return
+
+        if args.mode == 'morning_840' and (now.hour > 9 or (now.hour == 9 and now.minute > 5)):
+            print(f"⚠️ [발송 건너뜀] 현재 시각({time_str} KST)은 09:00 정규장 개장 이후입니다. 지연 실행된 08:40 가이드 발송을 취소합니다.")
+            return
+
+        if args.mode == 'closing' and (now.hour > 15 or (now.hour == 15 and now.minute > 35)):
+            print(f"⚠️ [발송 건너뜀] 현재 시각({time_str} KST)은 15:30 정규장 마감 이후입니다. 지연 실행된 15:10 가이드 발송을 취소합니다.")
+            return
+
+        if args.mode == 'night' and (now.hour > 20 or (now.hour == 20 and now.minute > 5)):
+            print(f"⚠️ [발송 건너뜀] 현재 시각({time_str} KST)은 20:00 NXT 마감 이후입니다. 지연 실행된 19:40 가이드 발송을 취소합니다.")
+            return
 
     print(f"시황 가이드 생성 중... (모드: {args.mode})")
     msg = get_market_score_message(mode=args.mode)
