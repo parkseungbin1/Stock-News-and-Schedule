@@ -1,10 +1,6 @@
 name: Disclosure Alert
 
 on:
-  schedule:
-    # 깃허브 대기열 지연 감안하여 1시간 앞당겨 예약
-    - cron: '45 21 * * 0-4'   # 06:45 KST 예약 -> 지연 후 07:30~07:50 KST 발송 (IR 일정 요약 포함)
-    - cron: '45 5 * * 1-5'     # 14:45 KST 예약 -> 지연 후 15:00 KST 발송 (장 마감 신규 공시)
   workflow_dispatch:
     inputs:
       morning:
@@ -41,7 +37,7 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
-          if [ "${{ github.event.schedule }}" = "45 21 * * 0-4" ] || [ "${{ inputs.morning }}" = "true" ]; then
+          if [ "${{ inputs.morning }}" = "true" ]; then
             python disclosure_alert.py --morning
           else
             python disclosure_alert.py
