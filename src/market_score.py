@@ -330,6 +330,8 @@ def get_closing_betting_guide():
                 chart_url = s.get('chart_url', f"https://m.stock.naver.com/domestic/stock/{s['code']}/total")
                 sec = s.get('sector', '주도주')
                 cat = s.get('catalyst')
+                cat_url = s.get('catalyst_url') or chart_url
+                cat_src = s.get('catalyst_source', '')
                 sr_status = s.get('sr_status')
                 support_p = s.get('support_price')
                 next_res = s.get('next_resistance')
@@ -341,7 +343,8 @@ def get_closing_betting_guide():
                     if support_p and next_res:
                         msg += f"   ├ 🛡️ <b>지지</b>: {support_p:,}원 | 🚀 <b>저항</b>: {next_res}\n"
                 if cat:
-                    msg += f"   ├ 📰 <b>핵심재료</b>: <i>{cat}</i>\n"
+                    src_tag = f" ({cat_src})" if cat_src else ""
+                    msg += f"   ├ 📰 <b>핵심재료</b>: <a href=\"{cat_url}\"><i>{cat}</i>{src_tag} ↗</a>\n"
                 msg += f"   ├ 🎯 <b>목표가</b>: <b>{s['target_1']:,}원</b> (+3%) | 손절: {s['stop_loss']:,}원 (-2%)\n"
                 msg += f"   └ 📱 <a href=\"{chart_url}\">네이버 증권 차트/호가 바로보기 ↗</a>\n\n"
     except Exception as e:
@@ -454,6 +457,8 @@ def get_evening_betting_guide():
                 chart_url = s.get('chart_url', f"https://m.stock.naver.com/domestic/stock/{s['code']}/total")
                 sec = s.get('sector', '주도주')
                 cat = s.get('catalyst')
+                cat_url = s.get('catalyst_url') or chart_url
+                cat_src = s.get('catalyst_source', '')
                 sr_status = s.get('sr_status')
                 support_p = s.get('support_price')
                 next_res = s.get('next_resistance')
@@ -465,7 +470,8 @@ def get_evening_betting_guide():
                     if support_p and next_res:
                         msg += f"   ├ 🛡️ <b>지지</b>: {support_p:,}원 | 🚀 <b>저항</b>: {next_res}\n"
                 if cat:
-                    msg += f"   ├ 📰 <b>핵심재료</b>: <i>{cat}</i>\n"
+                    src_tag = f" ({cat_src})" if cat_src else ""
+                    msg += f"   ├ 📰 <b>핵심재료</b>: <a href=\"{cat_url}\"><i>{cat}</i>{src_tag} ↗</a>\n"
                 msg += f"   ├ 🎯 <b>목표가</b>: <b>{s['target_1']:,}원</b> (+3%) | 손절: {s['stop_loss']:,}원 (-2%)\n"
                 msg += f"   └ 📱 <a href=\"{chart_url}\">네이버 증권 차트/호가 바로보기 ↗</a>\n\n"
     except Exception as e:

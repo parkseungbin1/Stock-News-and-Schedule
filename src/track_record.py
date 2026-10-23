@@ -72,6 +72,8 @@ def record_closing_picks(picks):
             'market': p.get('market', 'KRX'),
             'sector': p.get('sector', '주도주'),
             'catalyst': p.get('catalyst', ''),
+            'catalyst_url': p.get('catalyst_url', f"https://m.stock.naver.com/domestic/stock/{p['code']}/news"),
+            'catalyst_source': p.get('catalyst_source', ''),
             'close_price': p.get('price', 0),
             'change_pct': p.get('change_pct', 0),
             'target_1': p.get('target_1', 0),
@@ -288,7 +290,10 @@ def render_monthly_history_html():
             else:
                 res_str = f"종가 <b>{close_p:,}원</b> 매수 체결 → <i>내일 아침 09:00 시초가 확인 대기</i>"
 
-            cat_html = f"<div class='hist-cat'>📰 <b>핵심재료</b>: {cat}</div>" if cat else ""
+            cat_url = p.get('catalyst_url', f"https://m.stock.naver.com/domestic/stock/{code}/news")
+            cat_src = p.get('catalyst_source', '')
+            src_str = f" <span class='hist-cat-src'>({cat_src})</span>" if cat_src else ""
+            cat_html = f"<div class='hist-cat'>📰 <b>핵심재료</b>: <a href='{cat_url}' target='_blank' rel='noopener noreferrer' class='hist-cat-link'>{cat}{src_str} ↗</a></div>" if cat else ""
 
             items_html += f"""
             <div class="hist-item">
