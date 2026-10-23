@@ -1,9 +1,6 @@
 name: Daily Telegram Digest
 
 on:
-  schedule:
-    # 깃허브 러너 대기열 지연을 감안하여 05:45 KST (20:45 UTC) 예약 -> 지연 후 06:45~07:00 KST 발송
-    - cron: '45 20 * * *'
   workflow_dispatch:
 
 jobs:

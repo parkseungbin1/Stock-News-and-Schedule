@@ -1,16 +1,6 @@
 name: Market Score & Betting Alert
 
 on:
-  schedule:
-    # 깃허브 무료 러너의 전 세계 출근시간 대기열 지연(40~60분)을 선반영하여 1시간 10분 앞당겨 예약
-    # 1. [1차 07:40 가이드용] = 21:30 UTC (06:30 KST 예약 -> 지연 후 07:15~07:35 KST 발송)
-    - cron: '30 21 * * 0-4'
-    # 2. [2차 08:40 가이드용] = 22:30 UTC (07:30 KST 예약 -> 지연 후 08:15~08:35 KST 발송)
-    - cron: '30 22 * * 0-4'
-    # 3. [3차 15:10 가이드용] = 05:55 UTC (14:55 KST 예약 -> 지연 후 15:05~15:10 KST 발송)
-    - cron: '55 5 * * 1-5'
-    # 4. [4차 19:40 가이드용] = 10:25 UTC (19:25 KST 예약 -> 지연 후 19:35~19:40 KST 발송)
-    - cron: '25 10 * * 1-5'
   workflow_dispatch:
     inputs:
       mode:
@@ -44,18 +34,10 @@ jobs:
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ github.event.inputs.mode }}" != "auto" ] && [ "${{ github.event.inputs.mode }}" != "" ]; then
             MODE="${{ github.event.inputs.mode }}"
-          elif [ "${{ github.event.schedule }}" = "30 21 * * 0-4" ]; then
-            MODE="morning_740"
-          elif [ "${{ github.event.schedule }}" = "30 22 * * 0-4" ]; then
-            MODE="morning_840"
-          elif [ "${{ github.event.schedule }}" = "55 5 * * 1-5" ]; then
-            MODE="closing"
-          elif [ "${{ github.event.schedule }}" = "25 10 * * 1-5" ]; then
-            MODE="night"
           else
             MODE="auto"
           fi
-          echo "Selected mode: $MODE (event: ${{ github.event_name }}, schedule: ${{ github.event.schedule }})"
+          echo "Selected mode: $MODE"
           echo "MODE=$MODE" >> $GITHUB_ENV
 
       - name: Send Market Alert
