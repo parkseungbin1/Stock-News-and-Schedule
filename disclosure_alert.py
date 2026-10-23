@@ -57,15 +57,18 @@ def main():
     if args.morning:
         d.backfill_ir(dart, state)
         blocks = d.today_ir_blocks(state, watch)
-        header = f"🗓 <b>오늘의 실적발표(IR) 일정</b> ({now.strftime('%m/%d')})\n\n"
-        messages += d.split_messages(header, blocks) if blocks else [header + "오늘 예정된 IR 공시가 없습니다."]
+        if blocks:
+            header = f"🗓 <b>오늘의 실적발표(IR) 일정</b> ({now.strftime('%m/%d')})\n\n"
+            messages += d.split_messages(header, blocks)
 
     sections = d.collect_new_disclosures(dart, state, watch)
     slot = '오전' if now.hour < 12 else '오후'
     for title, blocks in sections:
         messages += d.split_messages(f"{title} ({now.strftime('%m/%d')} {slot})\n\n", blocks)
-    if not sections:
-        logging.info("신규 알림 대상 공시 없음")
+    
+    if not messages:
+        logging.info("신규 알림 대상 공시 및 예정된 IR 없음 - 발송 생략")
+        return
 
     ok = True
     for m in messages:

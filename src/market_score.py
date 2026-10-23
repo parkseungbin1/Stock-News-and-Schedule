@@ -203,7 +203,9 @@ def get_morning_sell_guide(time_label="07:40", is_nxt=True):
     vix_str = f"🌪️ VIX: <b>{vix_close}</b> ({vix_ratio:+.2f}%)" if vix_close else ""
     us10y_str = f"📈 美10년물: <b>{us10y_price:.2f}%</b> ({us10y_diff:+.2f}%p)" if us10y_price else ""
 
-    msg = f"🌅 <b>[{title_desc} 시초가 매도 가이드] {time_label}</b>\n"
+    target_title = "08:00 NXT 프리마켓 시초가 매도 가이드" if is_nxt else "09:00 정규장 최종 시초가 매도 가이드"
+
+    msg = f"🌅 <b>[{target_title}]</b> ({time_label} 알림)\n"
     msg += "━━━━━━━━━━━━━━━━━━━━\n"
     msg += f"🎯 <b>핵심 전략</b>: <b>{core_action}</b>\n"
     msg += f"📊 <b>시장 점수</b>: <b>{score}점</b> [{gauge}] {icon} | <b>{status_label}</b>\n"
@@ -292,7 +294,7 @@ def get_closing_betting_guide():
     vix_str = f"🌪️ VIX: <b>{vix_close}</b>" if vix_close else ""
     us10y_str = f"📈 美10년물: <b>{us10y_price:.2f}%</b>" if us10y_price else ""
 
-    msg = f"🎯 <b>[정규장 1차 종가베팅 가이드] 15:10</b>\n"
+    msg = f"🎯 <b>[15:30 정규장 1차 종가베팅 가이드]</b> (15:10 알림)\n"
     msg += "━━━━━━━━━━━━━━━━━━━━\n"
     msg += f"🎯 <b>핵심 전략</b>: <b>{core_action}</b>\n"
     msg += f"📊 <b>시장 점수</b>: <b>{score}점</b> [{gauge}] | <b>{betting_label}</b>\n"
@@ -306,8 +308,21 @@ def get_closing_betting_guide():
     if vix_str and us10y_str:
         msg += f"• {vix_str} | {us10y_str}\n"
 
-    msg += f"\n💡 <b>정규장 종가베팅 전략</b>\n{guide}\n\n"
-    msg += f"🔗 <b>실시간 대시보드</b>: {DASHBOARD_URL}"
+    msg += f"\n💡 <b>정규장 종가베팅 전략</b>\n{guide}\n"
+
+    try:
+        from src.recommender import get_recommendations
+        rec = get_recommendations()
+        closing_picks = rec.get('closing', [])
+        if closing_picks:
+            msg += "\n🔥 <b>오늘의 AI 종가베팅 주도주 TOP 3</b>\n"
+            for idx, s in enumerate(closing_picks[:3], 1):
+                msg += f"{idx}. <b>{s['name']}</b> ({s['change_pct']:+.2f}%) | 거래대금 <b>{s['amount_eok']:,}억</b>\n"
+                msg += f"   └ <i>{s['reason']}</i>\n"
+    except Exception as e:
+        logger.warning(f"종가베팅 추천 종목 조회 실패: {e}")
+
+    msg += f"\n🔗 <b>실시간 대시보드</b>: {DASHBOARD_URL}"
     return msg
 
 
@@ -376,7 +391,7 @@ def get_evening_betting_guide():
     vix_str = f"🌪️ VIX: <b>{vix_close}</b>" if vix_close else ""
     us10y_str = f"📈 美10년물: <b>{us10y_price:.2f}%</b>" if us10y_price else ""
 
-    msg = f"🎯 <b>[NXT 8시 마감 최종 종가베팅 가이드] 19:40</b>\n"
+    msg = f"🎯 <b>[20:00 NXT 야간 최종 종가베팅 가이드]</b> (19:40 알림)\n"
     msg += "━━━━━━━━━━━━━━━━━━━━\n"
     msg += f"🎯 <b>핵심 전략</b>: <b>{core_action}</b>\n"
     msg += f"📊 <b>최종 점수</b>: <b>{score}점</b> [{gauge}] | <b>{betting_label}</b>\n"
@@ -392,8 +407,31 @@ def get_evening_betting_guide():
         msg += f"• {vix_str} | {us10y_str}\n"
     msg += f"• 🧭 CNN 심리: <b>{cnn_score:.0f}점</b> ({cnn_rating.upper()})\n\n"
 
-    msg += f"💡 <b>20:00 마감 전 최종 종가베팅 전략</b>\n{guide}\n\n"
-    msg += f"🔗 <b>실시간 대시보드</b>: {DASHBOARD_URL}"
+    msg += f"💡 <b>20:00 마감 전 최종 종가베팅 전략</b>\n{guide}\n"
+
+    try:
+        from src.recommender import get_recommendations
+        rec = get_recommendations()
+        closing_picks = rec.get('closing', [])
+        breakout_picks = rec.get('breakout', [])
+        seen_codes = set()
+        picks = []
+        for s in (closing_picks[:2] + breakout_picks[:2]):
+            if s['code'] not in seen_codes:
+                seen_codes.add(s['code'])
+                picks.append(s)
+            if len(picks) >= 3:
+                break
+
+        if picks:
+            msg += "\n🔥 <b>오늘의 주도 대장주 레이더</b>\n"
+            for idx, s in enumerate(picks, 1):
+                msg += f"{idx}. <b>{s['name']}</b> ({s['change_pct']:+.2f}%) | 거래대금 <b>{s['amount_eok']:,}억</b>\n"
+                msg += f"   └ <i>{s['reason']}</i>\n"
+    except Exception as e:
+        logger.warning(f"야간 추천 종목 조회 실패: {e}")
+
+    msg += f"\n🔗 <b>실시간 대시보드</b>: {DASHBOARD_URL}"
     return msg
 
 

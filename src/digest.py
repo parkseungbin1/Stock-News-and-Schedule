@@ -7,8 +7,8 @@ from src.weather import get_weather_forecast_message
 from src.market_score import get_market_score_message
 
 
-def build_daily_digest():
-    """날씨, 오늘의 시황 스코어, 경제 캘린더를 합친 텔레그램 메시지 생성"""
+def build_daily_digest(include_market=False):
+    """날씨, 오늘의 시황 스코어(선택), 경제 캘린더를 합친 텔레그램 메시지 생성"""
     weather_data, weather_message = get_weather_forecast_message(
         latitude=Config.WEATHER_LATITUDE,
         longitude=Config.WEATHER_LONGITUDE,
@@ -17,7 +17,7 @@ def build_daily_digest():
     )
 
     events, economic_message = get_high_impact_events()
-    market_message = get_market_score_message()
+    market_message = get_market_score_message() if include_market else ""
 
     return {
         'weather_data': weather_data,
