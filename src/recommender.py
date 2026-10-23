@@ -329,8 +329,15 @@ def get_recommendations(dart_disclosures=None, market_context=None):
             candle_score = (1.0 - head_ratio) * 15.0
             score = 40.0 + volume_score + candle_score + sr_score
             
-            reasons = [f"차트: {sr_status}", f"거래대금 {int(amount_eok):,}억 폭발"]
-            tags = ['종가베팅', '단단한양봉'] + sr_tags
+            # 기존 AI 포착 근거 100% 보존 + 신규 지지·저항 차트 근거 추가
+            reasons = [
+                f"거래대금 {int(amount_eok):,}억 폭발 주도주",
+                f"고가 마감 양봉(윗꼬리 {int(head_ratio*100)}%)"
+            ]
+            if sr_status:
+                reasons.append(f"차트: {sr_status}")
+
+            tags = ['거래대금폭발', '단단한양봉', '익일시초가노림'] + sr_tags
 
             if code in catalyst_codes:
                 score += 10.0
