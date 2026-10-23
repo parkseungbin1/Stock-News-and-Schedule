@@ -101,10 +101,12 @@
 
 | 파일 경로 | 작업 내용 |
 | :--- | :--- |
-| [.github/workflows/smart-alert.yml](file:///c:/Users/BINI/Desktop/news-stock/.github/workflows/smart-alert.yml) | cron-job.org 연동용 단일 워크플로우 (캐시 복원 및 디스패처 실행) |
+| [src/recommender.py](file:///c:/Users/BINI/Desktop/news-stock/src/recommender.py) | **[STEP 1]** 실시간 1위 뉴스(재료) 및 업종/테마 자동 추출, 모바일 차트 링크 탑재 |
+| [src/track_record.py](file:///c:/Users/BINI/Desktop/news-stock/src/track_record.py) | **[STEP 4]** 전일 종가베팅 종목 익일 시초가 갭상승 자동 추적 및 누적 승률 산출 |
+| [src/market_score.py](file:///c:/Users/BINI/Desktop/news-stock/src/market_score.py) | 모바일 네이버 증권 원클릭 차트/호가 링크 & 아침 트랙 레코드 성과 피드백 연동 |
+| [.github/workflows/smart-alert.yml](file:///c:/Users/BINI/Desktop/news-stock/.github/workflows/smart-alert.yml) | cron-job.org 연동용 단일 워크플로우 (상태 캐시 복원 및 디스패처 실행) |
 | [scripts/smart_dispatcher.py](file:///c:/Users/BINI/Desktop/news-stock/scripts/smart_dispatcher.py) | KST 시간대 자동 분기, 수동 액션 처리, 주말 스킵 가드 |
 | [market_alert.py](file:///c:/Users/BINI/Desktop/news-stock/market_alert.py) | 세션별 만료 가드 장착, `--mode` 세분화 및 AI 주도주 연동 |
-| [src/market_score.py](file:///c:/Users/BINI/Desktop/news-stock/src/market_score.py) | 15:10 및 19:40 메시지에 실시간 종가베팅 TOP 3 렌더링 로직 추가 |
 | [daily_digest.py](file:///c:/Users/BINI/Desktop/news-stock/daily_digest.py) | 중복 시장 점수 제거, 날씨+경제 캘린더 전용 분리 |
 | [disclosure_alert.py](file:///c:/Users/BINI/Desktop/news-stock/disclosure_alert.py) | 공시 미발생 시 스팸 억제 로직 추가 |
 | [CRON_SETUP_GUIDE.md](file:///c:/Users/BINI/Desktop/news-stock/CRON_SETUP_GUIDE.md) | 외부 스케줄러(cron-job.org) 세부 관리 가이드 및 복구 cURL 모음 |
@@ -114,16 +116,16 @@
 
 ---
 
-## 5. 🚀 향후 2차 고도화 제안 (승률 & 시각화 강화 로드맵)
+## 5. 🚀 고도화 완료 및 향후 추가 제안
 
-1. **외인·기관 수급 쌍끌이 퀀트 필터**:
-   - 종가베팅 선별 시 네이버 증권 개별 종목 수급 API를 연동하여 `외인 + 기관 동반 순매수` 종목 가산점 부여 (익일 갭상승 승률 70%+ 확보).
-2. **실시간 테마 & 핵심 뉴스(Catalyst) 1줄 요약 탑재**:
-   - 종목명 밑에 `[반도체/CXL]` 테마 태그와 당일 1등 뉴스 헤드라인(`📰 미국향 대규모 수주 잭팟`)을 자동 추출하여 재료 명확화.
-3. **텔레그램 카드형 UI & 네이버 증권 원클릭 차트 링크**:
-   - 메시지 내 종목명 클릭 시 네이버 증권 모바일 차트로 즉시 연결되는 하이퍼링크 탑재.
-4. **전일 종가베팅 성과(트랙 레코드) 자동 검증**:
-   - 매일 아침 알림에 "어제 종가베팅 3종목의 오늘 시초가 결과: 평균 +3.8% 갭상승 성공" 자동 피드백 제공.
+- ✅ **[완료] STEP 1. 실시간 재료 & 테마 자동 추출**:
+  - 네이버 증권 모바일 뉴스 API에서 당일 1등 뉴스 헤드라인(`📰 핵심재료`) 추출 및 업종(`🏷️ [반도체]`, `[2차전지]` 등) 자동 태깅 완료.
+- ✅ **[완료] STEP 4. 전일 종가베팅 성과(트랙 레코드) 자동 검증**:
+  - `state/betting_track_record.json` 기반 익일 시초가 갭상승 수익률 및 성공률 자동 계산, 아침 알림에 피드백 탑재 완료.
+- ✅ **[완료] 모바일 네이버 증권 원클릭 차트/호가 링크**:
+  - 텔레그램 메시지 내 종목명 또는 링크 터치 시 실시간 모바일 일봉/호가창으로 즉시 이동 연동 완료.
+- 💡 **[향후 제안] 외인·기관 수급 쌍끌이 가중치 필터**:
+  - 네이버 종목별 실시간 수급 API 연동 가산점 부여.
 
 ---
-*보고서 작성 완료: 프로젝트 루트의 `PROJECT_WORK_REPORT.md`에서 언제든 확인 가능합니다.*
+*보고서 최신 갱신 완료: 프로젝트 루트의 `PROJECT_WORK_REPORT.md`에서 언제든 확인 가능합니다.*
