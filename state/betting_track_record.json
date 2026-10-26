@@ -1,0 +1,202 @@
+{
+  "history": [
+    {
+      "date": "2026-10-26",
+      "evaluated": false,
+      "picks": [
+        {
+          "code": "437730",
+          "name": "삼현",
+          "market": "KOSDAQ",
+          "sector": "자동차/부품",
+          "catalyst": "삼현, 북미 최대 자동화 전시회 참가…글로벌 로봇 공급망 공략",
+          "catalyst_url": "https://n.news.naver.com/mnews/article/018/0006311842",
+          "catalyst_source": "이데일리",
+          "close_price": 46800,
+          "change_pct": 5.64,
+          "target_1": 48204,
+          "stop_loss": 45864,
+          "chart_url": "https://m.stock.naver.com/domestic/stock/437730/total"
+        },
+        {
+          "code": "179880",
+          "name": "멜콘",
+          "market": "KOSDAQ",
+          "sector": "기계/장비",
+          "catalyst": "멜콘, 청약 경쟁률 1741.48대 1…증거금 6.7兆",
+          "catalyst_url": "https://n.news.naver.com/mnews/article/003/0014230817",
+          "catalyst_source": "뉴시스",
+          "close_price": 13140,
+          "change_pct": 7.27,
+          "target_1": 13534,
+          "stop_loss": 12877,
+          "chart_url": "https://m.stock.naver.com/domestic/stock/179880/total"
+        },
+        {
+          "code": "468670",
+          "name": "브릴스",
+          "market": "KOSDAQ",
+          "sector": "AI/로봇",
+          "catalyst": "브릴스 기관·외인 대량 수급 유입 및 업종 주도 모멘텀",
+          "catalyst_url": "https://m.stock.naver.com/domestic/stock/468670/news",
+          "catalyst_source": "실시간 수급",
+          "close_price": 16750,
+          "change_pct": 6.08,
+          "target_1": 17252,
+          "stop_loss": 16415,
+          "chart_url": "https://m.stock.naver.com/domestic/stock/468670/total"
+        }
+      ]
+    },
+    {
+      "date": "2026-10-23",
+      "evaluated": true,
+      "success_count": 3,
+      "total_count": 3,
+      "picks": [
+        {
+          "code": "042700",
+          "name": "한미반도체",
+          "market": "KOSPI",
+          "sector": "반도체",
+          "catalyst": "TC본더 글로벌 독점 공급 수혜 및 HBM 증설",
+          "catalyst_url": "https://m.stock.naver.com/domestic/stock/042700/news",
+          "catalyst_source": "머니투데이",
+          "close_price": 124500,
+          "open_price": 129000,
+          "gap_pct": 3.61,
+          "is_success": true,
+          "chart_url": "https://m.stock.naver.com/domestic/stock/042700/total"
+        },
+        {
+          "code": "028050",
+          "name": "삼성E&A",
+          "market": "KOSPI",
+          "sector": "플랜트/건설",
+          "catalyst": "사우디 아람코 파드힐리 가스전 대규모 수주 잭팟",
+          "catalyst_url": "https://m.stock.naver.com/domestic/stock/028050/news",
+          "catalyst_source": "한국경제",
+          "close_price": 27500,
+          "open_price": 28600,
+          "gap_pct": 4.0,
+          "is_success": true,
+          "chart_url": "https://m.stock.naver.com/domestic/stock/028050/total"
+        },
+        {
+          "code": "126340",
+          "name": "비나텍",
+          "market": "KOSDAQ",
+          "sector": "2차전지",
+          "catalyst": "슈퍼 커패시터 북미 데이터센터 백업 전원 공급 기대",
+          "catalyst_url": "https://m.stock.naver.com/domestic/stock/126340/news",
+          "catalyst_source": "이데일리",
+          "close_price": 118600,
+          "open_price": 121500,
+          "gap_pct": 2.45,
+          "is_success": true,
+          "chart_url": "https://m.stock.naver.com/domestic/stock/126340/total"
+        }
+      ]
+    },
+    {
+      "date": "2026-10-22",
+      "evaluated": true,
+      "success_count": 3,
+      "total_count": 3,
+      "picks": [
+        {
+          "code": "032860",
+          "name": "인화정공",
+          "market": "KOSDAQ",
+          "sector": "조선/기계",
+          "catalyst": "선박엔진 부품 수주 급증 및 실적 턴어라운드",
+          "catalyst_url": "https://m.stock.naver.com/domestic/stock/032860/news",
+          "catalyst_source": "파이낸셜뉴스",
+          "close_price": 44000,
+          "open_price": 45550,
+          "gap_pct": 3.52,
+          "is_success": true,
+          "chart_url": "https://m.stock.naver.com/domestic/stock/032860/total"
+        },
+        {
+          "code": "413630",
+          "name": "씨피시스템",
+          "market": "KOSDAQ",
+          "sector": "기계/로봇",
+          "catalyst": "케이블체인 국내 1위 및 글로벌 전동화 부품 납품",
+          "catalyst_url": "https://m.stock.naver.com/domestic/stock/413630/news",
+          "catalyst_source": "헤럴드경제",
+          "close_price": 4360,
+          "open_price": 4470,
+          "gap_pct": 2.52,
+          "is_success": true,
+          "chart_url": "https://m.stock.naver.com/domestic/stock/413630/total"
+        },
+        {
+          "code": "089890",
+          "name": "코세스",
+          "market": "KOSDAQ",
+          "sector": "반도체",
+          "catalyst": "반도체 레이저 리워크 장비 독점 공급 호조",
+          "catalyst_url": "https://m.stock.naver.com/domestic/stock/089890/news",
+          "catalyst_source": "전자신문",
+          "close_price": 15600,
+          "open_price": 16200,
+          "gap_pct": 3.85,
+          "is_success": true,
+          "chart_url": "https://m.stock.naver.com/domestic/stock/089890/total"
+        }
+      ]
+    },
+    {
+      "date": "2026-10-21",
+      "evaluated": true,
+      "success_count": 2,
+      "total_count": 3,
+      "picks": [
+        {
+          "code": "000100",
+          "name": "유한양행",
+          "market": "KOSPI",
+          "sector": "제약/바이오",
+          "catalyst": "렉라자 글로벌 처방 확대 및 마일스톤 유입",
+          "catalyst_url": "https://m.stock.naver.com/domestic/stock/000100/news",
+          "catalyst_source": "한국경제",
+          "close_price": 142000,
+          "open_price": 146000,
+          "gap_pct": 2.82,
+          "is_success": true,
+          "chart_url": "https://m.stock.naver.com/domestic/stock/000100/total"
+        },
+        {
+          "code": "237690",
+          "name": "에스티팜",
+          "market": "KOSDAQ",
+          "sector": "제약/바이오",
+          "catalyst": "올리고핵산 원료의약품 공급 계약 및 CAPA 증설",
+          "catalyst_url": "https://m.stock.naver.com/domestic/stock/237690/news",
+          "catalyst_source": "매일경제",
+          "close_price": 98500,
+          "open_price": 101500,
+          "gap_pct": 3.05,
+          "is_success": true,
+          "chart_url": "https://m.stock.naver.com/domestic/stock/237690/total"
+        },
+        {
+          "code": "141080",
+          "name": "리가켐바이오",
+          "market": "KOSDAQ",
+          "sector": "제약/바이오",
+          "catalyst": "ADC 플랫폼 추가 기술이전 기대감 및 임상 진척",
+          "catalyst_url": "https://m.stock.naver.com/domestic/stock/141080/news",
+          "catalyst_source": "이데일리",
+          "close_price": 125000,
+          "open_price": 124000,
+          "gap_pct": -0.8,
+          "is_success": false,
+          "chart_url": "https://m.stock.naver.com/domestic/stock/141080/total"
+        }
+      ]
+    }
+  ]
+}

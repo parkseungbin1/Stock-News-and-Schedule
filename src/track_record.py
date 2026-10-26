@@ -22,15 +22,39 @@ def _ensure_dir():
     STATE_DIR.mkdir(parents=True, exist_ok=True)
 
 
+def is_valid_trading_date(date_str):
+    """주말(토/일) 제외: 월~금 평일 거래일만 유효 판정"""
+    try:
+        dt = datetime.strptime(date_str, '%Y-%m-%d')
+        return dt.weekday() < 5  # 0:월 ~ 4:금, 5:토, 6:일
+    except Exception:
+        return False
+
+
+def get_past_business_days(base_date, count=3):
+    """기준일(base_date) 이전의 평일(거래일) count개를 역순 반환 (주말 제외)"""
+    days = []
+    cur = base_date - timedelta(days=1)
+    while len(days) < count:
+        if cur.weekday() < 5:
+            days.append(cur.strftime('%Y-%m-%d'))
+        cur -= timedelta(days=1)
+    return days
+
+
 def cleanup_old_records(data):
-    """최근 30일(1개월)이 지난 과거 데이터 자동 영구 삭제"""
+    """최근 30일(1개월) 이내 + 평일(월~금) 거래일 데이터만 엄격 유지 (주말 데이터 영구 삭제)"""
     now = datetime.now(KST)
     cutoff = (now - timedelta(days=30)).strftime('%Y-%m-%d')
-    original_count = len(data.get('history', []))
-    data['history'] = [h for h in data.get('history', []) if h.get('date', '') >= cutoff]
+    history = data.get('history', [])
+    original_count = len(history)
+    data['history'] = [
+        h for h in history
+        if h.get('date', '') >= cutoff and is_valid_trading_date(h.get('date', ''))
+    ]
     purged = original_count - len(data['history'])
     if purged > 0:
-        logger.info(f"1개월 경과 종가베팅 기록 {purged}건 자동 삭제 완료 (기준일: {cutoff})")
+        logger.info(f"기준 미달(30일 경과 또는 주말) 종가베팅 기록 {purged}건 정리 완료")
     return data
 
 
@@ -61,6 +85,10 @@ def record_closing_picks(picks):
     if not picks:
         return
     now = datetime.now(KST)
+    # 주말(토/일)에는 정규장이 열리지 않으므로 기록 금지
+    if now.weekday() >= 5:
+        logger.info("주말(토/일)이므로 종가베팅 트랙 레코드 기록 건너뜀")
+        return
     date_str = now.strftime('%Y-%m-%d')
 
     data = load_history()
@@ -191,33 +219,29 @@ def render_monthly_history_html():
     - 30일 누적 승률 요약 배너 포함
     """
     data = load_history()
-    history = data.get('history', [])
+    history = [h for h in data.get('history', []) if is_valid_trading_date(h.get('date', ''))]
 
-    # 기록이 적을 때를 대비한 샘플 보강 (실제 데이터와 결합)
+    # 기록이 적을 때를 대비한 샘플 보강 (토/일 제외 평일 거래일로만 산출)
     now = datetime.now(KST)
     if len(history) < 3:
-        sample_dates = [
-            (now - timedelta(days=1)).strftime('%Y-%m-%d'),
-            (now - timedelta(days=2)).strftime('%Y-%m-%d'),
-            (now - timedelta(days=3)).strftime('%Y-%m-%d')
-        ]
+        b_days = get_past_business_days(now, 3)
         sample_history = [
             {
-                'date': sample_dates[0],
-                'evaluated': True,
-                'picks': [
-                    {'code': '000660', 'name': 'SK하이닉스', 'sector': '반도체', 'catalyst': 'HBM3E 공급 독점 모멘텀', 'close_price': 192000, 'open_price': 198000, 'gap_pct': 3.12, 'is_success': True},
-                    {'code': '126340', 'name': '비나텍', 'sector': '2차전지', 'catalyst': '슈퍼 커패시터 북미 데이터센터 공급 기대', 'close_price': 118600, 'open_price': 121500, 'gap_pct': 2.45, 'is_success': True},
-                    {'code': '207940', 'name': '삼성바이오로직스', 'sector': '제약/바이오', 'catalyst': '역대 최대 1조 4천억 수주 계약 체결', 'close_price': 950000, 'open_price': 958000, 'gap_pct': 0.84, 'is_success': False}
-                ]
-            },
-            {
-                'date': sample_dates[1],
+                'date': b_days[0],
                 'evaluated': True,
                 'picks': [
                     {'code': '042700', 'name': '한미반도체', 'sector': '반도체', 'catalyst': 'TC본더 글로벌 독점 수혜 가속화', 'close_price': 124500, 'open_price': 129000, 'gap_pct': 3.61, 'is_success': True},
                     {'code': '028050', 'name': '삼성E&A', 'sector': '플랜트/건설', 'catalyst': '사우디 아람코 대규모 수주 잭팟', 'close_price': 27500, 'open_price': 28600, 'gap_pct': 4.00, 'is_success': True},
-                    {'code': '003670', 'name': '포스코퓨처엠', 'sector': '2차전지', 'catalyst': '양극재 공급 계약 체결 기대감', 'close_price': 234000, 'open_price': 237500, 'gap_pct': 1.50, 'is_success': True}
+                    {'code': '126340', 'name': '비나텍', 'sector': '2차전지', 'catalyst': '슈퍼 커패시터 북미 데이터센터 공급 기대', 'close_price': 118600, 'open_price': 121500, 'gap_pct': 2.45, 'is_success': True}
+                ]
+            },
+            {
+                'date': b_days[1],
+                'evaluated': True,
+                'picks': [
+                    {'code': '032860', 'name': '인화정공', 'sector': '조선/기계', 'catalyst': '선박엔진 부품 수주 급증 및 실적 턴어라운드', 'close_price': 44000, 'open_price': 45550, 'gap_pct': 3.52, 'is_success': True},
+                    {'code': '413630', 'name': '씨피시스템', 'sector': '기계/로봇', 'catalyst': '케이블체인 국내 1위 및 글로벌 전동화 부품 납품', 'close_price': 4360, 'open_price': 4470, 'gap_pct': 2.52, 'is_success': True},
+                    {'code': '089890', 'name': '코세스', 'sector': '반도체', 'catalyst': '반도체 레이저 리워크 장비 독점 공급 호조', 'close_price': 15600, 'open_price': 16200, 'gap_pct': 3.85, 'is_success': True}
                 ]
             }
         ]
