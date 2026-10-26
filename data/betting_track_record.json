@@ -1,0 +1,202 @@
+{
+  "history": [
+    {
+      "date": "2026-10-26",
+      "evaluated": false,
+      "picks": [
+        {
+          "code": "437730",
+          "name": "?쇳쁽",
+          "market": "KOSDAQ",
+          "sector": "?먮룞李?遺??,
+          "catalyst": "?쇳쁽, 遺곷? 理쒕? ?먮룞???꾩떆??李멸????濡쒕쾶 濡쒕큸 怨듦툒留?怨듬왂",
+          "catalyst_url": "https://n.news.naver.com/mnews/article/018/0006311842",
+          "catalyst_source": "?대뜲?쇰━",
+          "close_price": 46800,
+          "change_pct": 5.64,
+          "target_1": 48204,
+          "stop_loss": 45864,
+          "chart_url": "https://m.stock.naver.com/domestic/stock/437730/total"
+        },
+        {
+          "code": "179880",
+          "name": "硫쒖퐯",
+          "market": "KOSDAQ",
+          "sector": "湲곌퀎/?λ퉬",
+          "catalyst": "硫쒖퐯, 泥?빟 寃쎌웳瑜?1741.48? 1??쬆嫄곌툑 6.7??,
+          "catalyst_url": "https://n.news.naver.com/mnews/article/003/0014230817",
+          "catalyst_source": "?댁떆??,
+          "close_price": 13140,
+          "change_pct": 7.27,
+          "target_1": 13534,
+          "stop_loss": 12877,
+          "chart_url": "https://m.stock.naver.com/domestic/stock/179880/total"
+        },
+        {
+          "code": "468670",
+          "name": "釉뚮┫??,
+          "market": "KOSDAQ",
+          "sector": "AI/濡쒕큸",
+          "catalyst": "釉뚮┫??湲곌?쨌?몄씤 ????섍툒 ?좎엯 諛??낆쥌 二쇰룄 紐⑤찘?",
+          "catalyst_url": "https://m.stock.naver.com/domestic/stock/468670/news",
+          "catalyst_source": "?ㅼ떆媛??섍툒",
+          "close_price": 16750,
+          "change_pct": 6.08,
+          "target_1": 17252,
+          "stop_loss": 16415,
+          "chart_url": "https://m.stock.naver.com/domestic/stock/468670/total"
+        }
+      ]
+    },
+    {
+      "date": "2026-10-23",
+      "evaluated": true,
+      "success_count": 3,
+      "total_count": 3,
+      "picks": [
+        {
+          "code": "042700",
+          "name": "?쒕?諛섎룄泥?,
+          "market": "KOSPI",
+          "sector": "諛섎룄泥?,
+          "catalyst": "TC蹂몃뜑 湲濡쒕쾶 ?낆젏 怨듦툒 ?섑삙 諛?HBM 利앹꽕",
+          "catalyst_url": "https://m.stock.naver.com/domestic/stock/042700/news",
+          "catalyst_source": "癒몃땲?щ뜲??,
+          "close_price": 124500,
+          "open_price": 129000,
+          "gap_pct": 3.61,
+          "is_success": true,
+          "chart_url": "https://m.stock.naver.com/domestic/stock/042700/total"
+        },
+        {
+          "code": "028050",
+          "name": "?쇱꽦E&A",
+          "market": "KOSPI",
+          "sector": "?뚮옖??嫄댁꽕",
+          "catalyst": "?ъ슦???꾨엺肄??뚮뱶?먮━ 媛?ㅼ쟾 ?洹쒕え ?섏＜ ??뙚",
+          "catalyst_url": "https://m.stock.naver.com/domestic/stock/028050/news",
+          "catalyst_source": "?쒓뎅寃쎌젣",
+          "close_price": 27500,
+          "open_price": 28600,
+          "gap_pct": 4.0,
+          "is_success": true,
+          "chart_url": "https://m.stock.naver.com/domestic/stock/028050/total"
+        },
+        {
+          "code": "126340",
+          "name": "鍮꾨굹??,
+          "market": "KOSDAQ",
+          "sector": "2李⑥쟾吏",
+          "catalyst": "?덊띁 而ㅽ뙣?쒗꽣 遺곷? ?곗씠?곗꽱??諛깆뾽 ?꾩썝 怨듦툒 湲곕?",
+          "catalyst_url": "https://m.stock.naver.com/domestic/stock/126340/news",
+          "catalyst_source": "?대뜲?쇰━",
+          "close_price": 118600,
+          "open_price": 121500,
+          "gap_pct": 2.45,
+          "is_success": true,
+          "chart_url": "https://m.stock.naver.com/domestic/stock/126340/total"
+        }
+      ]
+    },
+    {
+      "date": "2026-10-22",
+      "evaluated": true,
+      "success_count": 3,
+      "total_count": 3,
+      "picks": [
+        {
+          "code": "032860",
+          "name": "?명솕?뺢났",
+          "market": "KOSDAQ",
+          "sector": "議곗꽑/湲곌퀎",
+          "catalyst": "?좊컯?붿쭊 遺???섏＜ 湲됱쬆 諛??ㅼ쟻 ?댁뼱?쇱슫??,
+          "catalyst_url": "https://m.stock.naver.com/domestic/stock/032860/news",
+          "catalyst_source": "?뚯씠?몄뀥?댁뒪",
+          "close_price": 44000,
+          "open_price": 45550,
+          "gap_pct": 3.52,
+          "is_success": true,
+          "chart_url": "https://m.stock.naver.com/domestic/stock/032860/total"
+        },
+        {
+          "code": "413630",
+          "name": "?⑦뵾?쒖뒪??,
+          "market": "KOSDAQ",
+          "sector": "湲곌퀎/濡쒕큸",
+          "catalyst": "耳?대툝泥댁씤 援?궡 1??諛?湲濡쒕쾶 ?꾨룞??遺???⑺뭹",
+          "catalyst_url": "https://m.stock.naver.com/domestic/stock/413630/news",
+          "catalyst_source": "?ㅻ윺?쒓꼍??,
+          "close_price": 4360,
+          "open_price": 4470,
+          "gap_pct": 2.52,
+          "is_success": true,
+          "chart_url": "https://m.stock.naver.com/domestic/stock/413630/total"
+        },
+        {
+          "code": "089890",
+          "name": "肄붿꽭??,
+          "market": "KOSDAQ",
+          "sector": "諛섎룄泥?,
+          "catalyst": "諛섎룄泥??덉씠? 由ъ썙???λ퉬 ?낆젏 怨듦툒 ?몄“",
+          "catalyst_url": "https://m.stock.naver.com/domestic/stock/089890/news",
+          "catalyst_source": "?꾩옄?좊Ц",
+          "close_price": 15600,
+          "open_price": 16200,
+          "gap_pct": 3.85,
+          "is_success": true,
+          "chart_url": "https://m.stock.naver.com/domestic/stock/089890/total"
+        }
+      ]
+    },
+    {
+      "date": "2026-10-21",
+      "evaluated": true,
+      "success_count": 2,
+      "total_count": 3,
+      "picks": [
+        {
+          "code": "000100",
+          "name": "?좏븳?묓뻾",
+          "market": "KOSPI",
+          "sector": "?쒖빟/諛붿씠??,
+          "catalyst": "?됰씪??湲濡쒕쾶 泥섎갑 ?뺣? 諛?留덉씪?ㅽ넠 ?좎엯",
+          "catalyst_url": "https://m.stock.naver.com/domestic/stock/000100/news",
+          "catalyst_source": "?쒓뎅寃쎌젣",
+          "close_price": 142000,
+          "open_price": 146000,
+          "gap_pct": 2.82,
+          "is_success": true,
+          "chart_url": "https://m.stock.naver.com/domestic/stock/000100/total"
+        },
+        {
+          "code": "237690",
+          "name": "?먯뒪?고뙗",
+          "market": "KOSDAQ",
+          "sector": "?쒖빟/諛붿씠??,
+          "catalyst": "?щ━怨좏빑???먮즺?섏빟??怨듦툒 怨꾩빟 諛?CAPA 利앹꽕",
+          "catalyst_url": "https://m.stock.naver.com/domestic/stock/237690/news",
+          "catalyst_source": "留ㅼ씪寃쎌젣",
+          "close_price": 98500,
+          "open_price": 101500,
+          "gap_pct": 3.05,
+          "is_success": true,
+          "chart_url": "https://m.stock.naver.com/domestic/stock/237690/total"
+        },
+        {
+          "code": "141080",
+          "name": "由ш?耳먮컮?댁삤",
+          "market": "KOSDAQ",
+          "sector": "?쒖빟/諛붿씠??,
+          "catalyst": "ADC ?뚮옯??異붽? 湲곗닠?댁쟾 湲곕?媛?諛??꾩긽 吏꾩쿃",
+          "catalyst_url": "https://m.stock.naver.com/domestic/stock/141080/news",
+          "catalyst_source": "?대뜲?쇰━",
+          "close_price": 125000,
+          "open_price": 124000,
+          "gap_pct": -0.8,
+          "is_success": false,
+          "chart_url": "https://m.stock.naver.com/domestic/stock/141080/total"
+        }
+      ]
+    }
+  ]
+}
