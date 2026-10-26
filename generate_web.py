@@ -84,6 +84,37 @@ def generate_html():
         swing_picks = fallback['swing']
         breakout_picks = fallback.get('breakout', [])
 
+    now_kst = datetime.now(timezone(timedelta(hours=9)))
+    hm_kst = now_kst.hour * 100 + now_kst.minute
+    is_closing_window = (now_kst.weekday() < 5) and (1500 <= hm_kst <= 1545)
+
+    try:
+        from src.track_record import get_latest_closing_record, render_monthly_history_html
+        latest_record = get_latest_closing_record()
+    except Exception as e:
+        latest_record = None
+
+    # 종가베팅(15:10)은 익일 09:00 시초가 매도 전략이므로
+    # 15:00~15:45 정규장 마감 시간대가 아닐 때는 직전 공식 확정 종목을 그대로 고정보존
+    if not is_closing_window and latest_record and latest_record.get('picks'):
+        closing_picks = latest_record['picks']
+        closing_ref_date = latest_record['date']
+        closing_evaluated = latest_record.get('evaluated', False)
+    else:
+        closing_ref_date = now_kst.strftime('%Y-%m-%d')
+        closing_evaluated = False
+
+    if is_closing_window:
+        closing_tab_title = f"⚡ 오늘({closing_ref_date}) 15:10 종가베팅"
+        closing_banner_html = f"<b>🎯 오늘({closing_ref_date}) 15:10 종가베팅 추천 종목</b>: 오후 15:10~15:30 매수 체결 → 익일 아침 09:00~09:20 시초가 갭상승 시 전량 분할 익절 (+3%~+5%)"
+    else:
+        if closing_evaluated:
+            closing_tab_title = f"⚡ 종가베팅 ({closing_ref_date} 검증완료)"
+            closing_banner_html = f"<b>🎯 직전({closing_ref_date}) 종가베팅 시초가 검증 완료</b>: 익일 시초가 매도 완료 구간 (오늘 15:10 정규장 마감 시 새로운 종목으로 자동 교체됩니다)"
+        else:
+            closing_tab_title = f"⚡ 종가베팅 ({closing_ref_date} 매수 대응)"
+            closing_banner_html = f"<b>🎯 직전({closing_ref_date}) 종가베팅 공식 추천 종목</b>: 오늘 아침 09:00~09:20 시초가 갭상승 시 전량 분할 익절 (+3%~+5%) 대응 구간 (오늘 15:10에 새 종목 선별)"
+
     try:
         from src.track_record import render_monthly_history_html
         history_tab_html = render_monthly_history_html()
@@ -142,6 +173,20 @@ def generate_html():
             </div>
             """
 
+        eval_box = ""
+        open_p = pick.get('open_price')
+        gap_p = pick.get('gap_pct')
+        if open_p is not None and gap_p is not None:
+            gap_sign = '+' if gap_p > 0 else ''
+            badge_text = '🎯 익절 성공' if pick.get('is_success') else ('✨ 보합' if gap_p >= 0 else '🔻 손절/이탈')
+            badge_color = '#ef4444' if gap_p > 0 else '#3b82f6'
+            eval_box = f"""
+            <div style="margin: 8px 0; padding: 6px 10px; background: rgba(255,255,255,0.06); border-radius: 6px; font-size: 0.85rem; border-left: 3px solid {badge_color}; display: flex; justify-content: space-between; align-items: center;">
+                <span>📊 <b>시초가 성과</b>: 종가 {pick['price']:,}원 → 시초가 <b>{open_p:,}원</b></span>
+                <span style="font-weight: bold; color: {badge_color};">{gap_sign}{gap_p:.2f}% {badge_text}</span>
+            </div>
+            """
+
         return f"""
         <div class="rec-card {card_theme}">
             <div class="rec-card-top">
@@ -154,6 +199,7 @@ def generate_html():
                 </div>
                 <div class="rec-score-badge">⭐ AI 적중도 {pick['score']}점</div>
             </div>
+            {eval_box}
 
             <div class="rec-price-row">
                 <div>
@@ -1781,7 +1827,7 @@ def generate_html():
     <!-- 추천 트랙 선택 탭 -->
     <div class="rec-nav">
         <button class="rec-tab active" onclick="switchRecTrack('closing', this)">
-            ⚡ 오늘 15:10 종가베팅 <span class="rec-tag-pill">익일 갭상승 +3%~+5%</span>
+            {closing_tab_title} <span class="rec-tag-pill">익일 갭상승 +3%~+5%</span>
         </button>
         <button class="rec-tab" onclick="switchRecTrack('swing', this)">
             🌊 2~5일 스윙 추천 <span class="rec-tag-pill pill-purple">추세 파동 +5%~+10%</span>
@@ -1798,7 +1844,7 @@ def generate_html():
     <div id="rec-closing-container" class="rec-container">
         <div class="rec-strategy-banner banner-orange">
             <div>
-                <b>🎯 종가베팅 전략 핵심 가이드</b>: 오후 15:10~15:30 매수 → 익일 아침 09:00~09:20 시초가 갭상승 시 전량 분할 익절 (+3%~+5%)
+                {closing_banner_html}
             </div>
         </div>
 
