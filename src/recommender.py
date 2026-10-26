@@ -136,33 +136,49 @@ def fetch_stock_catalyst(code, name=""):
 
 
 def get_stock_sector(code, default="주도주"):
-    """KRX-DESC 기반 종목별 업종/섹터 매핑 캐시"""
+    """KRX-DESC 기반 종목별 업종/섹터 매핑 캐시 (주력 제품 및 핵심 테마 정밀 매핑)"""
     global _SECTOR_MAP
     if not _SECTOR_MAP:
         try:
             import FinanceDataReader as fdr
             desc = fdr.StockListing('KRX-DESC')
-            if not desc.empty and 'Code' in desc.columns and 'Industry' in desc.columns:
+            if not desc.empty and 'Code' in desc.columns:
                 for _, r in desc.iterrows():
                     c = str(r['Code'])
-                    ind = str(r['Industry']) if pd.notna(r['Industry']) else ''
+                    ind = str(r['Industry']) if ('Industry' in r and pd.notna(r['Industry'])) else ''
                     sec = str(r['Sector']) if ('Sector' in r and pd.notna(r['Sector'])) else ''
-                    val = ind or sec
-                    if '반도체' in val:
-                        val = '반도체'
-                    elif '전기' in val or '전력' in val:
-                        val = '전력/전기'
-                    elif '바이오' in val or '의약' in val or '제약' in val:
-                        val = '제약/바이오'
-                    elif '자동차' in val:
-                        val = '자동차/부품'
-                    elif '화학' in val or '배터리' in val or '전지' in val:
-                        val = '2차전지'
-                    elif '통신' in val or 'IT' in val or '소프트웨어' in val:
-                        val = 'IT/SW'
-                    elif len(val) > 8:
-                        val = val[:8]
-                    _SECTOR_MAP[c] = val or default
+                    prod = str(r['Products']) if ('Products' in r and pd.notna(r['Products'])) else ''
+                    name = str(r.get('Name', ''))
+                    val = f"{name} {ind} {sec} {prod}"
+
+                    if '반도체' in val or '웨이퍼' in val or 'CXL' in val or 'HBM' in val:
+                        tag = '반도체'
+                    elif '2차전지' in val or '배터리' in val or '양극재' in val or '음극재' in val or '전지' in val:
+                        tag = '2차전지'
+                    elif '바이오' in val or '의약' in val or '제약' in val or '치료제' in val or '백신' in val or '의료기기' in val:
+                        tag = '제약/바이오'
+                    elif '인공지능' in val or 'AI' in val or '로봇' in val or '로보틱스' in val:
+                        tag = 'AI/로봇'
+                    elif '전력' in val or '변압기' in val or '전선' in val or '원전' in val or '원자력' in val:
+                        tag = '전력/원전'
+                    elif '방산' in val or '항공' in val or '우주' in val or '군수' in val:
+                        tag = '방산/우주'
+                    elif '자동차' in val or '자율주행' in val or '전장' in val:
+                        tag = '자동차/부품'
+                    elif '조선' in val or '해운' in val or '선박' in val:
+                        tag = '조선/해운'
+                    elif '철강' in val or '금속' in val or '알루미늄' in val:
+                        tag = '철강/금속'
+                    elif '화학' in val or '석유' in val or '소재' in val:
+                        tag = '화학/소재'
+                    elif '통신' in val or '소프트웨어' in val or 'IT' in val or '보안' in val:
+                        tag = 'IT/SW'
+                    elif '기계' in val or '장비' in val or '특수 목적용' in val:
+                        tag = '기계/장비'
+                    else:
+                        clean = ind.replace(' 제조업', '').replace(' 서비스업', '').replace(' 및 ', '/').strip()
+                        tag = clean[:8] if len(clean) > 8 else (clean or default)
+                    _SECTOR_MAP[c] = tag or default
         except Exception as e:
             logger.warning(f"업종 매핑 로드 실패: {e}")
     return _SECTOR_MAP.get(code, default)
