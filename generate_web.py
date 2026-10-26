@@ -211,7 +211,8 @@ def generate_html():
 
     def render_disc_card(block, badge_class, badge_label, card_type):
         b = block.replace('<a href=', '<a target="_blank" rel="noopener noreferrer" href=')
-        is_watch = '⭐' in b
+        is_burn = '소각' in b
+        is_watch = '⭐' in b or is_burn
         b_clean = b.replace('⭐', '').strip()
         lines = [l.strip() for l in b_clean.split('\n') if l.strip()]
         if not lines:
@@ -222,7 +223,9 @@ def generate_html():
             details_joined = "<br>".join(lines[1:])
             details_html = f"<div class='card-details'>{details_joined}</div>"
         watch_tag = ""
-        if is_watch:
+        if is_burn:
+            watch_tag = '<span class="watch-tag tag-burn">🔥 초특급 소각</span>'
+        elif is_watch:
             if "어닝서프라이즈" in b:
                 watch_tag = '<span class="watch-tag tag-surprise">⭐ 어닝 서프라이즈</span>'
             elif "흑자전환" in b:
@@ -230,10 +233,10 @@ def generate_html():
             elif "YoY +" in b:
                 watch_tag = '<span class="watch-tag tag-growth">⭐ 실적 급증</span>'
             elif "자사주" in b:
-                watch_tag = '<span class="watch-tag tag-buyback">⭐ 대규모 자사주</span>'
+                watch_tag = '<span class="watch-tag tag-buyback">⭐ 대규모 자사주(100억+)</span>'
             else:
                 watch_tag = '<span class="watch-tag">⭐ 핵심 포착</span>'
-        watch_card_class = " is-watchlist" if is_watch else ""
+        watch_card_class = " is-burn" if is_burn else (" is-watchlist" if is_watch else "")
         return f"""
         <div class="disclosure-card {card_type}{watch_card_class}">
             <div class="card-top-row">
@@ -258,12 +261,15 @@ def generate_html():
             sections = d.collect_new_disclosures(dart, temp_state, watch)
             if sections:
                 for title, blocks in sections:
-                    if "실적" in title:
+                    if "소각" in title:
+                        for block in blocks:
+                            buyback_cards.append(render_disc_card(block, "badge-fire", "🔥 주식소각", "type-burn"))
+                    elif "실적" in title:
                         for block in blocks:
                             earnings_cards.append(render_disc_card(block, "badge-green", "📈 실적공시", "type-earnings"))
                     elif "자사주" in title:
                         for block in blocks:
-                            buyback_cards.append(render_disc_card(block, "badge-gold", "💰 자사주", "type-buyback"))
+                            buyback_cards.append(render_disc_card(block, "badge-gold", "💰 자사주(100억+)", "type-buyback"))
                     elif "IR" in title:
                         for block in blocks:
                             ir_cards.append(render_disc_card(block, "badge-purple", "🎤 IR일정", "type-ir"))
@@ -1487,11 +1493,19 @@ def generate_html():
         .disclosure-card.type-earnings {{
             border-left: 4px solid #10b981;
         }}
+        .disclosure-card.type-burn {{
+            border-left: 4px solid #ef4444;
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.08), rgba(17, 24, 39, 0.95));
+        }}
         .disclosure-card.type-buyback {{
             border-left: 4px solid #f59e0b;
         }}
         .disclosure-card.type-ir {{
             border-left: 4px solid #8b5cf6;
+        }}
+        .disclosure-card.is-burn {{
+            border-color: rgba(239, 68, 68, 0.5);
+            box-shadow: 0 4px 20px rgba(239, 68, 68, 0.15);
         }}
         .disclosure-card.is-watchlist {{
             background: linear-gradient(135deg, rgba(245, 158, 11, 0.06), rgba(17, 24, 39, 0.95));
@@ -1512,6 +1526,12 @@ def generate_html():
             border-radius: 6px;
             border: 1px solid rgba(245, 158, 11, 0.35);
         }}
+        .watch-tag.tag-burn {{
+            color: #fca5a5;
+            background: rgba(239, 68, 68, 0.22);
+            border-color: rgba(239, 68, 68, 0.5);
+            box-shadow: 0 0 10px rgba(239, 68, 68, 0.2);
+        }}
         .watch-tag.tag-surprise {{
             color: #34d399;
             background: rgba(16, 185, 129, 0.18);
@@ -1531,6 +1551,11 @@ def generate_html():
             color: #fbbf24;
             background: rgba(245, 158, 11, 0.18);
             border-color: rgba(245, 158, 11, 0.4);
+        }}
+        .badge-fire {{
+            background: rgba(239, 68, 68, 0.2);
+            color: #f87171;
+            border: 1px solid rgba(239, 68, 68, 0.4);
         }}
         .badge {{
             font-size: 0.75rem;
@@ -1943,12 +1968,12 @@ def generate_html():
 
     <div id="guide-box" class="guide-content"></div>
 
-    <!-- 3. 핵심 공시 레이더 (실적 · 자사주 · IR 카테고리 분리) -->
+    <!-- 3. 핵심 공시 레이더 (실적 · 자사주/소각 · IR 카테고리 분리) -->
     <div class="section-title">
-        <span>📢 핵심 공시 레이더 (실적 · 자사주 · IR)</span>
+        <span>📢 핵심 공시 레이더 (실적 · 자사주/소각 · IR)</span>
     </div>
     <div style="font-size: 0.8rem; color: #9ca3af; margin-top: -8px; margin-bottom: 16px;">
-        💡 <b>⭐ 배지</b>는 알고리즘이 '어닝서프라이즈(+10% 초과)', '흑자전환', '대규모 자사주 취득' 등 강력한 상승 모멘텀을 자동 포착한 공시입니다.
+        💡 <b>⭐ 배지 및 🔥 소각</b>은 알고리즘이 '어닝서프라이즈(+10% 초과)', '흑자전환', '100억 이상 대규모 자사주 취득', '주식 소각' 등 강력한 주주환원 모멘텀을 자동 포착한 공시입니다.
     </div>
 
     <!-- 카테고리 필터 탭 -->
@@ -1960,7 +1985,7 @@ def generate_html():
             📈 실적 발표 <span class="tab-count count-green">{earnings_count}</span>
         </button>
         <button class="disc-tab" onclick="filterDisclosures('buyback', this)">
-            💰 자사주 취득 <span class="tab-count count-gold">{buyback_count}</span>
+            🔥 자사주·소각 <span class="tab-count count-gold">{buyback_count}</span>
         </button>
         <button class="disc-tab" onclick="filterDisclosures('ir', this)">
             🎤 IR 일정 <span class="tab-count count-purple">{ir_count}</span>
@@ -1978,14 +2003,14 @@ def generate_html():
         </div>
     </div>
 
-    <!-- 2) 자사주 취득 섹션 -->
+    <!-- 2) 자사주 취득 & 소각 섹션 -->
     <div id="section-buyback" class="category-group">
         <div class="category-header header-gold">
-            <div class="cat-title">💰 <span>자사주 취득 결정 레이더</span></div>
-            <div class="cat-badge">주주환원 · 취득규모 · {buyback_count}건</div>
+            <div class="cat-title">🔥 <span>대규모 자사주 취득 & 주식 소각 레이더</span></div>
+            <div class="cat-badge">주주환원 · 100억+ 또는 소각 · {buyback_count}건</div>
         </div>
         <div class="disclosure-grid">
-            {buyback_html or "<div class='empty-card'>최근 24시간 내 등록된 자사주 취득 공시가 없습니다.</div>"}
+            {buyback_html or "<div class='empty-card'>최근 24시간 내 등록된 대규모 자사주 취득(100억+) 또는 주식 소각 공시가 없습니다.</div>"}
         </div>
     </div>
 
