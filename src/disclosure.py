@@ -232,6 +232,47 @@ def parse_buyback_info(xml):
     return info
 
 
+def parse_cancellation_info(xml):
+    """주식소각결정 또는 자기주식소각결정 공시에서 금액, 주식수, 소각예정일, 목적, 방법 상세 추출"""
+    info = {
+        'amount': None,
+        'shares': None,
+        'date': None,
+        'purpose': '',
+        'method': '',
+    }
+    date_re = re.compile(r'(\d{4})\s*년\s*(\d{1,2})\s*월\s*(\d{1,2})\s*일')
+    for cells in _rows(xml):
+        label = cells[0].replace(' ', '')
+        val = ' '.join(cells[1:])
+        if ('소각예정금액' in label or '소각대상' in label or '취득가액' in label or '예정금액' in label) and info['amount'] is None:
+            for c in cells[1:]:
+                n = _num(c)
+                if n and n > 0:
+                    info['amount'] = n
+                    break
+        elif ('소각할주식' in label or '보통주식' in label or '소각주식수' in label or '주식수' in label) and info['shares'] is None:
+            for c in cells[1:]:
+                n = _num(c)
+                if n and n > 0:
+                    info['shares'] = n
+                    break
+        elif ('소각예정일' in label or '소각일' in label) and not info['date']:
+            m = date_re.search(val)
+            if m:
+                info['date'] = f"{m.group(1)}.{int(m.group(2)):02d}.{int(m.group(3)):02d}"
+            else:
+                m2 = re.search(r'(\d{4})[.\-/](\d{1,2})[.\-/](\d{1,2})', val)
+                if m2:
+                    info['date'] = f"{m2.group(1)}.{int(m2.group(2)):02d}.{int(m2.group(3)):02d}"
+        elif '목적' in label and not info['purpose']:
+            info['purpose'] = val.strip()[:60]
+        elif '방법' in label and not info['method']:
+            info['method'] = val.strip()[:40]
+
+    return info
+
+
 def parse_ir_info(xml):
     """기업설명회 공시에서 개최일자, 시간, 방식, 대상, 목적 추출"""
     info = {'date': None, 'time': '', 'purpose': '', 'method': '', 'target': ''}
@@ -300,6 +341,8 @@ def naver_consensus(stock_code):
 # ---------------------------------------------------------------- 분류/포맷
 def classify(report_nm):
     n = report_nm.replace(' ', '')
+    if '주식소각결정' in n or '자기주식소각결정' in n:
+        return 'cancellation'
     if '잠정)실적' in n or '잠정실적' in n:
         return 'earnings'
     if '자기주식취득결정' in n or '자기주식취득신탁계약체결결정' in n:
@@ -388,16 +431,55 @@ def format_earnings(item, actual, cons, watch):
     return line
 
 
+def format_cancellation(item, info, watch):
+    """주식 소각 결정 공시를 입체적으로 포맷 (최고 등급 주주환원 초특급 호재)"""
+    amt_eok = (info.get('amount') or 0) / 1e8
+    amount_str = ""
+    if info.get('amount'):
+        if amt_eok >= 10000:
+            amount_str = f"{amt_eok / 10000:.1f}조원"
+        else:
+            amount_str = f"{amt_eok:,.0f}억원"
+
+    shares_str = ""
+    if info.get('shares'):
+        sh = info['shares']
+        if sh >= 10000:
+            shares_str = f"{sh / 10000:,.1f}만주"
+        else:
+            shares_str = f"{sh:,.0f}주"
+
+    line = f"🔥 <b>{_link(item)}</b> 🔥 <b>[초특급 주주환원: 주식 소각 결정]</b>\n"
+    if amount_str or shares_str:
+        sh_part = f" (보통주 {shares_str})" if shares_str else ""
+        line += f"   • 소각규모: <b>{amount_str or '-'}</b>{sh_part}\n"
+
+    extra_tags = []
+    if info.get('date'):
+        extra_tags.append(f"소각예정일: {info['date']}")
+    if info.get('method'):
+        extra_tags.append(f"방법: {info['method']}")
+    if extra_tags:
+        line += f"   • {' | '.join(extra_tags)}\n"
+    if info.get('purpose'):
+        line += f"   • 목적: {info['purpose']}\n"
+
+    return line
+
+
 def format_buyback(item, info, watch):
-    """자사주 취득 공시를 금액, 주식수, 목적, 기간까지 입체적으로 포맷"""
+    """자사주 취득 공시를 금액, 주식수, 목적, 기간까지 입체적으로 포맷 (100억 이상 또는 소각 목적 엄선)"""
     amt_eok = (info.get('amount') or 0) / 1e8
     is_star = item.get('stock_code') in watch
-    # 50억원 이상 대규모 자사주 취득 또는 주주가치 제고/소각 목적이면 알고리즘 자동 선별
-    if amt_eok >= 50 or '소각' in str(info.get('purpose', '')):
+    has_burn = '소각' in str(info.get('purpose', ''))
+    # 100억원 이상 대규모 자사주 취득 또는 주주가치 제고/소각 목적이면 알고리즘 자동 선별
+    if amt_eok >= 100 or has_burn:
         is_star = True
 
+    burn_badge = " 🔥 <b>(소각목적)</b>" if has_burn else ""
     star_prefix = '⭐ ' if is_star else ''
-    line = f"{star_prefix}<b>{_link(item)}</b> 💰 <b>자사주 취득 결정</b>\n"
+    title_label = "대규모 자사주 취득 결정" if amt_eok >= 100 else "자사주 취득 결정"
+    line = f"{star_prefix}<b>{_link(item)}</b> 💰 <b>{title_label}</b>{burn_badge}\n"
     amount_str = ""
     if info.get('amount'):
         if amt_eok >= 10000:
@@ -492,7 +574,7 @@ def collect_new_disclosures(dart, state, watch):
     items = dart.list(bgn, end, 'I') + dart.list(bgn, end, 'B')
     items.sort(key=lambda x: x['rcept_no'])
 
-    earnings, buyback, ir = [], [], []
+    earnings, buyback, cancellation, ir = [], [], [], []
     for it in items:
         kind = classify(it['report_nm'])
         if not kind or it['rcept_no'] in seen:
@@ -509,7 +591,10 @@ def collect_new_disclosures(dart, state, watch):
         seen.add(it['rcept_no'])
 
         try:
-            if kind == 'earnings':
+            if kind == 'cancellation':
+                info = parse_cancellation_info(xml_text)
+                cancellation.append((it, format_cancellation(it, info, watch)))
+            elif kind == 'earnings':
                 if '정정' in it['report_nm']:
                     continue
                 actual = parse_preliminary_earnings(xml_text)
@@ -517,6 +602,16 @@ def collect_new_disclosures(dart, state, watch):
                 earnings.append((it, format_earnings(it, actual, cons, watch)))
             elif kind == 'buyback':
                 info = parse_buyback_info(xml_text)
+                amt_eok = (info.get('amount') or 0) / 1e8
+                has_burn = '소각' in str(info.get('purpose', '')) or '소각' in it['report_nm']
+                is_watch = it.get('stock_code') in watch
+
+                # [100억 이상 컷오프 필터링]: 100억 미만 소액은 노이즈로 보고 제외
+                # 단, '소각' 목적이 포함되어 있거나 사용자의 관심종목(watchlist)인 경우 예외로 전송
+                if amt_eok < 100 and not has_burn and not is_watch:
+                    logger.info(f"자사주 취득 100억 미만 필터링 제외: {it['corp_name']} ({amt_eok:.0f}억원)")
+                    continue
+
                 buyback.append((it, format_buyback(it, info, watch)))
             elif kind == 'ir':
                 info = parse_ir_info(xml_text)
@@ -533,21 +628,25 @@ def collect_new_disclosures(dart, state, watch):
                 ir.append((it, format_ir(it, info, watch)))
         except Exception as e:
             logger.warning(f"공시 파싱 실패 {it['corp_name']} {it['report_nm']}: {e}")
-            if kind == 'earnings':
+            if kind == 'cancellation':
+                cancellation.append((it, format_simple(it, watch, '🔥 주식 소각 결정 공시 [상세보기 🔗]')))
+            elif kind == 'earnings':
                 earnings.append((it, format_simple(it, watch, '잠정실적 공시 [상세보기 🔗]')))
             elif kind == 'buyback':
                 buyback.append((it, format_simple(it, watch, '💰 자사주 취득 결정 공시')))
             elif kind == 'ir':
                 ir.append((it, format_simple(it, watch, '🎤 기업설명회(IR) 개최 공시')))
 
-    def order(lst):  # 핵심 포착 공시(⭐) 먼저
-        return [b for _, b in sorted(lst, key=lambda x: '⭐' not in x[1])]
+    def order(lst):  # 핵심 포착 공시(⭐ 또는 🔥) 먼저
+        return [b for _, b in sorted(lst, key=lambda x: ('🔥' not in x[1] and '⭐' not in x[1]))]
 
     sections = []
+    if cancellation:
+        sections.append(('🔥 <b>주식 소각(초특급 주주환원) 공시</b>', order(cancellation)))
     if earnings:
         sections.append(('📈 <b>잠정실적 발표</b>', order(earnings)))
     if buyback:
-        sections.append(('💰 <b>자사주 취득 결정</b>', order(buyback)))
+        sections.append(('💰 <b>대규모 자사주 취득 결정 (100억+ 또는 소각)</b>', order(buyback)))
     if ir:
         sections.append(('🎤 <b>실적발표(IR) 일정 공시</b>', order(ir)))
     return sections
