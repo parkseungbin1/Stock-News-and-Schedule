@@ -15,7 +15,7 @@ on:
       - 'src/**'
 
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
 
@@ -63,6 +63,17 @@ jobs:
         with:
           path: state
           key: disclosure-state-${{ github.run_id }}
+
+      # 종가베팅 1개월 기록 영구 저장 (git 커밋)
+      - name: Persist track record
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/betting_track_record.json || exit 0
+          git diff --cached --quiet && exit 0
+          git commit -m "chore: update betting track record [skip ci]"
+          for i in 1 2 3; do git pull --rebase -X theirs && git push && break; sleep 5; done
 
       - name: Upload Artifact
         uses: actions/upload-pages-artifact@v3

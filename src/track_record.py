@@ -14,8 +14,10 @@ import FinanceDataReader as fdr
 logger = logging.getLogger(__name__)
 KST = timezone(timedelta(hours=9))
 
-STATE_DIR = Path(__file__).resolve().parent.parent / "state"
+# actions/cache(state/)는 여러 워크플로가 공유·덮어쓰기/7일 만료되어 기록이 유실됨 → git 추적 data/ 폴더에 영구 저장
+STATE_DIR = Path(__file__).resolve().parent.parent / "data"
 RECORD_FILE = STATE_DIR / "betting_track_record.json"
+LEGACY_FILE = Path(__file__).resolve().parent.parent / "state" / "betting_track_record.json"
 
 
 def _ensure_dir():
@@ -58,16 +60,31 @@ def cleanup_old_records(data):
     return data
 
 
+def _read(path):
+    try:
+        with open(path, 'r', encoding='utf-8') as f:
+            return json.load(f).get('history', [])
+    except Exception:
+        return []
+
+
 def load_history():
     _ensure_dir()
-    if RECORD_FILE.exists():
-        try:
-            with open(RECORD_FILE, 'r', encoding='utf-8') as f:
-                data = json.load(f)
-                return cleanup_old_records(data)
-        except Exception as e:
-            logger.warning(f"트랙 레코드 로드 실패: {e}")
-    return {"history": []}
+    merged = {}
+    # 레거시(state/) 기록도 병합하여 유실분 복구 (data/ 우선)
+    for path in (LEGACY_FILE, RECORD_FILE):
+        if path.exists():
+            for h in _read(path):
+                d = h.get('date')
+                if not d:
+                    continue
+                prev = merged.get(d)
+                # 검증 완료된 기록을 미검증 기록으로 덮어쓰지 않음
+                if prev and prev.get('evaluated') and not h.get('evaluated'):
+                    continue
+                merged[d] = h
+    data = {"history": sorted(merged.values(), key=lambda x: x['date'])}
+    return cleanup_old_records(data)
 
 
 def save_history(data):
@@ -88,6 +105,11 @@ def record_closing_picks(picks):
     # 주말(토/일)에는 정규장이 열리지 않으므로 기록 금지
     if now.weekday() >= 5:
         logger.info("주말(토/일)이므로 종가베팅 트랙 레코드 기록 건너뜀")
+        return
+    # 실제 종가베팅 시간대(15:00~15:45 KST)에만 기록 (아침/야간 실행 시 오기록·덮어쓰기 방지)
+    hm = now.hour * 100 + now.minute
+    if not (1500 <= hm <= 1545):
+        logger.info(f"종가베팅 시간대 아님({now:%H:%M}) → 트랙 레코드 기록 건너뜀")
         return
     date_str = now.strftime('%Y-%m-%d')
 
@@ -131,16 +153,17 @@ def evaluate_latest_performance():
     if not history:
         return None
 
-    target = None
-    for h in reversed(history):
-        if not h.get('evaluated', False):
-            target = h
-            break
-
     now = datetime.now(KST)
     today_str = now.strftime('%Y-%m-%d')
 
-    if not target or target.get('date') == today_str:
+    # 가장 오래된 미검증 일자부터 평가 (최신만 보면 이전 일자가 영원히 '대기'로 남음)
+    target = None
+    for h in sorted(history, key=lambda x: x['date']):
+        if not h.get('evaluated', False) and h.get('date') < today_str:
+            target = h
+            break
+
+    if not target:
         return None
 
     picks = target.get('picks', [])
@@ -164,11 +187,12 @@ def evaluate_latest_performance():
             if df.empty or len(df) < 2:
                 continue
 
-            last_date = df.index[-1].strftime('%Y-%m-%d')
-            if last_date <= target['date']:
+            # 추천일 '다음 거래일' 시초가 사용 (마지막 행이 아닌)
+            nxt = df[df.index.strftime('%Y-%m-%d') > target['date']]
+            if nxt.empty:
                 return None
 
-            open_p = float(df['Open'].iloc[-1])
+            open_p = float(nxt['Open'].iloc[0])
             gap_pct = ((open_p - close_p) / close_p) * 100
 
             is_success = gap_pct >= 1.5
@@ -250,7 +274,8 @@ def render_monthly_history_html():
         for sh in sample_history:
             if sh['date'] not in existing_dates:
                 history.append(sh)
-        history.sort(key=lambda x: x['date'], reverse=True)
+
+    history.sort(key=lambda x: x['date'], reverse=True)
 
     # 누적 통계 산출
     total_picks = 0
