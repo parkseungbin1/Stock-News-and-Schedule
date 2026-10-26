@@ -41,12 +41,28 @@ jobs:
 
       - run: pip install -r requirements.txt
 
+      # 종가베팅 성과 및 공시 상태 캐시 복원
+      - name: Restore state cache
+        uses: actions/cache/restore@v4
+        with:
+          path: state
+          key: disclosure-state-${{ github.run_id }}
+          restore-keys: disclosure-state-
+
       - name: Build Web Dashboard
         env:
           DART_API_KEY: ${{ secrets.DART_API_KEY }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: python generate_web.py
+
+      # 최신 상태 캐시 저장
+      - name: Save state cache
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: state
+          key: disclosure-state-${{ github.run_id }}
 
       - name: Upload Artifact
         uses: actions/upload-pages-artifact@v3

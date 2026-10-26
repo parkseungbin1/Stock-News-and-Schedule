@@ -10,4 +10,6 @@ venv/
 .ruff_cache/
 dist/
 build/
-state/
+state/*
+!state/betting_track_record.json
+
