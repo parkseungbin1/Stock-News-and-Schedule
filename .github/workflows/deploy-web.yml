@@ -13,6 +13,7 @@ on:
     paths:
       - 'generate_web.py'
       - 'src/**'
+      - 'data/**'
 
 permissions:
   contents: write
