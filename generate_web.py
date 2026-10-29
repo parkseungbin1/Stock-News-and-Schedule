@@ -1109,8 +1109,16 @@ def generate_html():
             padding: 16px 20px;
         }}
         .track-stat-card.stat-winrate {{
-            background: linear-gradient(135deg, rgba(16, 185, 129, 0.12), rgba(17, 24, 39, 0.95));
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.14), rgba(17, 24, 39, 0.95));
             border-color: rgba(16, 185, 129, 0.35);
+        }}
+        .track-stat-card.stat-rr {{
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.14), rgba(17, 24, 39, 0.95));
+            border-color: rgba(245, 158, 11, 0.35);
+        }}
+        .track-stat-card.stat-cum {{
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.14), rgba(17, 24, 39, 0.95));
+            border-color: rgba(59, 130, 246, 0.35);
         }}
         .stat-label {{
             font-size: 0.82rem;
@@ -1126,6 +1134,12 @@ def generate_html():
         }}
         .stat-winrate .stat-value {{
             color: #34d399;
+        }}
+        .stat-rr .stat-value {{
+            color: #fbbf24;
+        }}
+        .stat-cum .stat-value {{
+            color: #60a5fa;
         }}
         .stat-sub {{
             font-size: 0.74rem;
