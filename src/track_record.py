@@ -14,10 +14,9 @@ import FinanceDataReader as fdr
 logger = logging.getLogger(__name__)
 KST = timezone(timedelta(hours=9))
 
-# actions/cache(state/)는 여러 워크플로가 공유·덮어쓰기/7일 만료되어 기록이 유실됨 → git 추적 data/ 폴더에 영구 저장
+# actions/cache(state/) 대신 git 추적 data/ 폴더에 영구 저장
 STATE_DIR = Path(__file__).resolve().parent.parent / "data"
 RECORD_FILE = STATE_DIR / "betting_track_record.json"
-LEGACY_FILE = Path(__file__).resolve().parent.parent / "state" / "betting_track_record.json"
 
 
 def _ensure_dir():
@@ -70,20 +69,8 @@ def _read(path):
 
 def load_history():
     _ensure_dir()
-    merged = {}
-    # 레거시(state/) 기록도 병합하여 유실분 복구 (data/ 우선)
-    for path in (LEGACY_FILE, RECORD_FILE):
-        if path.exists():
-            for h in _read(path):
-                d = h.get('date')
-                if not d:
-                    continue
-                prev = merged.get(d)
-                # 검증 완료된 기록을 미검증 기록으로 덮어쓰지 않음
-                if prev and prev.get('evaluated') and not h.get('evaluated'):
-                    continue
-                merged[d] = h
-    data = {"history": sorted(merged.values(), key=lambda x: x['date'])}
+    history = _read(RECORD_FILE) if RECORD_FILE.exists() else []
+    data = {"history": sorted(history, key=lambda x: x['date'])}
     return cleanup_old_records(data)
 
 
