@@ -121,6 +121,8 @@ def record_closing_picks(picks):
             'price': close_p,
             'change_pct': p.get('change_pct', 0),
             'amount_eok': p.get('amount_eok', 0),
+            'marcap': p.get('marcap', 0),
+            'marcap_str': p.get('marcap_str', ''),
             'target_1': t1,
             'target_1_pct': p.get('target_1_pct', '+3.0%'),
             'target_2': t2,
@@ -404,6 +406,9 @@ def render_monthly_history_html():
             src_str = f" <span class='hist-cat-src'>({cat_src})</span>" if cat_src else ""
             cat_html = f"<div class='hist-cat'>📰 <b>핵심재료</b>: <a href='{cat_url}' target='_blank' rel='noopener noreferrer' class='hist-cat-link'>{cat}{src_str} ↗</a></div>" if cat else ""
 
+            marcap_str = p.get('marcap_str', '')
+            marcap_tag = f" <span class='hist-marcap'>시총 {marcap_str}</span>" if marcap_str else ""
+
             items_html += f"""
             <div class="hist-item">
                 <div class="hist-item-header">
@@ -411,7 +416,7 @@ def render_monthly_history_html():
                         <a href="https://m.stock.naver.com/domestic/stock/{code}/total" target="_blank" rel="noopener noreferrer">
                             <b>{name}</b> <span class="hist-code">{code}</span>
                         </a>
-                        <span class="hist-sector">[{sec}]</span>
+                        <span class="hist-sector">[{sec}]</span>{marcap_tag}
                     </div>
                     <div class="hist-result">{res_str}</div>
                 </div>

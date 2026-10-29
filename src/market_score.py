@@ -321,7 +321,7 @@ def get_closing_betting_guide():
     msg += f"\n💡 <b>정규장 종가베팅 전략</b>\n{guide}\n"
 
     try:
-        from src.recommender import get_recommendations
+        from src.recommender import get_recommendations, format_marcap
         rec = get_recommendations()
         closing_picks = rec.get('closing', [])
         if closing_picks:
@@ -335,9 +335,11 @@ def get_closing_betting_guide():
                 sr_status = s.get('sr_status')
                 support_p = s.get('support_price')
                 next_res = s.get('next_resistance')
+                marcap_str = s.get('marcap_str') or (format_marcap(s.get('marcap')) if s.get('marcap') else '')
+                marcap_part = f" | 🏢 시총: <b>{marcap_str}</b>" if marcap_str else ""
 
                 msg += f"{idx}. <a href=\"{chart_url}\"><b>{s['name']}</b></a> (<b>{s['change_pct']:+.2f}%</b>) 🏷️ <code>[{sec}]</code>\n"
-                msg += f"   ├ 💰 거래대금: <b>{s['amount_eok']:,}억</b> (종가: {s['price']:,}원)\n"
+                msg += f"   ├ 💰 거래대금: <b>{s['amount_eok']:,}억</b>{marcap_part} (종가: {s['price']:,}원)\n"
                 if sr_status:
                     msg += f"   ├ 📈 <b>차트분석</b>: {sr_status}\n"
                     if support_p and next_res:
@@ -438,7 +440,7 @@ def get_evening_betting_guide():
     msg += f"💡 <b>20:00 마감 전 최종 종가베팅 전략</b>\n{guide}\n"
 
     try:
-        from src.recommender import get_recommendations
+        from src.recommender import get_recommendations, format_marcap
         rec = get_recommendations()
         closing_picks = rec.get('closing', [])
         breakout_picks = rec.get('breakout', [])
@@ -462,9 +464,11 @@ def get_evening_betting_guide():
                 sr_status = s.get('sr_status')
                 support_p = s.get('support_price')
                 next_res = s.get('next_resistance')
+                marcap_str = s.get('marcap_str') or (format_marcap(s.get('marcap')) if s.get('marcap') else '')
+                marcap_part = f" | 🏢 시총: <b>{marcap_str}</b>" if marcap_str else ""
 
                 msg += f"{idx}. <a href=\"{chart_url}\"><b>{s['name']}</b></a> (<b>{s['change_pct']:+.2f}%</b>) 🏷️ <code>[{sec}]</code>\n"
-                msg += f"   ├ 💰 거래대금: <b>{s['amount_eok']:,}억</b> (종가: {s['price']:,}원)\n"
+                msg += f"   ├ 💰 거래대금: <b>{s['amount_eok']:,}억</b>{marcap_part} (종가: {s['price']:,}원)\n"
                 if sr_status:
                     msg += f"   ├ 📈 <b>차트분석</b>: {sr_status}\n"
                     if support_p and next_res:
