@@ -74,7 +74,9 @@ jobs:
           git add data/betting_track_record.json || exit 0
           git diff --cached --quiet && exit 0
           git commit -m "chore: update betting track record [skip ci]"
-          for i in 1 2 3; do git pull --rebase -X theirs && git push && break; sleep 5; done
+          git remote set-url origin "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
+          for i in 1 2 3; do git pull --rebase -X theirs origin main && git push origin main && break; sleep 5; done
+
 
       - name: Upload Artifact
         uses: actions/upload-pages-artifact@v3
