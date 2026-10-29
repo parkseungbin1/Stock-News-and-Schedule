@@ -130,6 +130,8 @@ def generate_html():
         price = pick.get('price', pick.get('close_price', 0))
         change_val = pick.get('change_pct', 0)
         amount_eok = pick.get('amount_eok', 0)
+        marcap_str = pick.get('marcap_str', '')
+        marcap_badge = f'<span class="rec-marcap-badge">시총 {marcap_str}</span>' if marcap_str else ''
         amount_str = f" ({amount_eok:,}억)" if amount_eok else ""
 
         t1 = pick.get('target_1') or (int(round(price * 1.03)) if price else 0)
@@ -214,6 +216,7 @@ def generate_html():
                     </a>
                     {sec_badge}
                     <span class="rec-market-badge">{market}</span>
+                    {marcap_badge}
                 </div>
                 <div class="rec-score-badge">⭐ AI 적중도 {score}점</div>
             </div>
@@ -1222,6 +1225,16 @@ def generate_html():
             margin-left: 6px;
             font-weight: 700;
         }}
+        .hist-marcap {{
+            font-size: 0.72rem;
+            color: #93c5fd;
+            background: rgba(59, 130, 246, 0.12);
+            border: 1px solid rgba(59, 130, 246, 0.25);
+            padding: 1px 6px;
+            border-radius: 4px;
+            font-weight: 600;
+            margin-left: 6px;
+        }}
         .hist-result {{
             font-size: 0.85rem;
             color: #d1d5db;
@@ -1316,6 +1329,16 @@ def generate_html():
             background: rgba(255, 255, 255, 0.08);
             color: #d1d5db;
             margin-left: 4px;
+        }}
+        .rec-marcap-badge {{
+            font-size: 0.7rem;
+            padding: 2px 6px;
+            border-radius: 4px;
+            background: rgba(59, 130, 246, 0.12);
+            color: #93c5fd;
+            border: 1px solid rgba(59, 130, 246, 0.25);
+            margin-left: 4px;
+            font-weight: 600;
         }}
         .rec-score-badge {{
             font-size: 0.74rem;

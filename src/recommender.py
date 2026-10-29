@@ -17,6 +17,31 @@ KST = timezone(timedelta(hours=9))
 _SECTOR_MAP = {}
 
 
+def format_marcap(marcap):
+    """
+    시가총액(원)을 직관적인 억/조 단위 한글 표기로 변환
+    예:
+        110581600000 -> '1,106억'
+        2206342643000 -> '2조 2,063억'
+        21554328762400 -> '21조 5,543억'
+    """
+    if not marcap or marcap <= 0:
+        return ""
+    try:
+        marcap = float(marcap)
+        eok = marcap / 1e8
+        if eok >= 10000:
+            jo = int(eok // 10000)
+            rem_eok = int(round(eok % 10000))
+            if rem_eok == 0:
+                return f"{jo:,}조원"
+            return f"{jo:,}조 {rem_eok:,}억"
+        else:
+            return f"{int(round(eok)):,}억"
+    except Exception:
+        return ""
+
+
 def fetch_stock_catalyst(code, name=""):
     """
     종목별 실제 핵심 상승 재료(호재 뉴스 및 DART 공시) 정밀 추출 엔진.
@@ -416,6 +441,8 @@ def get_recommendations(dart_disclosures=None, market_context=None):
         low_p = float(row['Low'])
         amount_eok = float(row['Amount']) / 1e8
         change_pct = float(row['ChagesRatio'])
+        marcap = float(row['Marcap']) if 'Marcap' in row and pd.notnull(row['Marcap']) else 0
+        marcap_str = format_marcap(marcap)
 
         if high_p <= low_p:
             continue
@@ -479,6 +506,8 @@ def get_recommendations(dart_disclosures=None, market_context=None):
                 'support_price': support_price,
                 'next_resistance': next_res,
                 'room_pct': room_pct,
+                'marcap': int(marcap),
+                'marcap_str': marcap_str,
                 'is_breakout': sr.get('is_20_breakout', False) or sr.get('is_60_breakout', False) if sr else False
             })
 
@@ -510,6 +539,8 @@ def get_recommendations(dart_disclosures=None, market_context=None):
         close_p = float(row['Close'])
         amount_eok = float(row['Amount']) / 1e8
         change_pct = float(row['ChagesRatio'])
+        marcap = float(row['Marcap']) if 'Marcap' in row and pd.notnull(row['Marcap']) else 0
+        marcap_str = format_marcap(marcap)
 
         try:
             df = fdr.DataReader(code)
@@ -552,7 +583,9 @@ def get_recommendations(dart_disclosures=None, market_context=None):
                     'holding_period': '2~5영업일 분할 매도',
                     'score': int(min(score, 98)),
                     'reason': " · ".join(reasons),
-                    'tags': tags
+                    'tags': tags,
+                    'marcap': int(marcap),
+                    'marcap_str': marcap_str
                 })
         except Exception:
             continue
@@ -586,6 +619,8 @@ def get_recommendations(dart_disclosures=None, market_context=None):
         low_p = float(row['Low'])
         amount_eok = float(row['Amount']) / 1e8
         change_pct = float(row['ChagesRatio'])
+        marcap = float(row['Marcap']) if 'Marcap' in row and pd.notnull(row['Marcap']) else 0
+        marcap_str = format_marcap(marcap)
 
         if high_p <= low_p:
             continue
@@ -618,7 +653,9 @@ def get_recommendations(dart_disclosures=None, market_context=None):
                 'holding_period': '당일 추격매수 금지 ⚠️ → 향후 2~5일 5일선/눌림목 지지 시 분할 매수 타겟',
                 'score': int(min(score, 99)),
                 'reason': " · ".join(reasons),
-                'tags': tags
+                'tags': tags,
+                'marcap': int(marcap),
+                'marcap_str': marcap_str
             })
 
     breakout_picks.sort(key=lambda x: x['score'], reverse=True)
@@ -685,6 +722,8 @@ def get_fallback_recommendations():
                 'support_price': 188000,
                 'next_resistance': '205,000원 (+7.0% 여유)',
                 'room_pct': 7.0,
+                'marcap': 139412000000000,
+                'marcap_str': '139조 4,120억',
                 'is_breakout': True
             }
         ],
@@ -695,6 +734,8 @@ def get_fallback_recommendations():
                 'target_2': 211000, 'target_2_pct': '+9.0%', 'stop_loss': 187700, 'stop_loss_pct': '-3.0%',
                 'holding_period': '2~5영업일 분할 매도',
                 'score': 91, 'reason': '20일선(191,000원) 눌림목 지지 · 이격도 1.3% 안정 구간 · 주주환원 자사주',
+                'marcap': 14500000000000,
+                'marcap_str': '14조 5,000억',
                 'tags': ['20일선눌림목', '추세우상향', '안정적손익비']
             }
         ],
@@ -705,6 +746,8 @@ def get_fallback_recommendations():
                 'target_2': 31600, 'target_2_pct': '+15.0%', 'stop_loss': 24000, 'stop_loss_pct': '기준봉 시초가 이탈',
                 'holding_period': '당일 추격매수 금지 ⚠️ → 향후 2~5일 5일선/눌림목 지지 시 분할 매수 타겟',
                 'score': 98, 'reason': '거래대금 6,789억 폭발 · +16.1% 강력 돌파 장대양봉 · 사우디 수주 호재',
+                'marcap': 5390000000000,
+                'marcap_str': '5조 3,900억',
                 'tags': ['강력기준봉', '거래대금폭발', '눌림목공략대기']
             }
         ]
