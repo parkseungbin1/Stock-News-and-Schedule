@@ -5,6 +5,7 @@
 3. [오후 15:10] 🎯 15:30 정규장 마감 1차 종가베팅 가이드
 4. [저녁 19:40] 🎯 20:00 NXT 8시 마감 최종 종가베팅 가이드
 """
+import functools
 import logging
 from datetime import datetime, timezone, timedelta
 import requests
@@ -18,6 +19,7 @@ HEADERS = {
 KST = timezone(timedelta(hours=9))
 
 
+@functools.lru_cache(maxsize=32)
 def fetch_nasdaq_futures():
     """실시간 미국 E-mini 나스닥 100 선물 (NQ=F) 조회"""
     url = 'https://query1.finance.yahoo.com/v8/finance/chart/NQ%3DF?interval=1d'
@@ -33,6 +35,7 @@ def fetch_nasdaq_futures():
     return None, 0.0
 
 
+@functools.lru_cache(maxsize=32)
 def fetch_naver_index(code):
     """네이버 증권 글로벌/국내 인덱스 조회 (예: .IXIC, .SOX, .GDAXI)"""
     url = f'https://api.stock.naver.com/index/{code}/basic'
@@ -46,6 +49,7 @@ def fetch_naver_index(code):
     return '', 0.0
 
 
+@functools.lru_cache(maxsize=32)
 def fetch_usdkrw():
     """원/달러 환율 및 등락률 조회"""
     url = 'https://api.stock.naver.com/marketindex/exchange/FX_USDKRW'
@@ -61,6 +65,7 @@ def fetch_usdkrw():
     return '', 0.0, 0.0
 
 
+@functools.lru_cache(maxsize=32)
 def fetch_cnn_fear_greed():
     """CNN Fear & Greed Index 조회 (0~100)"""
     url = 'https://production.dataviz.cnn.io/index/fearandgreed/graphdata'
@@ -74,6 +79,7 @@ def fetch_cnn_fear_greed():
     return 50.0, 'neutral'
 
 
+@functools.lru_cache(maxsize=32)
 def fetch_kr_market(code):
     """코스피/코스닥 지수 및 외인/기관 순매매 금액(억원) 조회"""
     close, ratio = '', 0.0
@@ -106,6 +112,7 @@ def fetch_vix():
     return fetch_naver_index('.VIX')
 
 
+@functools.lru_cache(maxsize=32)
 def fetch_us10y():
     """미국 10년물 국채금리 조회 (^TNX)"""
     url = 'https://query1.finance.yahoo.com/v8/finance/chart/%5ETNX?interval=1d'

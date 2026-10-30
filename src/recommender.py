@@ -382,10 +382,17 @@ def analyze_support_resistance(code: str, name: str) -> dict:
         return None
 
 
-def get_recommendations(dart_disclosures=None, market_context=None):
+_RECOMMENDATIONS_CACHE = None
+
+
+def get_recommendations(dart_disclosures=None, market_context=None, force_refresh=False):
     """
-    국내 KRX 전 종목을 실시간 스캔하여 고승률 4대 필터를 통과한 종목 도출
+    국내 KRX 전 종목을 실시간 스캔하여 고승률 4대 필터를 통과한 종목 도출 (프로세스 내 캐시 적용으로 초고속 실행)
     """
+    global _RECOMMENDATIONS_CACHE
+    if _RECOMMENDATIONS_CACHE is not None and not force_refresh:
+        return _RECOMMENDATIONS_CACHE
+
     import FinanceDataReader as fdr
 
     regime = evaluate_market_regime(market_context)
@@ -396,6 +403,7 @@ def get_recommendations(dart_disclosures=None, market_context=None):
         logger.error(f"KRX 종목 목록 수집 실패: {e}")
         fb = get_fallback_recommendations()
         fb['regime'] = regime
+        _RECOMMENDATIONS_CACHE = fb
         return fb
 
     # 1. 보통주 필터링
@@ -414,11 +422,6 @@ def get_recommendations(dart_disclosures=None, market_context=None):
 
     # =========================================================================
     # Track 1: 🎯 오늘 15:10 종가베팅 (오버나잇)
-    # 4대 기준 + [신규] 지지·저항 돌파 & 머리 위 저항선 충돌 배제 필터
-    # 1) 거래대금 80억+ & 시총 1,500억+ (소형 잡주 배제)
-    # 2) 윗꼬리 38% 이하 단단한 양봉 (장마감 매수세 유지)
-    # 3) 20일선 우상향 & 20일/60일 전고점 저항 돌파 (매물 공백)
-    # 4) 머리 위 2.5% 이내 저항선 충돌 위험 종목 원천 배제
     # =========================================================================
     closing_picks = []
     closing_pool = common[
@@ -428,8 +431,8 @@ def get_recommendations(dart_disclosures=None, market_context=None):
         (common['ChagesRatio'] <= 10.0)     # 최대 +10.0% 이하
     ].copy()
 
-    # 거래대금 상위 60개 종목 압축
-    closing_pool = closing_pool.sort_values(by='Amount', ascending=False).head(60)
+    # 거래대금 상위 20개 종목 압축 (초고속 스캔)
+    closing_pool = closing_pool.sort_values(by='Amount', ascending=False).head(20)
 
     for _, row in closing_pool.iterrows():
         code = str(row['Code'])
@@ -530,7 +533,7 @@ def get_recommendations(dart_disclosures=None, market_context=None):
         (common['ChagesRatio'] <= 6.5)         # 과열되지 않은 눌림목/초입 양봉
     ].copy()
 
-    swing_pool = swing_pool.sort_values(by='Amount', ascending=False).head(40)
+    swing_pool = swing_pool.sort_values(by='Amount', ascending=False).head(15)
 
     for _, row in swing_pool.iterrows():
         code = str(row['Code'])
@@ -543,7 +546,8 @@ def get_recommendations(dart_disclosures=None, market_context=None):
         marcap_str = format_marcap(marcap)
 
         try:
-            df = fdr.DataReader(code)
+            start_date = (datetime.now() - timedelta(days=90)).strftime('%Y-%m-%d')
+            df = fdr.DataReader(code, start=start_date)
             if len(df) < 25:
                 continue
             closes = df['Close'].values
@@ -607,7 +611,7 @@ def get_recommendations(dart_disclosures=None, market_context=None):
         (common['Marcap'] >= 1000 * 1e8)
     ].copy()
 
-    breakout_pool = breakout_pool.sort_values(by='Amount', ascending=False).head(30)
+    breakout_pool = breakout_pool.sort_values(by='Amount', ascending=False).head(15)
 
     for _, row in breakout_pool.iterrows():
         code = str(row['Code'])
@@ -698,12 +702,14 @@ def get_recommendations(dart_disclosures=None, market_context=None):
     except Exception as e:
         logger.warning(f"스윙 트랙 레코드 기록 실패: {e}")
 
-    return {
+    res = {
         'regime': regime,
         'closing': closing_picks,
         'swing': swing_picks,
         'breakout': breakout_picks
     }
+    _RECOMMENDATIONS_CACHE = res
+    return res
 
 
 def get_fallback_recommendations():

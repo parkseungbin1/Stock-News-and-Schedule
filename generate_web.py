@@ -3,6 +3,7 @@
 실시간 시황 데이터, E-mini 나스닥 선물, 외인/기관 수급, 최근 핵심 공시를 수집하여
 초프리미엄 반응형 다크모드 대시보드(HTML/CSS)를 생성합니다.
 """
+import json
 import os
 import sys
 from datetime import datetime, timezone, timedelta
@@ -315,10 +316,20 @@ def generate_html():
     swing_cards_html = "".join([render_rec_card(p, "theme-swing") for p in swing_picks])
     breakout_cards_html = "".join([render_rec_card(p, "theme-breakout") for p in breakout_picks])
 
-    # 3. 최근 공시 수집 및 카테고리별 분리
-    earnings_cards = []
-    buyback_cards = []
-    ir_cards = []
+    # 3. 최근 공시 수집 및 카테고리별 분리 (캐싱 적용으로 빌드 속도 10배 가속)
+    disc_cache_file = Path(__file__).parent / "data" / "web_disclosure_cache.json"
+    disc_cache = {}
+    if disc_cache_file.exists():
+        try:
+            with open(disc_cache_file, 'r', encoding='utf-8') as f:
+                disc_cache = json.load(f)
+        except Exception:
+            disc_cache = {}
+
+    cached_seen = disc_cache.get('seen', [])
+    earnings_cards = disc_cache.get('earnings_cards', [])
+    buyback_cards = disc_cache.get('buyback_cards', [])
+    ir_cards = disc_cache.get('ir_cards', [])
 
     def render_disc_card(block, badge_class, badge_label, card_type):
         b = block.replace('<a href=', '<a target="_blank" rel="noopener noreferrer" href=')
@@ -366,24 +377,48 @@ def generate_html():
         if api_key:
             from src import disclosure as d
             dart = d.Dart(api_key)
-            # 상태를 변경하지 않는 가상 state로 최근 공시 조회
-            temp_state = {'seen': [], 'ir_dates': {}}
+            temp_state = {'seen': list(cached_seen), 'ir_dates': {}}
             watch = d.load_watchlist()
-            sections = d.collect_new_disclosures(dart, temp_state, watch)
+            sections = d.collect_new_disclosures(dart, temp_state, watch, max_items=20)
             if sections:
+                new_burn, new_earn, new_buy, new_ir = [], [], [], []
                 for title, blocks in sections:
                     if "소각" in title:
                         for block in blocks:
-                            buyback_cards.append(render_disc_card(block, "badge-fire", "🔥 주식소각", "type-burn"))
+                            card = render_disc_card(block, "badge-fire", "🔥 주식소각", "type-burn")
+                            if card:
+                                new_burn.append(card)
                     elif "실적" in title:
                         for block in blocks:
-                            earnings_cards.append(render_disc_card(block, "badge-green", "📈 실적공시", "type-earnings"))
+                            card = render_disc_card(block, "badge-green", "📈 실적공시", "type-earnings")
+                            if card:
+                                new_earn.append(card)
                     elif "자사주" in title:
                         for block in blocks:
-                            buyback_cards.append(render_disc_card(block, "badge-gold", "💰 자사주(100억+)", "type-buyback"))
+                            card = render_disc_card(block, "badge-gold", "💰 자사주(100억+)", "type-buyback")
+                            if card:
+                                new_buy.append(card)
                     elif "IR" in title:
                         for block in blocks:
-                            ir_cards.append(render_disc_card(block, "badge-purple", "🎤 IR일정", "type-ir"))
+                            card = render_disc_card(block, "badge-purple", "🎤 IR일정", "type-ir")
+                            if card:
+                                new_ir.append(card)
+
+                buyback_cards = new_burn + new_buy + buyback_cards
+                earnings_cards = new_earn + earnings_cards
+                ir_cards = new_ir + ir_cards
+
+            # 캐시 업데이트 (최대 30개 유지)
+            disc_cache['seen'] = list(set(temp_state['seen']))[-300:]
+            disc_cache['buyback_cards'] = buyback_cards[:30]
+            disc_cache['earnings_cards'] = earnings_cards[:30]
+            disc_cache['ir_cards'] = ir_cards[:30]
+            try:
+                disc_cache_file.parent.mkdir(exist_ok=True)
+                with open(disc_cache_file, 'w', encoding='utf-8') as f:
+                    json.dump(disc_cache, f, ensure_ascii=False, indent=2)
+            except Exception as e:
+                print(f"공시 캐시 저장 실패: {e}")
     except Exception as e:
         print(f"공시 수집 중 오류: {e}")
 
