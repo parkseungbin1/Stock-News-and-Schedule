@@ -681,6 +681,200 @@ def generate_html():
             border-color: rgba(255, 255, 255, 0.2);
             transform: translateY(-1px);
         }}
+        .toolbar-btn.refresh-btn {{
+            background: rgba(16, 185, 129, 0.15);
+            color: #34d399;
+            border-color: rgba(16, 185, 129, 0.35);
+        }}
+        .toolbar-btn.refresh-btn:hover {{
+            background: rgba(16, 185, 129, 0.28);
+            border-color: #34d399;
+            box-shadow: 0 0 12px rgba(16, 185, 129, 0.3);
+        }}
+        .toolbar-btn.cloud-btn {{
+            background: rgba(59, 130, 246, 0.15);
+            color: #60a5fa;
+            border-color: rgba(59, 130, 246, 0.35);
+        }}
+        .toolbar-btn.cloud-btn:hover {{
+            background: rgba(59, 130, 246, 0.28);
+            border-color: #60a5fa;
+            box-shadow: 0 0 12px rgba(59, 130, 246, 0.3);
+        }}
+        .risk-quick-refresh-btn {{
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text-main);
+            border: 1px solid var(--border);
+            padding: 3px 10px;
+            border-radius: 999px;
+            font-size: 0.74rem;
+            font-weight: 700;
+            cursor: pointer;
+            margin-left: 8px;
+            transition: all 0.2s;
+        }}
+        .risk-quick-refresh-btn:hover {{
+            background: rgba(255, 255, 255, 0.18);
+            color: #34d399;
+            border-color: #34d399;
+        }}
+        .spin {{
+            display: inline-block;
+            animation: spinAnim 1s linear infinite;
+        }}
+        @keyframes spinAnim {{
+            from {{ transform: rotate(0deg); }}
+            to {{ transform: rotate(360deg); }}
+        }}
+        /* 클라우드 모달 스타일 */
+        .modal-overlay {{
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(6px);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }}
+        .modal-content {{
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            max-width: 520px;
+            width: 100%;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+            overflow: hidden;
+            animation: modalFadeIn 0.25s ease-out;
+        }}
+        @keyframes modalFadeIn {{
+            from {{ opacity: 0; transform: scale(0.95); }}
+            to {{ opacity: 1; transform: scale(1); }}
+        }}
+        .modal-header {{
+            padding: 16px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+        }}
+        .modal-header h3 {{
+            margin: 0;
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: var(--text-main);
+        }}
+        .modal-close {{
+            background: none;
+            border: none;
+            color: var(--text-sub);
+            font-size: 1.3rem;
+            cursor: pointer;
+            padding: 4px;
+            line-height: 1;
+        }}
+        .modal-body {{
+            padding: 18px 20px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }}
+        .modal-desc {{
+            font-size: 0.85rem;
+            color: var(--text-sub);
+            line-height: 1.55;
+            margin-bottom: 14px;
+        }}
+        .cloud-action-card {{
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 12px 14px;
+            margin-bottom: 12px;
+        }}
+        .cac-title {{
+            font-size: 0.88rem;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 4px;
+        }}
+        .cac-desc {{
+            font-size: 0.78rem;
+            color: var(--text-sub);
+            line-height: 1.45;
+            margin-bottom: 8px;
+        }}
+        .cac-btn {{
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            width: 100%;
+            padding: 9px 14px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            text-decoration: none;
+            cursor: pointer;
+            border: none;
+            box-sizing: border-box;
+            transition: all 0.2s;
+        }}
+        .cac-btn.primary {{
+            background: linear-gradient(135deg, #2563eb, #3b82f6);
+            color: #ffffff;
+        }}
+        .cac-btn.primary:hover {{
+            background: #1d4ed8;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+        }}
+        .cac-btn.green {{
+            background: #10b981;
+            color: #ffffff;
+            width: auto;
+            white-space: nowrap;
+        }}
+        .token-input-row {{
+            display: flex;
+            gap: 8px;
+        }}
+        .token-input {{
+            flex: 1;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 8px 12px;
+            color: var(--text-main);
+            font-size: 0.82rem;
+        }}
+        .token-status {{
+            font-size: 0.76rem;
+            margin-top: 6px;
+            min-height: 16px;
+        }}
+        .cloud-schedule-box {{
+            background: rgba(59, 130, 246, 0.05);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            border-radius: 12px;
+            padding: 12px 14px;
+            font-size: 0.8rem;
+        }}
+        .csb-title {{
+            font-weight: 700;
+            color: #60a5fa;
+            margin-bottom: 4px;
+        }}
+        .cloud-schedule-box ul {{
+            margin: 0;
+            padding-left: 18px;
+            color: var(--text-main);
+            line-height: 1.65;
+        }}
+        .csb-sub {{
+            margin-top: 6px;
+            font-size: 0.74rem;
+            color: var(--text-sub);
+        }}
         .quick-etf-bar {{
             display: flex;
             align-items: center;
@@ -2078,6 +2272,12 @@ def generate_html():
             </div>
         </div>
         <div class="header-right-controls">
+            <button id="refresh-now-btn" class="toolbar-btn refresh-btn" onclick="refreshDashboardNow()" title="최신 데이터 실시간 새로고침 (캐시 우회)">
+                🔄 <span id="refresh-btn-text">실시간 새로고침</span>
+            </button>
+            <button id="cloud-modal-btn" class="toolbar-btn cloud-btn" onclick="openCloudModal()" title="외부/스마트폰에서 깃허브 클라우드 즉시 재분석 실행">
+                ⚡ <span>클라우드 갱신</span>
+            </button>
             <button id="theme-toggle-btn" class="toolbar-btn" onclick="toggleTheme()" title="다크/라이트 테마 변경">
                 🌓 <span id="theme-btn-text">라이트모드</span>
             </button>
@@ -2087,12 +2287,58 @@ def generate_html():
         </div>
     </header>
 
+    <!-- 실시간 클라우드 재분석 모달 -->
+    <div id="cloud-modal" class="modal-overlay" style="display:none;" onclick="if(event.target===this)closeCloudModal()">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>⚡ 실시간 클라우드 재분석 & 배포</h3>
+                <button class="modal-close" onclick="closeCloudModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="modal-desc">
+                    스마트폰(길거리)이나 외부 PC에서도 버튼 하나로 깃허브 클라우드를 깨워 <b>실시간 나스닥 선물, 반도체, 환율, 수급을 즉시 재수집하고 대시보드를 새로고침</b>할 수 있습니다.
+                </div>
+                
+                <div class="cloud-action-card">
+                    <div class="cac-title">🚀 방법 1. 원클릭 깃허브 액션 즉시 실행 (가장 추천)</div>
+                    <div class="cac-desc">모바일 브라우저에서 깃허브 액션 페이지로 바로 이동하여 [Run workflow] 버튼을 누릅니다. (약 1분 후 최신 웹 자동 배포)</div>
+                    <a href="https://github.com/parkseungbin1/Stock-News-and-Schedule/actions/workflows/deploy-web.yml" target="_blank" rel="noopener noreferrer" class="cac-btn primary">
+                        ⚡ 깃허브 실행창 바로가기 (Run workflow)
+                    </a>
+                </div>
+
+                <div class="cloud-action-card">
+                    <div class="cac-title">🔑 방법 2. 스마트폰 원터치 직접 실행 (GitHub 토큰 1회 저장)</div>
+                    <div class="cac-desc">GitHub 토큰(PAT)을 내 폰에 1회만 저장해두면, 위 페이지로 이동할 필요도 없이 이 화면에서 1초 만에 클라우드 빌드를 시작합니다.</div>
+                    <div class="token-input-row">
+                        <input type="password" id="gh-token-input" placeholder="ghp_... (GitHub Personal Access Token)" class="token-input">
+                        <button onclick="saveAndTriggerWorkflow()" class="cac-btn green">🚀 즉시 실행</button>
+                    </div>
+                    <div id="token-status" class="token-status"></div>
+                </div>
+
+                <div class="cloud-schedule-box">
+                    <div class="csb-title">⏰ 정규 종가베팅 자동 배포 스케줄 (완전 자동 / 0원)</div>
+                    <ul>
+                        <li>🎯 <b>15:00 KST</b> : 장마감 대비 1차 리스크 수집 및 선제 가이드</li>
+                        <li>🎯 <b>15:10 KST</b> : 15:10 공식 종가베팅 골든타임 최신화 (텔레그램 동시)</li>
+                        <li>🎯 <b>15:20 KST</b> : 15:20 동시호가 직전 최종 지표 배포</li>
+                        <li>🏁 <b>15:35 KST</b> : 정규장 마감 후 최종 성과 검증</li>
+                        <li>🌙 <b>20:05 KST</b> : NXT 야간 마감</li>
+                    </ul>
+                    <div class="csb-sub">※ 평일 15:00~15:20 골든타임에는 버튼을 누르지 않으셔도 10분마다 깃허브가 자동으로 최신화합니다.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- 0. AI 실시간 복합 시장 리스크 스코어 배너 -->
     <div class="risk-banner-card {risk_badge_class}">
         <div class="risk-left">
             <div class="risk-title-row">
                 <span class="risk-icon-pill">🛡️ AI 실시간 시장 리스크 스코어</span>
                 <span class="risk-status-badge">{risk_grade}</span>
+                <button class="risk-quick-refresh-btn" onclick="refreshDashboardNow()" title="실시간 최신 데이터 동기화">🔄 새로고침</button>
             </div>
             <div class="risk-desc-text">{risk_desc}</div>
         </div>
@@ -2591,6 +2837,85 @@ def generate_html():
                     card.style.display = (eok >= 3000 && eok < 10000) ? 'flex' : 'none';
                 }} else if (type === 'small') {{
                     card.style.display = (eok < 3000) ? 'flex' : 'none';
+                }}
+            }});
+        }}
+
+        // 실시간 새로고침 (캐시 무시 강제 요청)
+        function refreshDashboardNow() {{
+            const btns = document.querySelectorAll('.refresh-btn, .risk-quick-refresh-btn');
+            btns.forEach(b => {{
+                b.innerHTML = '🔄 <span class="spin">동기화 중...</span>';
+                b.disabled = true;
+            }});
+            const url = window.location.pathname + '?nocache=' + Date.now();
+            fetch(url, {{ cache: 'no-store' }})
+                .then(() => {{
+                    window.location.href = url;
+                }})
+                .catch(() => {{
+                    window.location.reload();
+                }});
+        }}
+
+        // 클라우드 모달 열기/닫기
+        function openCloudModal() {{
+            const m = document.getElementById('cloud-modal');
+            if (m) m.style.display = 'flex';
+            const saved = localStorage.getItem('binistock_gh_token');
+            const inp = document.getElementById('gh-token-input');
+            if (saved && inp) inp.value = saved;
+        }}
+
+        function closeCloudModal() {{
+            const m = document.getElementById('cloud-modal');
+            if (m) m.style.display = 'none';
+        }}
+
+        // GitHub Actions Workflow Dispatch 실행 (모바일 / 외부 PC용)
+        function saveAndTriggerWorkflow() {{
+            const inp = document.getElementById('gh-token-input');
+            const status = document.getElementById('token-status');
+            const token = inp ? inp.value.trim() : '';
+            if (!token) {{
+                if (status) {{
+                    status.style.color = '#f87171';
+                    status.innerText = '❌ GitHub 토큰을 입력해 주세요. (또는 방법 1을 이용하세요)';
+                }}
+                return;
+            }}
+            localStorage.setItem('binistock_gh_token', token);
+            if (status) {{
+                status.style.color = '#60a5fa';
+                status.innerHTML = '⏳ 깃허브 클라우드 서버에 실시간 재분석 요청을 전송 중...';
+            }}
+
+            fetch('https://api.github.com/repos/parkseungbin1/Stock-News-and-Schedule/actions/workflows/deploy-web.yml/dispatches', {{
+                method: 'POST',
+                headers: {{
+                    'Accept': 'application/vnd.github.v3+json',
+                    'Authorization': 'token ' + token,
+                    'Content-Type': 'application/json'
+                }},
+                body: JSON.stringify({{ ref: 'main' }})
+            }})
+            .then(res => {{
+                if (res.status === 204 || res.ok) {{
+                    if (status) {{
+                        status.style.color = '#34d399';
+                        status.innerHTML = '🚀 <b>성공!</b> 클라우드에서 실시간 재분석이 시작되었습니다. (약 1분 후 최신 데이터가 자동 반영됩니다)';
+                    }}
+                    setTimeout(() => {{ refreshDashboardNow(); }}, 60000);
+                }} else {{
+                    return res.json().then(data => {{
+                        throw new Error(data.message || '인증 실패 (권한 부족 또는 잘못된 토큰)');
+                    }});
+                }}
+            }})
+            .catch(err => {{
+                if (status) {{
+                    status.style.color = '#f87171';
+                    status.innerText = '❌ 실행 실패: ' + err.message + ' (방법 1 링크를 직접 이용해 보세요)';
                 }}
             }});
         }}
