@@ -685,12 +685,18 @@ def get_recommendations(dart_disclosures=None, market_context=None):
             p['catalyst_body'] = ''
         p['chart_url'] = f"https://m.stock.naver.com/domestic/stock/{p['code']}/total"
 
-    # [STEP 4] 익일 시초가 성과 자동 추적을 위한 당일 종가베팅 종목 기록
+    # [STEP 4] 익일 시초가 성과 자동 추적을 위한 당일 종가베팅 및 스윙 종목 기록
     try:
         from src.track_record import record_closing_picks
         record_closing_picks(closing_picks)
     except Exception as e:
-        logger.warning(f"트랙 레코드 기록 실패: {e}")
+        logger.warning(f"종가베팅 트랙 레코드 기록 실패: {e}")
+
+    try:
+        from src.swing_track_record import record_swing_picks
+        record_swing_picks(swing_picks)
+    except Exception as e:
+        logger.warning(f"스윙 트랙 레코드 기록 실패: {e}")
 
     return {
         'regime': regime,

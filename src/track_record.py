@@ -93,15 +93,18 @@ def record_closing_picks(picks):
     if now.weekday() >= 5:
         logger.info("주말(토/일)이므로 종가베팅 트랙 레코드 기록 건너뜀")
         return
-    # 실제 종가베팅 시간대(15:00~15:45 KST)에만 기록 (아침/야간 실행 시 오기록·덮어쓰기 방지)
+    # 평일 정규장 마감(15:00 KST) 이후 당일 종가베팅 추천 확정 기록
     hm = now.hour * 100 + now.minute
-    if not (1500 <= hm <= 1545):
-        logger.info(f"종가베팅 시간대 아님({now:%H:%M}) → 트랙 레코드 기록 건너뜀")
+    if hm < 1500:
+        logger.info(f"정규장 마감 전({now:%H:%M}) → 종가베팅 트랙 레코드 기록 대기")
         return
     date_str = now.strftime('%Y-%m-%d')
 
     data = load_history()
     existing = [h for h in data.get('history', []) if h.get('date') == date_str]
+    if existing and existing[0].get('evaluated'):
+        logger.info(f"[{date_str}] 이미 성과 검증 완료된 기록이므로 보존")
+        return
     pick_items = []
     for p in picks:
         close_p = p.get('price', p.get('close_price', 0))

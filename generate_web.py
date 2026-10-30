@@ -122,6 +122,14 @@ def generate_html():
         print(f"히스토리 탭 생성 실패: {e}")
         history_tab_html = "<div class='empty-card'>기록을 불러오는 중입니다..</div>"
 
+    try:
+        from src.swing_track_record import render_monthly_swing_history_html, evaluate_swing_performance
+        evaluate_swing_performance()
+        swing_history_tab_html = render_monthly_swing_history_html()
+    except Exception as e:
+        print(f"스윙 히스토리 탭 생성 실패: {e}")
+        swing_history_tab_html = "<div class='empty-card'>스윙 기록을 불러오는 중입니다..</div>"
+
     def render_rec_card(pick, card_theme):
         name = pick.get('name', '종목')
         code = pick.get('code', '')
@@ -1144,6 +1152,18 @@ def generate_html():
         .stat-cum .stat-value {{
             color: #60a5fa;
         }}
+        .stat-swing-winrate .stat-value {{
+            color: #c084fc;
+        }}
+        .stat-swing-rr .stat-value {{
+            color: #fbbf24;
+        }}
+        .stat-swing-cum .stat-value {{
+            color: #34d399;
+        }}
+        .stat-swing-period .stat-value {{
+            color: #818cf8;
+        }}
         .stat-sub {{
             font-size: 0.74rem;
             color: #9ca3af;
@@ -1260,6 +1280,16 @@ def generate_html():
             background: rgba(239, 68, 68, 0.2);
             color: #f87171;
             border: 1px solid rgba(239, 68, 68, 0.35);
+        }}
+        .res-badge.win-gold {{
+            background: rgba(245, 158, 11, 0.2);
+            color: #fbbf24;
+            border: 1px solid rgba(245, 158, 11, 0.4);
+        }}
+        .res-badge.wait {{
+            background: rgba(156, 163, 175, 0.15);
+            color: #d1d5db;
+            border: 1px solid rgba(156, 163, 175, 0.3);
         }}
         .hist-cat {{
             font-size: 0.78rem;
@@ -1893,6 +1923,9 @@ def generate_html():
         <button class="rec-tab" onclick="switchRecTrack('history', this)">
             📜 최근 1개월 종가베팅 성과 <span class="rec-tag-pill pill-blue">1달치 자동기록</span>
         </button>
+        <button class="rec-tab" onclick="switchRecTrack('swing_history', this)">
+            📊 최근 1개월 스윙 성과 <span class="rec-tag-pill pill-purple">2~5일 추세추적</span>
+        </button>
     </div>
 
     <!-- 1) 종가베팅 컨테이너 -->
@@ -2058,6 +2091,16 @@ def generate_html():
         {history_tab_html}
     </div>
 
+    <!-- 5) 최근 1개월 스윙 성과 히스토리 컨테이너 -->
+    <div id="rec-swing-history-container" class="rec-container" style="display: none;">
+        <div class="rec-strategy-banner banner-purple">
+            <div>
+                <b>📊 최근 30일(1개월) 2~5일 스윙 실전 성과 히스토리</b>: 20일선 눌림목 반등 추천 종목의 2~5영업일간 최고가 도달 수익률(1차 목표 +5%, 2차 목표 +9%) 및 손절가 이탈 여부를 정밀 추적·누적 검증합니다.
+            </div>
+        </div>
+        {swing_history_tab_html}
+    </div>
+
     <!-- 3. 실전 4대 종가베팅/매도 가이드 -->
     <div class="section-title">⏱️ 실전 4대 트레이딩 라이프사이클 가이드</div>
     <div class="tabs">
@@ -2182,6 +2225,7 @@ def generate_html():
             document.getElementById('rec-swing-container').style.display = (track === 'swing') ? 'block' : 'none';
             document.getElementById('rec-breakout-container').style.display = (track === 'breakout') ? 'block' : 'none';
             document.getElementById('rec-history-container').style.display = (track === 'history') ? 'block' : 'none';
+            document.getElementById('rec-swing-history-container').style.display = (track === 'swing_history') ? 'block' : 'none';
         }}
     </script>
 </body>
