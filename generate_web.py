@@ -688,31 +688,6 @@ def generate_html():
             border-color: rgba(255, 255, 255, 0.2);
             transform: translateY(-1px);
         }}
-        .refresh-control {{
-            display: flex;
-            align-items: center;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid var(--border);
-            border-radius: 999px;
-            padding: 4px 10px;
-            gap: 6px;
-            font-size: 0.8rem;
-            color: var(--text-sub);
-        }}
-        .refresh-control select {{
-            background: transparent;
-            border: none;
-            color: var(--text-main);
-            font-size: 0.8rem;
-            outline: none;
-            cursor: pointer;
-        }}
-        .refresh-countdown {{
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.76rem;
-            color: #10b981;
-            font-weight: 700;
-        }}
         .quick-etf-bar {{
             display: flex;
             align-items: center;
@@ -2110,16 +2085,6 @@ def generate_html():
             </div>
         </div>
         <div class="header-right-controls">
-            <div class="refresh-control" title="브라우저 자체 새로고침 (외부 호출 없는 100% 무료 0원)">
-                <span>🔄</span>
-                <select id="auto-refresh-select" onchange="changeAutoRefresh(this.value)">
-                    <option value="0">자동새로고침: 꺼짐</option>
-                    <option value="30" selected>30초 주기</option>
-                    <option value="60">1분 주기</option>
-                    <option value="300">5분 주기</option>
-                </select>
-                <span id="refresh-timer" class="refresh-countdown">30s</span>
-            </div>
             <button id="theme-toggle-btn" class="toolbar-btn" onclick="toggleTheme()" title="다크/라이트 테마 변경">
                 🌓 <span id="theme-btn-text">라이트모드</span>
             </button>
@@ -2662,41 +2627,6 @@ def generate_html():
             }}
         }}
         initTheme();
-
-        // 30초 실시간 자동 새로고침 (클라이언트 브라우저 전용: 100% 무료 0원)
-        let refreshSec = 30;
-        let countdown = refreshSec;
-        let refreshInterval = null;
-
-        function updateCountdown() {{
-            const el = document.getElementById('refresh-timer');
-            if (!el) return;
-            if (refreshSec <= 0) {{
-                el.innerText = '꺼짐';
-                return;
-            }}
-            countdown--;
-            if (countdown <= 0) {{
-                el.innerText = '0s';
-                window.location.reload();
-            }} else {{
-                el.innerText = countdown + 's';
-            }}
-        }}
-
-        function changeAutoRefresh(val) {{
-            refreshSec = parseInt(val, 10);
-            countdown = refreshSec;
-            const el = document.getElementById('refresh-timer');
-            if (refreshInterval) clearInterval(refreshInterval);
-            if (refreshSec > 0) {{
-                if (el) el.innerText = countdown + 's';
-                refreshInterval = setInterval(updateCountdown, 1000);
-            }} else {{
-                if (el) el.innerText = '꺼짐';
-            }}
-        }}
-        refreshInterval = setInterval(updateCountdown, 1000);
 
         // PWA Service Worker 등록
         if ('serviceWorker' in navigator) {{
