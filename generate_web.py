@@ -2383,7 +2383,7 @@ def generate_html():
             </div>
             <div class="metric-main-row">
                 <div class="metric-value">{fut_display}</div>
-                <a href="https://m.stock.naver.com/worldstock/future/NQ=F" target="_blank" rel="noopener noreferrer" class="live-quote-link" title="네이버 증권 실시간 CME 나스닥 선물 호가창 보기">🔴 실시간 호가 ↗</a>
+                <a href="https://kr.tradingview.com/symbols/CME_MINI-NQ1!/" target="_blank" rel="noopener noreferrer" class="live-quote-link" title="트레이딩뷰 실시간 CME 나스닥100 선물 틱 차트 및 호가 보기">🔴 실시간 호가 ↗</a>
             </div>
             <div class="metric-sub">{fut_badge} (CME 실시간 수집)</div>
             <div class="metric-desc">
