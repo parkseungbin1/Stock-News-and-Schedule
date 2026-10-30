@@ -90,7 +90,7 @@ def generate_html():
 
     # 2-2. AI 실시간 복합 리스크 스코어 계산 (0~100)
     try:
-        from src.risk_score import compute_risk_score
+        from src.risk_score import compute_risk_score, get_risk_assessment
         vix_val = float(str(vix_close).replace(',', '')) if vix_close else 20.0
         risk_ctx = {
             'fut_ratio': fut_ratio if fut_ratio is not None else 0.0,
@@ -103,25 +103,18 @@ def generate_html():
             'us10y': us10y_diff if us10y_diff is not None else 0.0,
         }
         ai_risk_score = compute_risk_score(risk_ctx)
+        assessment = get_risk_assessment(ai_risk_score)
+        risk_grade = assessment['grade']
+        risk_color = assessment['color']
+        risk_badge_class = assessment['badge_class']
+        risk_desc = assessment['desc']
     except Exception as e:
         print(f"리스크 스코어 계산 실패: {e}")
-        ai_risk_score = 35
-
-    if ai_risk_score < 35:
-        risk_grade = "안정 (저위험)"
-        risk_color = "#10b981"
-        risk_badge_class = "risk-good"
-        risk_desc = "시장 위험도 낮음: 공격적 매매 및 종가베팅 비중 100% 정상 운용 가능"
-    elif ai_risk_score < 65:
+        ai_risk_score = 50
         risk_grade = "주의 (중위험)"
         risk_color = "#f59e0b"
         risk_badge_class = "risk-caution"
-        risk_desc = "단기 변동성 주의: 분할 매수 및 익절(+3%~+5%) 원칙 엄격 준수"
-    else:
-        risk_grade = "경고 (고위험)"
-        risk_color = "#ef4444"
-        risk_badge_class = "risk-danger"
-        risk_desc = "시장 하방 압력 경계: 현금 비중 50% 이상 확보 및 보수적 매매 대응"
+        risk_desc = "단기 변동성 주의: 분할 매수 및 익절 원칙 준수"
 
     try:
         from src.track_record import get_latest_closing_record, render_monthly_history_html
