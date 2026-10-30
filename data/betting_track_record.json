@@ -402,6 +402,113 @@
           "chart_url": "https://m.stock.naver.com/domestic/stock/028050/total"
         }
       ]
+    },
+    {
+      "date": "2026-10-29",
+      "evaluated": true,
+      "success_count": 3,
+      "total_count": 3,
+      "picks": [
+        {
+          "code": "489790",
+          "name": "한화비전",
+          "market": "KOSPI",
+          "sector": "IT/SW",
+          "catalyst": "김동선 테크 부문 성장 시동…한화비전, 3분기 영업익 1026억 호실적 발표",
+          "catalyst_url": "https://m.stock.naver.com/domestic/stock/489790/news",
+          "catalyst_source": "더팩트",
+          "close_price": 43700,
+          "price": 43700,
+          "change_pct": 8.71,
+          "open_price": 49450,
+          "gap_pct": 13.16,
+          "is_success": true,
+          "target_1": 45011,
+          "target_1_pct": "+3.0%",
+          "target_2": 45885,
+          "target_2_pct": "+5.0%",
+          "stop_loss": 42826,
+          "stop_loss_pct": "-2.0%",
+          "score": 96,
+          "amount_eok": 478,
+          "marcap": 2206342643000,
+          "marcap_str": "2조 2,063억",
+          "reason": "김동선 테크 부문 성장 시동 호실적 발표 및 20일선 지지 우상향 파동",
+          "holding_period": "당일 15:10~15:30 매수 → 익일 09:00~09:20 전량 분할 매도",
+          "tags": [
+            "종가베팅",
+            "실적호재",
+            "우상향"
+          ],
+          "chart_url": "https://m.stock.naver.com/domestic/stock/489790/total"
+        },
+        {
+          "code": "138040",
+          "name": "메리츠금융지주",
+          "market": "KOSPI",
+          "sector": "기타 금융업",
+          "catalyst": "메리츠금융지주 기관·외인 대량 수급 유입 및 주주환원 자사주 소각 모멘텀",
+          "catalyst_url": "https://m.stock.naver.com/domestic/stock/138040/news",
+          "catalyst_source": "한국경제",
+          "close_price": 128800,
+          "price": 128800,
+          "change_pct": 4.29,
+          "open_price": 131900,
+          "gap_pct": 2.41,
+          "is_success": true,
+          "target_1": 132664,
+          "target_1_pct": "+3.0%",
+          "target_2": 135240,
+          "target_2_pct": "+5.0%",
+          "stop_loss": 126224,
+          "stop_loss_pct": "-2.0%",
+          "score": 93,
+          "amount_eok": 147,
+          "marcap": 21554328762400,
+          "marcap_str": "21조 5,543억",
+          "reason": "메리츠금융지주 기관·외인 대량 수급 유입 및 업종 주도 모멘텀",
+          "holding_period": "당일 15:10~15:30 매수 → 익일 09:00~09:20 전량 분할 매도",
+          "tags": [
+            "종가베팅",
+            "기관수급",
+            "주주환원"
+          ],
+          "chart_url": "https://m.stock.naver.com/domestic/stock/138040/total"
+        },
+        {
+          "code": "030960",
+          "name": "양지사",
+          "market": "KOSDAQ",
+          "sector": "인쇄/문구",
+          "catalyst": "북미회담 기대감 및 남북경협·품절주 품귀 현상 거래량 폭발",
+          "catalyst_url": "https://m.stock.naver.com/domestic/stock/030960/news",
+          "catalyst_source": "머니투데이",
+          "close_price": 6920,
+          "price": 6920,
+          "change_pct": 22.48,
+          "open_price": 7210,
+          "gap_pct": 4.19,
+          "is_success": true,
+          "target_1": 7404,
+          "target_1_pct": "+3.0%",
+          "target_2": 7612,
+          "target_2_pct": "+5.0%",
+          "stop_loss": 6781,
+          "stop_loss_pct": "-2.0%",
+          "score": 91,
+          "amount_eok": 456,
+          "marcap": 110581600000,
+          "marcap_str": "1,106억",
+          "reason": "거래대금 456억 폭발 주도주, 상단 저항선 돌파 장대양봉",
+          "holding_period": "당일 15:10~15:30 매수 → 익일 09:00~09:20 전량 분할 매도",
+          "tags": [
+            "종가베팅",
+            "거래대금폭발",
+            "품절주"
+          ],
+          "chart_url": "https://m.stock.naver.com/domestic/stock/030960/total"
+        }
+      ]
     }
   ]
 }
