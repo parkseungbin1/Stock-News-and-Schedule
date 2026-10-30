@@ -1183,6 +1183,27 @@ def generate_html():
             font-family: 'JetBrains Mono', monospace;
             color: #ffffff;
         }}
+        .live-quote-link {{
+            font-size: 0.72rem;
+            font-weight: 700;
+            color: #60a5fa;
+            background: rgba(59, 130, 246, 0.12);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            border-radius: 6px;
+            padding: 2px 8px;
+            text-decoration: none;
+            transition: all 0.2s;
+            margin-left: 6px;
+            white-space: nowrap;
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+        }}
+        .live-quote-link:hover {{
+            background: #2563eb;
+            color: #ffffff;
+            border-color: #2563eb;
+        }}
         .up {{ color: #f87171; }}
         .down {{ color: #60a5fa; }}
         .metric-sub {{
@@ -2362,8 +2383,9 @@ def generate_html():
             </div>
             <div class="metric-main-row">
                 <div class="metric-value">{fut_display}</div>
+                <a href="https://m.stock.naver.com/worldstock/future/NQ=F" target="_blank" rel="noopener noreferrer" class="live-quote-link" title="네이버 증권 실시간 CME 나스닥 선물 호가창 보기">🔴 실시간 호가 ↗</a>
             </div>
-            <div class="metric-sub">{fut_badge} (CME 실시간)</div>
+            <div class="metric-sub">{fut_badge} (CME 실시간 수집)</div>
             <div class="metric-desc">
                 <div class="metric-desc-title">💡 시장 영향 & 실전 의미</div>
                 <div class="metric-desc-text">{fut_impact_desc}</div>
@@ -2377,6 +2399,7 @@ def generate_html():
             </div>
             <div class="metric-main-row">
                 <div class="metric-value">{sox_display}</div>
+                <a href="https://m.stock.naver.com/worldstock/index/.SOX" target="_blank" rel="noopener noreferrer" class="live-quote-link" title="네이버 증권 실시간 반도체 지수 보기">🔴 실시간 ↗</a>
             </div>
             <div class="metric-sub">{sox_badge}</div>
             <div class="metric-desc">
@@ -2422,6 +2445,7 @@ def generate_html():
             </div>
             <div class="metric-main-row">
                 <div class="metric-value">{fx_display}</div>
+                <a href="https://m.stock.naver.com/marketindex/exchange/FX_USDKRW" target="_blank" rel="noopener noreferrer" class="live-quote-link" title="네이버 증권 실시간 환율 보기">🔴 실시간 ↗</a>
             </div>
             <div class="metric-sub">{fx_badge}</div>
             <div class="metric-desc">
