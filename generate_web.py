@@ -88,6 +88,41 @@ def generate_html():
     hm_kst = now_kst.hour * 100 + now_kst.minute
     is_closing_window = (now_kst.weekday() < 5) and (1500 <= hm_kst <= 1545)
 
+    # 2-2. AI 실시간 복합 리스크 스코어 계산 (0~100)
+    try:
+        from src.risk_score import compute_risk_score
+        vix_val = float(str(vix_close).replace(',', '')) if vix_close else 20.0
+        risk_ctx = {
+            'fut_ratio': fut_ratio if fut_ratio is not None else 0.0,
+            'sox_ratio': sox_ratio if sox_ratio is not None else 0.0,
+            'kp_ratio': kp_ratio if kp_ratio is not None else 0.0,
+            'kd_ratio': kd_ratio if kd_ratio is not None else 0.0,
+            'fx_ratio': fx_ratio if fx_ratio is not None else 0.0,
+            'cnn_score': cnn_score if cnn_score is not None else 50.0,
+            'vix': vix_val,
+            'us10y': us10y_diff if us10y_diff is not None else 0.0,
+        }
+        ai_risk_score = compute_risk_score(risk_ctx)
+    except Exception as e:
+        print(f"리스크 스코어 계산 실패: {e}")
+        ai_risk_score = 35
+
+    if ai_risk_score < 35:
+        risk_grade = "안정 (저위험)"
+        risk_color = "#10b981"
+        risk_badge_class = "risk-good"
+        risk_desc = "시장 위험도 낮음: 공격적 매매 및 종가베팅 비중 100% 정상 운용 가능"
+    elif ai_risk_score < 65:
+        risk_grade = "주의 (중위험)"
+        risk_color = "#f59e0b"
+        risk_badge_class = "risk-caution"
+        risk_desc = "단기 변동성 주의: 분할 매수 및 익절(+3%~+5%) 원칙 엄격 준수"
+    else:
+        risk_grade = "경고 (고위험)"
+        risk_color = "#ef4444"
+        risk_badge_class = "risk-danger"
+        risk_desc = "시장 하방 압력 경계: 현금 비중 50% 이상 확보 및 보수적 매매 대응"
+
     try:
         from src.track_record import get_latest_closing_record, render_monthly_history_html
         latest_record = get_latest_closing_record()
@@ -129,6 +164,14 @@ def generate_html():
     except Exception as e:
         print(f"스윙 히스토리 탭 생성 실패: {e}")
         swing_history_tab_html = "<div class='empty-card'>스윙 기록을 불러오는 중입니다..</div>"
+
+    # 스윙 What-If 시뮬레이터 카드 생성
+    try:
+        from src.swing_simulator import render_swing_simulator_card
+        swing_sim_card_html = render_swing_simulator_card(swing_picks)
+    except Exception as e:
+        print(f"스윙 시뮬레이터 생성 실패: {e}")
+        swing_sim_card_html = ""
 
     def render_rec_card(pick, card_theme):
         name = pick.get('name', '종목')
@@ -216,7 +259,7 @@ def generate_html():
             """
 
         return f"""
-        <div class="rec-card {card_theme}">
+        <div class="rec-card {card_theme}" data-marcap="{int(pick.get('marcap', 0))}">
             <div class="rec-card-top">
                 <div class="rec-stock-title">
                     <a href="{chart_url}" target="_blank" rel="noopener noreferrer">
@@ -534,6 +577,8 @@ def generate_html():
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>비니stock 실전 트레이딩 대시보드</title>
     <meta name="description" content="E-mini 나스닥 100 선물, 외인/기관 수급, 종가베팅 & 시초가 매도 타이밍 실시간 분석 대시보드">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0b0f19">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
@@ -552,6 +597,298 @@ def generate_html():
             --gold: #f59e0b;
             --purple: #8b5cf6;
         }}
+        [data-theme="light"] {{
+            --bg: #f8fafc;
+            --surface: #ffffff;
+            --surface-hover: #f1f5f9;
+            --border: rgba(0, 0, 0, 0.09);
+            --text-main: #0f172a;
+            --text-sub: #475569;
+            --primary: #2563eb;
+        }}
+        [data-theme="light"] body {{
+            background: #f8fafc;
+            color: #0f172a;
+        }}
+        [data-theme="light"] .metric-card,
+        [data-theme="light"] .rec-card,
+        [data-theme="light"] .disclosure-card,
+        [data-theme="light"] .guide-card,
+        [data-theme="light"] .criteria-card,
+        [data-theme="light"] .swing-sim-card,
+        [data-theme="light"] .risk-banner-card {{
+            background: #ffffff;
+            border-color: rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05);
+        }}
+        [data-theme="light"] .card-main-title,
+        [data-theme="light"] .card-main-title a,
+        [data-theme="light"] .card-main-title b {{
+            color: #0f172a !important;
+        }}
+        [data-theme="light"] .card-details {{
+            background: #f1f5f9;
+            color: #1e293b !important;
+            border-color: rgba(0, 0, 0, 0.06);
+        }}
+        [data-theme="light"] .rec-stock-title a {{
+            color: #0f172a;
+        }}
+        [data-theme="light"] .rec-desc-box {{
+            background: #f8fafc;
+        }}
+        [data-theme="light"] .rec-desc-title {{
+            color: #334155;
+        }}
+        [data-theme="light"] .rec-desc-text {{
+            color: #1e293b;
+        }}
+        [data-theme="light"] .sim-table th {{
+            background: #f1f5f9;
+            color: #334155;
+        }}
+        [data-theme="light"] .sim-table td {{
+            border-bottom-color: rgba(0, 0, 0, 0.06);
+            color: #1e293b;
+        }}
+        [data-theme="light"] .sim-stock-cell b {{
+            color: #0f172a;
+        }}
+        [data-theme="light"] .criteria-item {{
+            background: #f8fafc;
+        }}
+        [data-theme="light"] .ci-title {{
+            color: #0f172a;
+        }}
+        [data-theme="light"] .ci-desc {{
+            color: #475569;
+        }}
+        .header-right-controls {{
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }}
+        .toolbar-btn {{
+            background: rgba(255, 255, 255, 0.06);
+            color: var(--text-main);
+            border: 1px solid var(--border);
+            padding: 6px 12px;
+            border-radius: 999px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }}
+        .toolbar-btn:hover {{
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-1px);
+        }}
+        .refresh-control {{
+            display: flex;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            padding: 4px 10px;
+            gap: 6px;
+            font-size: 0.8rem;
+            color: var(--text-sub);
+        }}
+        .refresh-control select {{
+            background: transparent;
+            border: none;
+            color: var(--text-main);
+            font-size: 0.8rem;
+            outline: none;
+            cursor: pointer;
+        }}
+        .refresh-countdown {{
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.76rem;
+            color: #10b981;
+            font-weight: 700;
+        }}
+        .quick-etf-bar {{
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 6px;
+            flex-wrap: wrap;
+        }}
+        .quick-label {{
+            font-size: 0.74rem;
+            color: var(--text-sub);
+            font-weight: 600;
+        }}
+        .quick-tag {{
+            font-size: 0.72rem;
+            font-weight: 700;
+            padding: 2px 7px;
+            border-radius: 4px;
+            background: rgba(59, 130, 246, 0.12);
+            color: #60a5fa;
+            border: 1px solid rgba(59, 130, 246, 0.25);
+            text-decoration: none;
+            transition: all 0.15s;
+        }}
+        .quick-tag:hover {{
+            background: #2563eb;
+            color: #ffffff;
+        }}
+        .risk-banner-card {{
+            background: linear-gradient(135deg, rgba(17, 24, 39, 0.95), rgba(15, 23, 42, 0.98));
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 16px 20px;
+            margin-bottom: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s;
+        }}
+        .risk-good {{ border-left: 5px solid #10b981; }}
+        .risk-caution {{ border-left: 5px solid #f59e0b; }}
+        .risk-danger {{ border-left: 5px solid #ef4444; }}
+        .risk-left {{ flex: 1; min-width: 280px; }}
+        .risk-title-row {{
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 6px;
+            flex-wrap: wrap;
+        }}
+        .risk-icon-pill {{ font-size: 0.92rem; font-weight: 800; color: var(--text-main); }}
+        .risk-status-badge {{
+            font-size: 0.78rem;
+            font-weight: 800;
+            padding: 3px 10px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid var(--border);
+        }}
+        .risk-good .risk-status-badge {{
+            background: rgba(16, 185, 129, 0.18);
+            color: #34d399;
+            border-color: rgba(16, 185, 129, 0.4);
+        }}
+        .risk-caution .risk-status-badge {{
+            background: rgba(245, 158, 11, 0.18);
+            color: #fbbf24;
+            border-color: rgba(245, 158, 11, 0.4);
+        }}
+        .risk-danger .risk-status-badge {{
+            background: rgba(239, 68, 68, 0.18);
+            color: #f87171;
+            border-color: rgba(239, 68, 68, 0.4);
+        }}
+        .risk-desc-text {{ font-size: 0.85rem; color: var(--text-sub); line-height: 1.5; }}
+        .risk-right {{
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            min-width: 180px;
+            gap: 6px;
+        }}
+        .risk-score-display {{ display: flex; align-items: baseline; gap: 4px; }}
+        .risk-score-num {{
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 2rem;
+            font-weight: 800;
+            line-height: 1;
+            color: var(--text-main);
+        }}
+        .risk-score-unit {{ font-size: 0.85rem; color: var(--text-sub); }}
+        .risk-meter-bar-container {{
+            width: 180px;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 999px;
+            overflow: hidden;
+        }}
+        .risk-meter-bar-fill {{ height: 100%; border-radius: 999px; transition: width 0.5s ease; }}
+        .marcap-filter-bar {{
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 16px 0 20px;
+            flex-wrap: wrap;
+            padding: 10px 14px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+        }}
+        .mfilter-label {{ font-size: 0.82rem; font-weight: 700; color: var(--text-sub); margin-right: 4px; }}
+        .mfilter-btn {{
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            color: var(--text-sub);
+            padding: 5px 12px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }}
+        .mfilter-btn:hover {{ background: rgba(255, 255, 255, 0.1); color: var(--text-main); }}
+        .mfilter-btn.active {{
+            background: #2563eb;
+            color: #ffffff;
+            border-color: #3b82f6;
+            box-shadow: 0 0 10px rgba(37, 99, 235, 0.4);
+        }}
+        .swing-sim-card {{
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 20px;
+            margin-top: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        }}
+        .swing-sim-header {{
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }}
+        .swing-sim-header h3 {{ font-size: 1.05rem; font-weight: 800; color: var(--text-main); margin-bottom: 4px; }}
+        .sim-desc {{ font-size: 0.82rem; color: var(--text-sub); }}
+        .sim-badge {{
+            font-size: 0.72rem;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 999px;
+            background: rgba(139, 92, 246, 0.15);
+            color: #c084fc;
+            border: 1px solid rgba(139, 92, 246, 0.35);
+        }}
+        .table-responsive {{ overflow-x: auto; -webkit-overflow-scrolling: touch; }}
+        .sim-table {{ width: 100%; border-collapse: collapse; font-size: 0.85rem; text-align: left; }}
+        .sim-table th {{
+            padding: 10px 12px;
+            background: rgba(255, 255, 255, 0.04);
+            color: var(--text-sub);
+            font-weight: 600;
+            border-bottom: 1px solid var(--border);
+            white-space: nowrap;
+        }}
+        .sim-table td {{ padding: 12px; border-bottom: 1px solid var(--border); white-space: nowrap; }}
+        .sim-stock-cell b {{ color: var(--text-main); font-size: 0.92rem; }}
+        .sim-code {{ font-size: 0.78rem; color: var(--text-sub); font-family: 'JetBrains Mono', monospace; margin-left: 4px; }}
+        .sim-price-cell {{ font-weight: 700; color: var(--text-main); }}
+        .sim-val {{ font-weight: 700; margin-right: 6px; }}
+        .sim-pct {{ font-size: 0.72rem; font-weight: 700; padding: 2px 6px; border-radius: 4px; }}
+        .badge-blue {{ background: rgba(59, 130, 246, 0.18); color: #93c5fd; }}
         * {{ margin: 0; padding: 0; box-sizing: border-box; }}
         body {{
             background: var(--bg);
@@ -1763,11 +2100,54 @@ def generate_html():
     <header>
         <div class="logo-area">
             <h1>🧭 비니stock 트레이딩 대시보드</h1>
+            <div class="quick-etf-bar">
+                <span class="quick-label">⚡ 글로벌 퀵:</span>
+                <a href="https://m.stock.naver.com/worldstock/index/.IXIC" target="_blank" rel="noopener noreferrer" class="quick-tag">나스닥</a>
+                <a href="https://m.stock.naver.com/worldstock/etf/QQQ" target="_blank" rel="noopener noreferrer" class="quick-tag">QQQ</a>
+                <a href="https://m.stock.naver.com/worldstock/etf/SPY" target="_blank" rel="noopener noreferrer" class="quick-tag">SPY</a>
+                <a href="https://m.stock.naver.com/worldstock/etf/SOXX" target="_blank" rel="noopener noreferrer" class="quick-tag">SOXX</a>
+                <a href="https://m.stock.naver.com/worldstock/stock/NVDA.O/total" target="_blank" rel="noopener noreferrer" class="quick-tag">NVDA</a>
+            </div>
         </div>
-        <div class="time-badge">
-            <span class="live-dot"></span>{now_str}
+        <div class="header-right-controls">
+            <div class="refresh-control" title="브라우저 자체 새로고침 (외부 호출 없는 100% 무료 0원)">
+                <span>🔄</span>
+                <select id="auto-refresh-select" onchange="changeAutoRefresh(this.value)">
+                    <option value="0">자동새로고침: 꺼짐</option>
+                    <option value="30" selected>30초 주기</option>
+                    <option value="60">1분 주기</option>
+                    <option value="300">5분 주기</option>
+                </select>
+                <span id="refresh-timer" class="refresh-countdown">30s</span>
+            </div>
+            <button id="theme-toggle-btn" class="toolbar-btn" onclick="toggleTheme()" title="다크/라이트 테마 변경">
+                🌓 <span id="theme-btn-text">라이트모드</span>
+            </button>
+            <div class="time-badge">
+                <span class="live-dot"></span>{now_str}
+            </div>
         </div>
     </header>
+
+    <!-- 0. AI 실시간 복합 시장 리스크 스코어 배너 -->
+    <div class="risk-banner-card {risk_badge_class}">
+        <div class="risk-left">
+            <div class="risk-title-row">
+                <span class="risk-icon-pill">🛡️ AI 실시간 시장 리스크 스코어</span>
+                <span class="risk-status-badge">{risk_grade}</span>
+            </div>
+            <div class="risk-desc-text">{risk_desc}</div>
+        </div>
+        <div class="risk-right">
+            <div class="risk-score-display">
+                <span class="risk-score-num" style="color: {risk_color};">{ai_risk_score}</span>
+                <span class="risk-score-unit">/ 100점</span>
+            </div>
+            <div class="risk-meter-bar-container">
+                <div class="risk-meter-bar-fill" style="width: {ai_risk_score}%; background: {risk_color};"></div>
+            </div>
+        </div>
+    </div>
 
     <!-- 1. 핵심 지표 그리드 -->
     <div class="grid-indicators">
@@ -1928,6 +2308,15 @@ def generate_html():
         </button>
     </div>
 
+    <!-- 시가총액 필터 바 -->
+    <div class="marcap-filter-bar">
+        <span class="mfilter-label">🏷️ 시가총액 필터:</span>
+        <button class="mfilter-btn active" onclick="filterByMarcap('all', this)">전체보기</button>
+        <button class="mfilter-btn" onclick="filterByMarcap('large', this)">대형주 (1조원+)</button>
+        <button class="mfilter-btn" onclick="filterByMarcap('mid', this)">중형주 (3천억~1조)</button>
+        <button class="mfilter-btn" onclick="filterByMarcap('small', this)">스몰캡 (3천억 미만)</button>
+    </div>
+
     <!-- 1) 종가베팅 컨테이너 -->
     <div id="rec-closing-container" class="rec-container">
         <div class="rec-strategy-banner banner-orange">
@@ -2028,6 +2417,7 @@ def generate_html():
         <div class="rec-grid">
             {swing_cards_html}
         </div>
+        {swing_sim_card_html}
     </div>
 
     <!-- 3) 당일 +15% 돌파 대장주 컨테이너 -->
@@ -2227,15 +2617,112 @@ def generate_html():
             document.getElementById('rec-history-container').style.display = (track === 'history') ? 'block' : 'none';
             document.getElementById('rec-swing-history-container').style.display = (track === 'swing_history') ? 'block' : 'none';
         }}
+
+        // 시가총액 필터
+        function filterByMarcap(type, btn) {{
+            document.querySelectorAll('.mfilter-btn').forEach(b => b.classList.remove('active'));
+            if (btn) btn.classList.add('active');
+            document.querySelectorAll('.rec-card').forEach(card => {{
+                const marcap = parseFloat(card.getAttribute('data-marcap') || '0');
+                const eok = marcap / 1e8;
+                if (type === 'all') {{
+                    card.style.display = 'flex';
+                }} else if (type === 'large') {{
+                    card.style.display = (eok >= 10000) ? 'flex' : 'none';
+                }} else if (type === 'mid') {{
+                    card.style.display = (eok >= 3000 && eok < 10000) ? 'flex' : 'none';
+                }} else if (type === 'small') {{
+                    card.style.display = (eok < 3000) ? 'flex' : 'none';
+                }}
+            }});
+        }}
+
+        // 테마 (다크/라이트) 관리
+        function initTheme() {{
+            const saved = localStorage.getItem('binistock_theme');
+            if (saved === 'light') {{
+                document.documentElement.setAttribute('data-theme', 'light');
+                const tText = document.getElementById('theme-btn-text');
+                if (tText) tText.innerText = '다크모드';
+            }}
+        }}
+        function toggleTheme() {{
+            const current = document.documentElement.getAttribute('data-theme');
+            const target = (current === 'light') ? 'dark' : 'light';
+            if (target === 'light') {{
+                document.documentElement.setAttribute('data-theme', 'light');
+                localStorage.setItem('binistock_theme', 'light');
+                const tText = document.getElementById('theme-btn-text');
+                if (tText) tText.innerText = '다크모드';
+            }} else {{
+                document.documentElement.removeAttribute('data-theme');
+                localStorage.setItem('binistock_theme', 'dark');
+                const tText = document.getElementById('theme-btn-text');
+                if (tText) tText.innerText = '라이트모드';
+            }}
+        }}
+        initTheme();
+
+        // 30초 실시간 자동 새로고침 (클라이언트 브라우저 전용: 100% 무료 0원)
+        let refreshSec = 30;
+        let countdown = refreshSec;
+        let refreshInterval = null;
+
+        function updateCountdown() {{
+            const el = document.getElementById('refresh-timer');
+            if (!el) return;
+            if (refreshSec <= 0) {{
+                el.innerText = '꺼짐';
+                return;
+            }}
+            countdown--;
+            if (countdown <= 0) {{
+                el.innerText = '0s';
+                window.location.reload();
+            }} else {{
+                el.innerText = countdown + 's';
+            }}
+        }}
+
+        function changeAutoRefresh(val) {{
+            refreshSec = parseInt(val, 10);
+            countdown = refreshSec;
+            const el = document.getElementById('refresh-timer');
+            if (refreshInterval) clearInterval(refreshInterval);
+            if (refreshSec > 0) {{
+                if (el) el.innerText = countdown + 's';
+                refreshInterval = setInterval(updateCountdown, 1000);
+            }} else {{
+                if (el) el.innerText = '꺼짐';
+            }}
+        }}
+        refreshInterval = setInterval(updateCountdown, 1000);
+
+        // PWA Service Worker 등록
+        if ('serviceWorker' in navigator) {{
+            window.addEventListener('load', () => {{
+                navigator.serviceWorker.register('./sw.js').catch(() => {{}});
+            }});
+        }}
     </script>
 </body>
 </html>
 """
     # 저장 디렉토리 (dist/)
+    import shutil
     out_dir = Path(__file__).parent / "dist"
     out_dir.mkdir(exist_ok=True)
     out_file = out_dir / "index.html"
     out_file.write_text(html, encoding="utf-8")
+
+    # PWA 에셋 dist에 복사
+    manifest_src = Path(__file__).parent / "manifest.json"
+    if manifest_src.exists():
+        shutil.copy(manifest_src, out_dir / "manifest.json")
+    sw_src = Path(__file__).parent / "sw.js"
+    if sw_src.exists():
+        shutil.copy(sw_src, out_dir / "sw.js")
+
     print(f"✓ 웹 대시보드 생성 완료: {out_file} ({out_file.stat().st_size} bytes)")
     return out_file
 
