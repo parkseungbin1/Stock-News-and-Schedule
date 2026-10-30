@@ -1,0 +1,21 @@
+{
+  "name": "비니stock 실전 트레이딩 대시보드",
+  "short_name": "비니stock",
+  "description": "실시간 나스닥 선물, 외인/기관 수급, 4대 종가베팅/스윙 추천 및 전자공시 레이더",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0b0f19",
+  "theme_color": "#0b0f19",
+  "icons": [
+    {
+      "src": "https://img.icons8.com/fluency/192/bullish.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://img.icons8.com/fluency/512/bullish.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
