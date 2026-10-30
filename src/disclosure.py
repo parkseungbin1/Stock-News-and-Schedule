@@ -101,8 +101,10 @@ class Dart:
                             continue
                 return '\n'.join(texts)
             except zipfile.BadZipFile:
-                if '<status>014</status>' in r.text and attempt < max_retries:
-                    time.sleep(1.5 * attempt)
+                if '<status>014</status>' in r.text:
+                    raise RuntimeError("원문 없음(014: 조회된 데이터가 없음)")
+                if attempt < max_retries:
+                    time.sleep(1.0)
                     continue
                 raise RuntimeError(f"원문 조회 실패: {r.text[:200]}")
 
@@ -564,21 +566,27 @@ def split_messages(header, blocks, limit=3800):
 
 
 # ---------------------------------------------------------------- 메인 로직
-def collect_new_disclosures(dart, state, watch):
-    """신규 공시를 분류·분석해 메시지 블록 반환"""
+def collect_new_disclosures(dart, state, watch, max_items=None):
+    """신규 공시를 분류·분석해 메시지 블록 반환 (max_items 지원으로 웹 대시보드 초고속 빌드)"""
     now = datetime.now(KST)
     bgn = (now - timedelta(days=1)).strftime('%Y%m%d')
     end = now.strftime('%Y%m%d')
     seen = set(state['seen'])
 
     items = dart.list(bgn, end, 'I') + dart.list(bgn, end, 'B')
-    items.sort(key=lambda x: x['rcept_no'])
+    # 최신 접수 번호 순(내림차순) 정렬
+    items.sort(key=lambda x: x['rcept_no'], reverse=True)
 
-    earnings, buyback, cancellation, ir = [], [], [], []
+    candidates = []
     for it in items:
         kind = classify(it['report_nm'])
-        if not kind or it['rcept_no'] in seen:
-            continue
+        if kind and it['rcept_no'] not in seen:
+            candidates.append((it, kind))
+            if max_items and len(candidates) >= max_items:
+                break
+
+    earnings, buyback, cancellation, ir = [], [], [], []
+    for it, kind in candidates:
 
         try:
             xml_text = dart.document_text(it['rcept_no'])
