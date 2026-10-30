@@ -85,7 +85,6 @@ def generate_html():
         swing_picks = fallback['swing']
         breakout_picks = fallback.get('breakout', [])
 
-    now_kst = datetime.now(timezone(timedelta(hours=9)))
     hm_kst = now_kst.hour * 100 + now_kst.minute
     is_closing_window = (now_kst.weekday() < 5) and (1500 <= hm_kst <= 1545)
 
@@ -145,7 +144,6 @@ def generate_html():
             closing_banner_html = f"<b>🎯 직전({closing_ref_date}) 종가베팅 공식 추천 종목</b>: 오늘 아침 09:00~09:20 시초가 갭상승 시 전량 분할 익절 (+3%~+5%) 대응 구간 (오늘 15:10에 새 종목 선별)"
 
     try:
-        from src.track_record import render_monthly_history_html
         history_tab_html = render_monthly_history_html()
     except Exception as e:
         print(f"히스토리 탭 생성 실패: {e}")
@@ -596,6 +594,21 @@ def generate_html():
     else:
         us10y_impact_badge = '<span class="impact-badge impact-neutral">⚪ 보합</span>'
         us10y_impact_desc = "글로벌 벤치마크 금리가 기준선 부근에서 안정적인 흐름 유지"
+
+    # 현재 시간대별 기본 활성 가이드 탭 자동 매칭 (아침/정규장/마감/야간)
+    if 700 <= hm_kst < 815:
+        def_guide_key, def_guide_idx = 'g0740', 0
+    elif 815 <= hm_kst < 1300:
+        def_guide_key, def_guide_idx = 'g0840', 1
+    elif 1300 <= hm_kst < 1700:
+        def_guide_key, def_guide_idx = 'g1510', 2
+    else:
+        def_guide_key, def_guide_idx = 'g1940', 3
+
+    t0_act = ' active' if def_guide_idx == 0 else ''
+    t1_act = ' active' if def_guide_idx == 1 else ''
+    t2_act = ' active' if def_guide_idx == 2 else ''
+    t3_act = ' active' if def_guide_idx == 3 else ''
 
     # HTML 템플릿
     html = f"""<!DOCTYPE html>
@@ -2757,10 +2770,10 @@ def generate_html():
     <!-- 3. 실전 4대 종가베팅/매도 가이드 -->
     <div class="section-title">⏱️ 실전 4대 트레이딩 라이프사이클 가이드</div>
     <div class="tabs">
-        <button class="tab-btn" onclick="showGuide('g0740', this)">🌅 07:40 NXT 매도</button>
-        <button class="tab-btn" onclick="showGuide('g0840', this)">🌅 08:40 정규장 매도</button>
-        <button class="tab-btn" onclick="showGuide('g1510', this)">🎯 15:10 정규장 종가베팅</button>
-        <button class="tab-btn active" onclick="showGuide('g1940', this)">🎯 19:40 NXT 최종 종가베팅</button>
+        <button class="tab-btn{t0_act}" onclick="showGuide('g0740', this)">🌅 07:40 NXT 매도</button>
+        <button class="tab-btn{t1_act}" onclick="showGuide('g0840', this)">🌅 08:40 정규장 매도</button>
+        <button class="tab-btn{t2_act}" onclick="showGuide('g1510', this)">🎯 15:10 정규장 종가베팅</button>
+        <button class="tab-btn{t3_act}" onclick="showGuide('g1940', this)">🎯 19:40 NXT 최종 종가베팅</button>
     </div>
 
     <div id="guide-box" class="guide-content"></div>
@@ -2868,8 +2881,8 @@ def generate_html():
             }}
         }}
 
-        // 기본 활성 탭
-        showGuide('g1940', document.querySelectorAll('.tab-btn')[3]);
+        // 현재 시간대 맞춤 기본 활성 가이드 탭 로드
+        showGuide('{def_guide_key}', document.querySelectorAll('.tab-btn')[{def_guide_idx}]);
 
         function switchRecTrack(track, btn) {{
             document.querySelectorAll('.rec-tab').forEach(b => b.classList.remove('active'));
