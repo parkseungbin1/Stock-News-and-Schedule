@@ -3310,7 +3310,14 @@ def generate_html():
             if (m) m.style.display = 'flex';
             const saved = localStorage.getItem('binistock_gh_token');
             const inp = document.getElementById('gh-token-input');
-            if (saved && inp) inp.value = saved;
+            if (saved && inp) {{
+                inp.value = saved;
+                const status = document.getElementById('token-status');
+                if (status) {{
+                    status.style.color = '#34d399';
+                    status.innerHTML = '✅ 이 기기에 토큰이 저장되어 있습니다. 바로 <b>[🚀 즉시 실행]</b>만 누르세요!';
+                }}
+            }}
         }}
 
         function closeCloudModal() {{
