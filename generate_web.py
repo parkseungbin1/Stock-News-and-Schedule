@@ -390,7 +390,10 @@ def generate_html():
     earnings_cards = [
         c.replace("| YoY ", "| 전년동기대비(YoY) ")
          .replace("| QoQ ", "| 직전분기대비(QoQ) ")
-         .replace("(컨센 ", "(시장예상치 ")
+         .replace("(컨센 ", "(증권가예상치 ")
+         .replace("(시장예상치 ", "(증권가예상치 ")
+         .replace("컨센 부합", "증권가 예상치 부합")
+         .replace("(컨센서스 없음)", "(증권가 예상치 없음)")
          .replace("[YoY ", "[전년동기대비 ")
         for c in disc_cache.get('earnings_cards', [])
     ]

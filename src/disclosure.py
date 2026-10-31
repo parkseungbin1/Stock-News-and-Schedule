@@ -446,10 +446,10 @@ def format_earnings(item, actual, cons, watch):
         elif diff <= -SURPRISE_PCT:
             verdict = f"🧊 <b>어닝쇼크 {diff:+.0f}%</b>"
         else:
-            verdict = f"➖ 컨센 부합 {diff:+.0f}%"
-        detail_head = f"   영업이익 {_fmt_eok(op)} (컨센 {_fmt_eok(cons['op'])}, {escape(cons['period'])})\n"
+            verdict = f"➖ 증권가 예상치 부합 {diff:+.0f}%"
+        detail_head = f"   영업이익 {_fmt_eok(op)} (증권가예상치 {_fmt_eok(cons['op'])}, {escape(cons['period'])})\n"
     else:
-        detail_head = f"   영업이익 {_fmt_eok(op)} (컨센서스 없음)\n"
+        detail_head = f"   영업이익 {_fmt_eok(op)} (증권가 예상치 없음)\n"
 
     turnaround = op_info.get('turnaround') or net_info.get('turnaround')
     if turnaround and '흑자전환' in str(turnaround):
@@ -477,7 +477,7 @@ def format_earnings(item, actual, cons, watch):
 
     # 매출액
     if sales is not None:
-        cs = f" (컨센 {_fmt_eok(cons['sales'])})" if cons and cons.get('sales') else ''
+        cs = f" (증권가예상치 {_fmt_eok(cons['sales'])})" if cons and cons.get('sales') else ''
         sales_growth = f" [YoY {sales_info['yoy']:+.1f}%]" if sales_info.get('yoy') is not None else ''
         line += f"   매출액 {_fmt_eok(sales)}{cs}{sales_growth}\n"
 
