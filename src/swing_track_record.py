@@ -345,8 +345,10 @@ def render_monthly_swing_history_html():
 
             low_p = p.get('lowest_price', entry_p)
             min_ret = round(((low_p - entry_p) / entry_p) * 100, 2) if entry_p > 0 else 0.0
-            low_str = f" · 최저 <b>{low_p:,}원</b> (<span class='down'>{min_ret:+.2f}%</span>)" if '손절' in status and low_p < entry_p else ""
-            res_str = f"추천가 {entry_p:,}원 → 최고 <b>{high_p:,}원</b> (<span class='{'up' if max_ret>0 else 'down'}'>{max_ret:+.2f}%</span>){low_str} {badge}"
+            if '손절' in status:
+                res_str = f"추천가 {entry_p:,}원 → 최저 <b>{low_p:,}원</b> (<span class='down'>{min_ret:+.2f}%</span> · 1차목표 +5% 미달, 반등최고 {max_ret:+.2f}%) {badge}"
+            else:
+                res_str = f"추천가 {entry_p:,}원 → 최고 <b>{high_p:,}원</b> (<span class='{'up' if max_ret>0 else 'down'}'>{max_ret:+.2f}%</span>) {badge}"
 
             cat_url = p.get('catalyst_url', f"https://m.stock.naver.com/domestic/stock/{code}/news")
             cat_src = p.get('catalyst_source', '')
