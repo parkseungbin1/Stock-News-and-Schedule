@@ -318,6 +318,63 @@ def parse_ir_info(xml):
 
 
 # ---------------------------------------------------------------- 네이버 컨센서스
+def fetch_stock_market_metrics(stock_code):
+    """
+    공시 발생 종목의 최근 10영업일 주가 수익률(선반영 판별용),
+    시가총액(억원), 20일 일평균 거래대금(억원, 자사주 매수압력 산출용)을 초고속 조회
+    """
+    if not stock_code:
+        return {}
+    out = {'ret_10d': None, 'marcap_eok': None, 'avg_20d_amount_eok': None}
+    try:
+        url = f"https://fchart.stock.naver.com/sise.nhn?symbol={stock_code}&timeframe=day&count=22&requestType=0"
+        r = requests.get(url, headers=UA, timeout=4)
+        if r.status_code == 200 and r.text:
+            items = re.findall(r'data="([^"]+)"', r.text)
+            rows = []
+            for it in items:
+                p = it.split('|')
+                if len(p) >= 6:
+                    c = float(p[4])
+                    v = float(p[5])
+                    if c > 0:
+                        rows.append((c, v))
+            if len(rows) >= 11:
+                cur_c = rows[-1][0]
+                prev_10_c = rows[-11][0]
+                if prev_10_c > 0:
+                    out['ret_10d'] = round((cur_c - prev_10_c) / prev_10_c * 100, 1)
+            if len(rows) >= 5:
+                recent = rows[-20:]
+                avg_amt = sum(c * v for c, v in recent) / len(recent) / 1e8
+                out['avg_20d_amount_eok'] = round(avg_amt, 1)
+    except Exception as e:
+        logger.debug(f"주가/거래대금 조회 실패({stock_code}): {e}")
+
+    try:
+        int_url = f"https://m.stock.naver.com/api/stock/{stock_code}/integration"
+        r2 = requests.get(int_url, headers=UA, timeout=4)
+        if r2.status_code == 200:
+            j = r2.json()
+            for info in j.get('totalInfos', []):
+                if info.get('code') == 'marketValue':
+                    val_str = info.get('value', '')
+                    jo_m = re.search(r'([\d,]+)\s*조', val_str)
+                    eok_m = re.search(r'([\d,]+)\s*억', val_str)
+                    total_eok = 0.0
+                    if jo_m:
+                        total_eok += float(jo_m.group(1).replace(',', '')) * 10000
+                    if eok_m:
+                        total_eok += float(eok_m.group(1).replace(',', ''))
+                    if total_eok > 0:
+                        out['marcap_eok'] = total_eok
+                    break
+    except Exception as e:
+        logger.debug(f"시가총액 조회 실패({stock_code}): {e}")
+
+    return out
+
+
 def naver_consensus(stock_code):
     """네이버 분기 재무에서 컨센서스(추정) 분기 값(억원) 조회"""
     try:
@@ -430,6 +487,18 @@ def format_earnings(item, actual, cons, watch):
             f" [YoY {net_info['yoy']:+.1f}%]" if net_info.get('yoy') is not None else "")
         line += f"   당기순이익 {_fmt_eok(net)}{net_turn}\n"
 
+    # [아이디어 4] 어닝 서프라이즈/호실적의 주가 선반영(Sell the News) vs 미반영 알짜 판별
+    if item.get('stock_code'):
+        metrics = fetch_stock_market_metrics(item.get('stock_code'))
+        ret_10d = metrics.get('ret_10d')
+        if ret_10d is not None:
+            if is_star and ret_10d <= 7.0:
+                line += f"   • 💡 <b>선반영 판별</b>: 🟢 <b>주가 미반영 알짜 호재</b> (최근 10일 {ret_10d:+.1f}% → 신규 수급 유입 기대)\n"
+            elif is_star and ret_10d >= 18.0:
+                line += f"   • 💡 <b>선반영 판별</b>: ⚠️ <b>단기 급등 선반영 주의</b> (최근 10일 {ret_10d:+.1f}% → 재료소멸 차익매물 경계)\n"
+            else:
+                line += f"   • 💡 <b>주가 흐름</b>: 🔵 최근 10일 등락 {ret_10d:+.1f}%\n"
+
     return line
 
 
@@ -455,6 +524,12 @@ def format_cancellation(item, info, watch):
     if amount_str or shares_str:
         sh_part = f" (보통주 {shares_str})" if shares_str else ""
         line += f"   • 소각규모: <b>{amount_str or '-'}</b>{sh_part}\n"
+    if amt_eok > 0 and item.get('stock_code'):
+        metrics = fetch_stock_market_metrics(item.get('stock_code'))
+        mc = metrics.get('marcap_eok')
+        if mc and mc > 0:
+            mc_pct = (amt_eok / mc) * 100
+            line += f"   • 🏢 <b>시총 대비 소각비중</b>: 시가총액의 <b>{mc_pct:.2f}%</b> 영구 증발 (EPS 직접 상승)\n"
 
     extra_tags = []
     if info.get('date'):
@@ -500,6 +575,21 @@ def format_buyback(item, info, watch):
     if amount_str or shares_str:
         sh_part = f" (보통주 {shares_str})" if shares_str else ""
         line += f"   • 취득예정: <b>{amount_str or '-'}</b>{sh_part}\n"
+    if amt_eok > 0 and item.get('stock_code'):
+        metrics = fetch_stock_market_metrics(item.get('stock_code'))
+        mc = metrics.get('marcap_eok')
+        avg_amt = metrics.get('avg_20d_amount_eok')
+        impact_parts = []
+        if mc and mc > 0:
+            mc_pct = (amt_eok / mc) * 100
+            impact_parts.append(f"시총 대비 <b>{mc_pct:.2f}%</b>")
+        if avg_amt and avg_amt > 0:
+            # 통상 3개월(60영업일) 분할 장내 매수 기준 일평균 거래대금 대비 매수 압력 산출
+            daily_pressure = ((amt_eok / 60.0) / avg_amt) * 100
+            grade = "🔥초강력 하방지지" if daily_pressure >= 5.0 else ("🟢양호한 하방지지" if daily_pressure >= 1.5 else "보통")
+            impact_parts.append(f"일일 매수압력 <b>{daily_pressure:.1f}%</b> ({grade})")
+        if impact_parts:
+            line += f"   • ⚡ <b>수급 파괴력</b>: {' | '.join(impact_parts)}\n"
 
     extra_tags = []
     if info.get('method'):

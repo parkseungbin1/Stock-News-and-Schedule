@@ -235,6 +235,24 @@ def get_morning_sell_guide(time_label="07:40", is_nxt=True):
 
     msg += f"💡 <b>오늘의 실전 매매 액션 플랜</b>\n{guide}\n\n"
 
+    # [아이디어 1] 직전 종가베팅 보유 종목의 NXT 프리마켓/시간외 실시간 체결 시세 및 개별 대응 가이드
+    try:
+        from src.track_record import get_latest_closing_record
+        from src.recommender import fetch_nxt_over_market_info
+        rec = get_latest_closing_record()
+        if rec and rec.get('picks'):
+            nxt_lines = []
+            for p in rec['picks'][:3]:
+                nxt = fetch_nxt_over_market_info(p['code'])
+                if nxt and nxt.get('price'):
+                    r_val = nxt.get('ratio', 0.0)
+                    act = "🔥NXT 50% 선제익절 권장" if r_val >= 2.5 else ("🟢09:00 정규장 슈팅 대기" if r_val >= 0 else "⚖️전일종가 지지 확인")
+                    nxt_lines.append(f"• <b>{p['name']}</b>: {nxt['session']} <b>{nxt['price']:,}원</b> ({r_val:+.2f}%) → <i>{act}</i>")
+            if nxt_lines:
+                msg += "⚡ <b>[종가베팅 종목 NXT 실시간 시세 & 시차 대응]</b>\n" + "\n".join(nxt_lines) + "\n\n"
+    except Exception as e:
+        logger.debug(f"NXT 시세 브리핑 생략: {e}")
+
     # [STEP 4] 전일 종가베팅 사후 성과 검증 피드백 자동 삽입
     try:
         from src.track_record import evaluate_latest_performance

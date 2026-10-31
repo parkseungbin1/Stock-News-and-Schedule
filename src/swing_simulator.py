@@ -60,6 +60,9 @@ def render_swing_simulator_card(picks: list) -> str:
                 <span class="sim-val">{sim1['stop_price']:,}원</span>
                 <span class="sim-pct badge-blue">-2.0%</span>
             </td>
+            <td class="sim-kelly-cell" data-price="{price}">
+                <span class="kelly-shares-badge">계산중...</span>
+            </td>
         </tr>
         """)
     
@@ -85,6 +88,7 @@ def render_swing_simulator_card(picks: list) -> str:
                         <th>2차 목표 (+5%)</th>
                         <th>3차 목표 (+9%)</th>
                         <th>기준 손절가 (-2%)</th>
+                        <th>권장 매수량 & 예상 손익 (시드 연동)</th>
                     </tr>
                 </thead>
                 <tbody>

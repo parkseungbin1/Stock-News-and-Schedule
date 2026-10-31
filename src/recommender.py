@@ -271,6 +271,109 @@ def evaluate_market_regime(market_context=None):
     }
 
 
+def fetch_nxt_over_market_info(code: str) -> dict:
+    """
+    [아이디어 1] 네이버 증권 basic API에서 Nextrade(NXT) 프리마켓(08:00~08:50) 및
+    애프터마켓(15:40~20:00) 시간외 실시간 체결가 및 등락률을 조회합니다.
+    """
+    import requests
+    try:
+        url = f"https://m.stock.naver.com/api/stock/{code}/basic"
+        r = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=3)
+        if r.status_code == 200:
+            j = r.json()
+            over = j.get('overMarketPriceInfo')
+            if over and over.get('overPrice'):
+                s_type = over.get('tradingSessionType', '')
+                session_kor = 'NXT 프리마켓' if 'PRE' in s_type else 'NXT 야간마켓'
+                status = over.get('overMarketStatus', 'CLOSE')
+                price_str = str(over.get('overPrice', '')).replace(',', '')
+                ratio_val = float(over.get('fluctuationsRatio', 0.0) or 0.0)
+                return {
+                    'session': session_kor,
+                    'status': status,
+                    'price': int(float(price_str)) if price_str.isdigit() else 0,
+                    'price_str': over.get('overPrice', ''),
+                    'ratio': ratio_val,
+                }
+    except Exception:
+        pass
+    return None
+
+
+def analyze_intraday_microstructure(code: str, close_p: float) -> dict:
+    """
+    [아이디어 2 & 6] 1분봉 차트(fchart minute) 기반 장중 수급 미시구조(Microstructure) 정밀 분석:
+    1) 당일 정규장(09:00~15:30) VWAP(거래량가중평균단가) 산출 및 종가 상회율(vwap_diff_pct) 계산
+    2) 장중 최고가 형성 시각(peak_time) 추출 -> 오전 10:15 이전 고점 찍고 오후 내내 VWAP 아래로 흐른 '설거지 패턴' 판별
+    3) 15:10 가격 대비 15:30 동시호가 마감 가격의 막판 수급 끌어올림(closing_auction_diff) 측정
+    """
+    import requests
+    import xml.etree.ElementTree as ET
+    try:
+        url = f"https://fchart.stock.naver.com/sise.nhn?symbol={code}&timeframe=minute&count=420&requestType=0"
+        res = requests.get(url, timeout=3)
+        if res.status_code != 200 or not res.text:
+            return None
+        cleaned = re.sub(r'<\?xml[^>]*\?>', '', res.text).strip()
+        root = ET.fromstring(cleaned)
+        items = root.findall('.//item')
+        if not items:
+            return None
+
+        parsed = [it.attrib['data'].split('|') for it in items]
+        last_date = parsed[-1][0][:8]
+        reg = [x for x in parsed if x[0].startswith(last_date) and '0900' <= x[0][8:12] <= '1530']
+        if len(reg) < 15:
+            return None
+
+        total_pv = 0.0
+        total_v = 0.0
+        prev_cum_v = 0.0
+        max_p = -1.0
+        peak_hhmm = '0900'
+        p_1510 = None
+        p_1530 = float(reg[-1][4])
+
+        for idx, r in enumerate(reg):
+            hhmm = r[0][8:12]
+            p = float(r[4])
+            cum_v = float(r[5])
+            dv = (cum_v - prev_cum_v) if idx > 0 else cum_v
+            if dv < 0:
+                dv = 0.0
+            prev_cum_v = cum_v
+            total_pv += p * dv
+            total_v += dv
+            if p >= max_p:
+                max_p = p
+                peak_hhmm = hhmm
+            if hhmm <= '1510':
+                p_1510 = p
+
+        vwap = (total_pv / total_v) if total_v > 0 else close_p
+        vwap_diff_pct = round(((close_p - vwap) / vwap) * 100, 2) if vwap > 0 else 0.0
+        peak_time_str = f"{peak_hhmm[:2]}:{peak_hhmm[2:]}"
+
+        # 오전 10:15 이전에 고점을 찍고 종가가 VWAP 밑으로 무너진 경우 = 전형적인 오전 설거지 패턴
+        is_morning_dump = (peak_hhmm <= '1015') and (vwap_diff_pct < -0.5)
+
+        closing_auction_diff = 0.0
+        if p_1510 and p_1510 > 0:
+            closing_auction_diff = round(((p_1530 - p_1510) / p_1510) * 100, 2)
+
+        return {
+            'vwap': int(round(vwap)),
+            'vwap_diff_pct': vwap_diff_pct,
+            'peak_time': peak_time_str,
+            'is_afternoon_high': peak_hhmm >= '1300',
+            'is_morning_dump': is_morning_dump,
+            'closing_auction_diff': closing_auction_diff,
+        }
+    except Exception:
+        return None
+
+
 def analyze_support_resistance(code: str, name: str) -> dict:
     """
     네이버 일봉 차트(최근 65일)를 실시간 분석하여 20일/60일 전고점 저항 돌파 및 지지선 정밀 판별.
@@ -314,6 +417,8 @@ def analyze_support_resistance(code: str, name: str) -> dict:
 
         prev_20_high = max(r['high'] for r in past_20)
         prev_60_high = max(r['high'] for r in past_60)
+        avg_20_vol = sum(r['volume'] for r in past_20) / max(len(past_20), 1)
+        rvol = round(today['volume'] / avg_20_vol, 2) if avg_20_vol > 0 else 1.0
 
         # 20일선 및 60일선 이동평균
         ma20 = sum(r['close'] for r in rows[-20:]) / 20.0
@@ -375,6 +480,7 @@ def analyze_support_resistance(code: str, name: str) -> dict:
             'next_res': next_res,
             'room_pct': room_pct,
             'sr_score': sr_score,
+            'rvol': rvol,
             'tags': tags
         }
     except Exception as e:
@@ -423,6 +529,46 @@ def get_recommendations(dart_disclosures=None, market_context=None, force_refres
     # =========================================================================
     # Track 1: 🎯 오늘 15:10 종가베팅 (오버나잇)
     # =========================================================================
+    # [아이디어 5] 오늘의 최강 주도 섹터 TOP 3 (Sector Sympathy) 집계
+    hot_sectors = []
+    hot_sector_names = []
+    try:
+        surge_pool = common[
+            (common['Amount'] >= 50 * 1e8) &
+            (common['ChagesRatio'] >= 3.0)
+        ].sort_values(by='Amount', ascending=False).head(35)
+        sec_agg = {}
+        for _, srow in surge_pool.iterrows():
+            scode = str(srow['Code'])
+            sname = str(srow['Name'])
+            samt = float(srow['Amount']) / 1e8
+            schg = float(srow['ChagesRatio'])
+            ssec = get_stock_sector(scode)
+            if ssec not in sec_agg:
+                sec_agg[ssec] = {'sector': ssec, 'count': 0, 'total_amount_eok': 0, 'chg_sum': 0.0, 'leader_name': sname, 'leader_chg': schg}
+            sec_agg[ssec]['count'] += 1
+            sec_agg[ssec]['total_amount_eok'] += int(samt)
+            sec_agg[ssec]['chg_sum'] += schg
+            if schg > sec_agg[ssec]['leader_chg']:
+                sec_agg[ssec]['leader_name'] = sname
+                sec_agg[ssec]['leader_chg'] = round(schg, 2)
+        for k, v in sec_agg.items():
+            v['avg_chg'] = round(v['chg_sum'] / max(v['count'], 1), 2)
+            hot_sectors.append(v)
+        hot_sectors.sort(key=lambda x: (x['count'], x['total_amount_eok']), reverse=True)
+        hot_sectors = hot_sectors[:3]
+        hot_sector_names = [h['sector'] for h in hot_sectors[:2]]
+    except Exception as e:
+        logger.debug(f"주도 섹터 집계 예외: {e}")
+
+    # [아이디어 10] 최근 30일 트랙레코드 기반 자가보정(Self-Tuning) 우위 섹터 로드
+    winning_sectors = set()
+    try:
+        from src.track_record import get_self_tuning_insights
+        winning_sectors = get_self_tuning_insights().get('winning_sectors', set())
+    except Exception:
+        pass
+
     closing_picks = []
     closing_pool = common[
         (common['Marcap'] >= 1500 * 1e8) &  # 시총 1,500억 이상
@@ -467,6 +613,15 @@ def get_recommendations(dart_disclosures=None, market_context=None, force_refres
             next_res = sr.get('next_res', f"{int(close_p * 1.05):,}원") if sr else f"{int(close_p * 1.05):,}원"
             room_pct = sr.get('room_pct', 5.0) if sr else 5.0
             sr_tags = sr.get('tags', []) if sr else []
+            rvol = sr.get('rvol', 1.5) if sr else 1.5
+            turnover_pct = round((amount_eok / (marcap / 1e8)) * 100, 2) if marcap > 0 else 0.0
+            stock_sec = get_stock_sector(code)
+
+            # [아이디어 2 & 6] 분봉 미시구조(VWAP & 오전 설거지 패턴 & 막판 동시호가 수급) 분석
+            micro = analyze_intraday_microstructure(code, close_p)
+            if micro and micro.get('is_morning_dump'):
+                logger.info(f"[종가베팅 필터 탈락] {name}({code}): 오전 고점({micro.get('peak_time')}) 후 오후 VWAP 하회 설거지 패턴")
+                continue
 
             # 점수 산정: 기본 40 + 거래대금(최대 30) + 캔들완성도(최대 15) + 지지저항돌파(최대 30)
             volume_score = min(amount_eok / 10, 30.0)
@@ -480,6 +635,25 @@ def get_recommendations(dart_disclosures=None, market_context=None, force_refres
             ]
             if sr_status:
                 reasons.append(f"차트: {sr_status}")
+            if rvol >= 2.0:
+                score += min((rvol - 1.0) * 2.0, 6.0)
+                reasons.append(f"상대거래량 RVOL {rvol:.1f}배(회전율 {turnover_pct:.1f}%)")
+            if micro:
+                vwap_diff = micro.get('vwap_diff_pct', 0.0)
+                peak_t = micro.get('peak_time', '')
+                auc_diff = micro.get('closing_auction_diff', 0.0)
+                if vwap_diff >= 0:
+                    score += 3.0
+                    reasons.append(f"당일 VWAP 상회(+{vwap_diff:.1f}% · 고점 {peak_t})")
+                if auc_diff >= 0.3:
+                    score += 2.0
+                    reasons.append(f"막판 동시호가 수급 유입(+{auc_diff:.2f}%)")
+            if stock_sec in hot_sector_names:
+                score += 5.0
+                reasons.append(f"🔥당일 주도섹터({stock_sec}) 동조화")
+            if stock_sec in winning_sectors:
+                score += 4.0
+                reasons.append(f"🧠30일 고승률 섹터 자가보정(+4점)")
 
             tags = ['거래대금폭발', '단단한양봉', '익일시초가노림'] + sr_tags
 
@@ -511,6 +685,12 @@ def get_recommendations(dart_disclosures=None, market_context=None, force_refres
                 'room_pct': room_pct,
                 'marcap': int(marcap),
                 'marcap_str': marcap_str,
+                'rvol': rvol,
+                'turnover_pct': turnover_pct,
+                'vwap': micro.get('vwap') if micro else int(close_p * 0.99),
+                'vwap_diff_pct': micro.get('vwap_diff_pct', 0.0) if micro else 0.8,
+                'peak_time': micro.get('peak_time', '15:15') if micro else '15:15',
+                'closing_auction_diff': micro.get('closing_auction_diff', 0.0) if micro else 0.0,
                 'is_breakout': sr.get('is_20_breakout', False) or sr.get('is_60_breakout', False) if sr else False
             })
 
@@ -665,6 +845,110 @@ def get_recommendations(dart_disclosures=None, market_context=None, force_refres
     breakout_picks.sort(key=lambda x: x['score'], reverse=True)
     breakout_picks = breakout_picks[:3]
 
+    # =========================================================================
+    # Track 4: 🎯 [아이디어 7] 과거 2~7일 내 기준봉(+13% 이상 대량거래) 출현 후
+    #          오늘 5일선 / 기준봉 중심선 + 거래량 건조(수축) 눌림목 타점 도래 종목 포착
+    # =========================================================================
+    pullback_picks = []
+    try:
+        pb_pool = common[
+            (common['Marcap'] >= 1500 * 1e8) &
+            (common['Amount'] >= 30 * 1e8) &
+            (common['ChagesRatio'] >= -4.0) &
+            (common['ChagesRatio'] <= 5.5)
+        ].sort_values(by='Amount', ascending=False).head(25)
+
+        import requests
+        import xml.etree.ElementTree as ET
+        for _, row in pb_pool.iterrows():
+            code = str(row['Code'])
+            name = str(row['Name'])
+            market = str(row['Market'])
+            close_p = float(row['Close'])
+            amount_eok = float(row['Amount']) / 1e8
+            change_pct = float(row['ChagesRatio'])
+            marcap = float(row['Marcap']) if 'Marcap' in row and pd.notnull(row['Marcap']) else 0
+            marcap_str = format_marcap(marcap)
+
+            try:
+                url = f"https://fchart.stock.naver.com/sise.nhn?symbol={code}&timeframe=day&count=30&requestType=0"
+                r = requests.get(url, timeout=3)
+                if r.status_code != 200 or not r.text:
+                    continue
+                cleaned = re.sub(r'<\?xml[^>]*\?>', '', r.text).strip()
+                root = ET.fromstring(cleaned)
+                items = root.findall('.//item')
+                if len(items) < 22:
+                    continue
+                rows = []
+                for it in items:
+                    p = it.attrib['data'].split('|')
+                    rows.append({
+                        'date': p[0], 'open': float(p[1]), 'high': float(p[2]),
+                        'low': float(p[3]), 'close': float(p[4]), 'vol': float(p[5])
+                    })
+                today_r = rows[-1]
+                ma5 = sum(x['close'] for x in rows[-5:]) / 5.0
+                avg_20_vol = sum(x['vol'] for x in rows[-21:-1]) / 20.0
+
+                # 직전 2~7영업일 내 기준봉(등락률 +12% 이상 & 거래량 20일 평균의 2배 이상) 탐색
+                found_base = None
+                days_ago = 0
+                for idx in range(len(rows) - 2, max(len(rows) - 8, 1), -1):
+                    cand = rows[idx]
+                    prev_c = rows[idx - 1]['close']
+                    if prev_c <= 0:
+                        continue
+                    c_gain = (cand['close'] - prev_c) / prev_c * 100
+                    if c_gain >= 12.0 and cand['vol'] >= avg_20_vol * 2.0 and cand['close'] > cand['open']:
+                        found_base = (cand, round(c_gain, 1), (len(rows) - 1) - idx)
+                        break
+
+                if not found_base:
+                    continue
+
+                base_bar, base_gain, days_ago = found_base
+                base_mid = (base_bar['open'] + base_bar['close']) / 2.0
+                vol_ratio = (today_r['vol'] / base_bar['vol']) * 100 if base_bar['vol'] > 0 else 100.0
+                dist_ma5 = abs(close_p - ma5) / close_p * 100
+                dist_mid = abs(close_p - base_mid) / close_p * 100
+
+                # 조건: 1) 기준봉 시가 위 지지, 2) 5일선 또는 기준봉 중심선 부근(4.5% 이내), 3) 거래량이 기준봉 대비 65% 이하로 수축(숨고르기)
+                if close_p >= base_bar['open'] * 0.99 and (dist_ma5 <= 4.5 or dist_mid <= 4.5) and vol_ratio <= 65.0:
+                    pb_score = 88 + int(max(0, (65.0 - vol_ratio) * 0.15))
+                    support_line = int(round(max(base_bar['open'], min(ma5, base_mid))))
+                    pullback_picks.append({
+                        'code': code,
+                        'name': name,
+                        'market': market,
+                        'price': int(close_p),
+                        'change_pct': round(change_pct, 2),
+                        'amount_eok': int(amount_eok),
+                        'target_1': int(close_p * 1.05),
+                        'target_1_pct': '+5.0%',
+                        'target_2': int(close_p * 1.10),
+                        'target_2_pct': '+10.0%',
+                        'stop_loss': int(base_bar['open']),
+                        'stop_loss_pct': '기준봉 시가 손절',
+                        'holding_period': f'{days_ago}일 전 기준봉(+{base_gain}%) 출현 → 현재 5일선·중심선 눌림목 매수 적기',
+                        'score': min(pb_score, 98),
+                        'reason': f"{days_ago}일 전 +{base_gain}% 기준봉 출현 · 거래량 {int(vol_ratio)}%로 건조(숨고르기) · 기준봉 중심선({int(base_mid):,}원)/5일선({int(ma5):,}원) 지지",
+                        'tags': ['기준봉눌림목타점', f'거래량{int(vol_ratio)}%수축', '5일선지지'],
+                        'sr_status': f"🎯 기준봉({days_ago}일전 +{base_gain}%) 중심선·5일선 눌림목 지지",
+                        'support_price': support_line,
+                        'next_resistance': f"{int(base_bar['high']):,}원 (기준봉 고점 탈환)",
+                        'marcap': int(marcap),
+                        'marcap_str': marcap_str,
+                        'rvol': round(today_r['vol'] / max(avg_20_vol, 1), 2),
+                        'turnover_pct': round((amount_eok / (marcap / 1e8)) * 100, 2) if marcap > 0 else 0.0,
+                    })
+                    if len(pullback_picks) >= 3:
+                        break
+            except Exception:
+                continue
+    except Exception as e:
+        logger.debug(f"기준봉 눌림목 스캔 예외: {e}")
+
     # 급락장 또는 휴장일 등으로 후보가 부족할 경우 안전 보강
     if not closing_picks:
         closing_picks = get_fallback_recommendations()['closing']
@@ -674,7 +958,14 @@ def get_recommendations(dart_disclosures=None, market_context=None, force_refres
         breakout_picks = get_fallback_recommendations()['breakout']
 
     # 실시간 테마/업종, 핵심 뉴스(재료) 및 모바일 네이버 증권 차트 링크 보강
-    for p in (closing_picks + swing_picks + breakout_picks):
+    if not pullback_picks:
+        pullback_picks = get_fallback_recommendations().get('pullback', [])
+
+    for p in (closing_picks + swing_picks + breakout_picks + pullback_picks):
+        if 'turnover_pct' not in p:
+            mc = p.get('marcap', 0)
+            p['turnover_pct'] = round((p.get('amount_eok', 0) / (mc / 1e8)) * 100, 2) if mc > 0 else 0.0
+        p['nxt_info'] = fetch_nxt_over_market_info(p['code'])
         p['sector'] = get_stock_sector(p['code'])
         cat_info = fetch_stock_catalyst(p['code'], p.get('name', ''))
         if isinstance(cat_info, dict):
@@ -706,7 +997,9 @@ def get_recommendations(dart_disclosures=None, market_context=None, force_refres
         'regime': regime,
         'closing': closing_picks,
         'swing': swing_picks,
-        'breakout': breakout_picks
+        'breakout': breakout_picks,
+        'pullback': pullback_picks,
+        'hot_sectors': hot_sectors,
     }
     _RECOMMENDATIONS_CACHE = res
     return res
@@ -762,6 +1055,23 @@ def get_fallback_recommendations():
                 'marcap_str': '5조 3,900억',
                 'tags': ['강력기준봉', '거래대금폭발', '눌림목공략대기']
             }
+        ],
+        'pullback': [
+            {
+                'code': '042700', 'name': '한미반도체', 'market': 'KOSPI', 'price': 124500,
+                'change_pct': 1.20, 'amount_eok': 890, 'target_1': 130700, 'target_1_pct': '+5.0%',
+                'target_2': 136900, 'target_2_pct': '+10.0%', 'stop_loss': 118000, 'stop_loss_pct': '기준봉 시가 손절',
+                'holding_period': '3일 전 기준봉(+14.5%) 출현 → 현재 5일선·중심선 눌림목 매수 적기',
+                'score': 94, 'reason': '3일 전 +14.5% 기준봉 출현 · 거래량 38%로 건조(숨고르기) · 기준봉 중심선 및 5일선 지지 안착',
+                'marcap': 12000000000000, 'marcap_str': '12조원',
+                'sr_status': '🎯 기준봉(3일전 +14.5%) 중심선·5일선 눌림목 지지',
+                'support_price': 121000, 'next_resistance': '132,000원 (기준봉 고점 탈환)',
+                'tags': ['기준봉눌림목타점', '거래량38%수축', '5일선지지']
+            }
+        ],
+        'hot_sectors': [
+            {'sector': '반도체', 'count': 5, 'total_amount_eok': 6800, 'avg_chg': 5.8, 'leader_name': 'SK하이닉스', 'leader_chg': 6.4},
+            {'sector': '전력/원전', 'count': 4, 'total_amount_eok': 4200, 'avg_chg': 6.2, 'leader_name': 'HD현대일렉트릭', 'leader_chg': 7.8},
+            {'sector': '방산/우주', 'count': 3, 'total_amount_eok': 3100, 'avg_chg': 4.9, 'leader_name': '한화에어로스페이스', 'leader_chg': 5.5}
         ]
     }
-

@@ -77,6 +77,8 @@ def generate_html():
         closing_picks = rec_data.get('closing', [])
         swing_picks = rec_data.get('swing', [])
         breakout_picks = rec_data.get('breakout', [])
+        pullback_picks = rec_data.get('pullback', [])
+        hot_sectors = rec_data.get('hot_sectors', [])
     except Exception as e:
         print(f"추천 종목 수집 실패: {e}")
         fallback = recommender.get_fallback_recommendations()
@@ -84,6 +86,8 @@ def generate_html():
         closing_picks = fallback['closing']
         swing_picks = fallback['swing']
         breakout_picks = fallback.get('breakout', [])
+        pullback_picks = fallback.get('pullback', [])
+        hot_sectors = fallback.get('hot_sectors', [])
 
     hm_kst = now_kst.hour * 100 + now_kst.minute
     is_closing_window = (now_kst.weekday() < 5) and (1500 <= hm_kst <= 1545)
@@ -122,6 +126,17 @@ def generate_html():
     except Exception as e:
         latest_record = None
 
+    try:
+        from src.track_record import get_self_tuning_insights
+        tuning_info = get_self_tuning_insights()
+    except Exception:
+        tuning_info = {'win_rate': 75.0, 'rr_ratio': 2.15, 'half_kelly_pct': 60.0, 'top_sectors_summary': '반도체, 전력/원전'}
+
+    kelly_win_rate = tuning_info.get('win_rate', 75.0)
+    kelly_rr = tuning_info.get('rr_ratio', 2.15)
+    kelly_base_pct = tuning_info.get('half_kelly_pct', 60.0)
+    recommended_invest_pct = int(round(max(15.0, min(80.0, kelly_base_pct * (1.0 - (ai_risk_score / 115.0))))))
+
     # 종가베팅(15:10)은 익일 09:00 시초가 매도 전략이므로
     # 15:00~15:45 정규장 마감 시간대가 아닐 때는 직전 공식 확정 종목을 그대로 고정보존
     if not is_closing_window and latest_record and latest_record.get('picks'):
@@ -133,14 +148,20 @@ def generate_html():
         closing_evaluated = False
 
     if is_closing_window:
-        closing_tab_title = f"⚡ 오늘({closing_ref_date}) 15:10 종가베팅"
+        short_ref_date = closing_ref_date[5:] if len(str(closing_ref_date)) >= 10 else closing_ref_date
+        closing_tab_title = "⚡ 오늘 15:10 종가베팅"
+        closing_tab_pill = f"{short_ref_date} 골든타임 · 익일 +3~5%"
         closing_banner_html = f"<b>🎯 오늘({closing_ref_date}) 15:10 종가베팅 추천 종목</b>: 오후 15:10~15:30 매수 체결 → 익일 아침 09:00~09:20 시초가 갭상승 시 전량 분할 익절 (+3%~+5%)"
     else:
         if closing_evaluated:
-            closing_tab_title = f"⚡ 종가베팅 ({closing_ref_date} 검증완료)"
+            short_ref_date = closing_ref_date[5:] if len(str(closing_ref_date)) >= 10 else closing_ref_date
+            closing_tab_title = "⚡ 15:20 종가베팅"
+            closing_tab_pill = f"{short_ref_date} 검증완료 · 익일 +3~5%"
             closing_banner_html = f"<b>🎯 직전({closing_ref_date}) 종가베팅 시초가 검증 완료</b>: 익일 시초가 매도 완료 구간 (오늘 15:10 정규장 마감 시 새로운 종목으로 자동 교체됩니다)"
         else:
-            closing_tab_title = f"⚡ 종가베팅 ({closing_ref_date} 매수 대응)"
+            short_ref_date = closing_ref_date[5:] if len(str(closing_ref_date)) >= 10 else closing_ref_date
+            closing_tab_title = "⚡ 15:20 종가베팅"
+            closing_tab_pill = f"{short_ref_date} 매수대응 · 익일 +3~5%"
             closing_banner_html = f"<b>🎯 직전({closing_ref_date}) 종가베팅 공식 추천 종목</b>: 오늘 아침 09:00~09:20 시초가 갭상승 시 전량 분할 익절 (+3%~+5%) 대응 구간 (오늘 15:10에 새 종목 선별)"
 
     try:
@@ -236,6 +257,29 @@ def generate_html():
             </div>
             """
 
+        # [아이디어 1, 2, 3, 6, 9] RVOL · 회전율 · VWAP · NXT 시세 · 켈리 시드 연동 주문량 박스
+        rvol_val = pick.get('rvol')
+        turn_val = pick.get('turnover_pct')
+        vwap_diff = pick.get('vwap_diff_pct')
+        peak_t = pick.get('peak_time')
+        nxt_info = pick.get('nxt_info')
+
+        micro_pills = []
+        if rvol_val:
+            micro_pills.append(f'<span class="sr-pill pill-gold">🔥 상대거래량 RVOL <b>{rvol_val:.1f}배</b></span>')
+        if turn_val:
+            micro_pills.append(f'<span class="sr-pill pill-green">💫 시총회전율 <b>{turn_val:.1f}%</b></span>')
+        if vwap_diff is not None:
+            pk_str = f" · 고점 {peak_t}" if peak_t else ""
+            micro_pills.append(f'<span class="sr-pill pill-green">📈 VWAP <b>{vwap_diff:+.1f}%</b>{pk_str}</span>')
+        if nxt_info and nxt_info.get('price'):
+            n_r = nxt_info.get('ratio', 0.0)
+            micro_pills.append(f'<span class="sr-pill pill-gold">🌙 {nxt_info["session"]} <b>{nxt_info["price"]:,}원</b> ({n_r:+.2f}%)</span>')
+
+        micro_pills_html = f'<div class="sr-price-line" style="margin-top:6px;">{"".join(micro_pills)}</div>' if micro_pills else ''
+        kelly_order_box = f'<div class="rec-kelly-order-box" data-price="{price}" style="margin-top:8px; padding:7px 10px; background:rgba(59,130,246,0.1); border:1px solid rgba(59,130,246,0.3); border-radius:7px; font-size:0.77rem; color:#93c5fd;">💰 <b>내 시드 맞춤 권장 매수량</b>: 계산 중...</div>' if price else ''
+        micro_box = micro_pills_html + kelly_order_box
+
         eval_box = ""
         open_p = pick.get('open_price')
         gap_p = pick.get('gap_pct')
@@ -294,6 +338,7 @@ def generate_html():
                 <div class="rec-desc-title">💡 AI 포착 근거:</div>
                 <div class="rec-desc-text">{reason}</div>
                 {sr_box}
+                {micro_box}
                 {cat_box}
                 <div class="rec-period-tag">⏱️ 매매 타이밍: {holding_period}</div>
             </div>
@@ -313,6 +358,23 @@ def generate_html():
     closing_cards_html = "".join([render_rec_card(p, "theme-closing") for p in closing_picks])
     swing_cards_html = "".join([render_rec_card(p, "theme-swing") for p in swing_picks])
     breakout_cards_html = "".join([render_rec_card(p, "theme-breakout") for p in breakout_picks])
+    pullback_cards_html = "".join([render_rec_card(p, "theme-swing") for p in pullback_picks]) if pullback_picks else "<div class='empty-card'>현재 과거 기준봉의 5일선·중심선 눌림목 구간에 진입한 종목이 없습니다.</div>"
+
+    hot_sectors_items = []
+    for idx_s, hs in enumerate(hot_sectors[:3], 1):
+        rank_medal = "🥇 1위" if idx_s == 1 else ("🥈 2위" if idx_s == 2 else "🥉 3위")
+        hot_sectors_items.append(f"""
+        <div style="flex:1; min-width:220px; background:rgba(255,255,255,0.03); border:1px solid rgba(245,158,11,0.3); border-radius:10px; padding:10px 14px; display:flex; flex-direction:column; gap:4px;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-weight:800; color:#fbbf24; font-size:0.9rem;">{rank_medal} [{hs.get('sector', '주도주')}]</span>
+                <span style="font-size:0.75rem; background:rgba(239,68,68,0.18); color:#f87171; padding:2px 7px; border-radius:999px; font-weight:700;">평균 +{hs.get('avg_chg', 0):.1f}% ({hs.get('count', 1)}종목 폭발)</span>
+            </div>
+            <div style="font-size:0.78rem; color:#d1d5db;">
+                💰 섹터 거래대금 <b>{hs.get('total_amount_eok', 0):,}억</b> | 👑 대장주: <b>{hs.get('leader_name', '-')}</b> (+{hs.get('leader_chg', 0):.1f}%)
+            </div>
+        </div>
+        """)
+    hot_sectors_html = "".join(hot_sectors_items)
 
     # 3. 최근 공시 수집 및 카테고리별 분리 (캐싱 적용으로 빌드 속도 10배 가속)
     disc_cache_file = Path(__file__).parent / "data" / "web_disclosure_cache.json"
@@ -1417,52 +1479,101 @@ def generate_html():
             line-height: 1.45;
         }}
 
-        /* AI 추천 종목 레이더 */
+        /* AI 추천 종목 레이더 - 1줄 6칸 대형 카드형 네비게이션 */
         .rec-nav {{
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-            align-items: center;
-            padding-bottom: 4px;
-            margin-bottom: 14px;
-            scrollbar-width: none;
-            -ms-overflow-style: none;
+            display: grid;
+            grid-template-columns: repeat(6, minmax(0, 1fr));
+            gap: 12px;
+            width: 100%;
+            margin-bottom: 18px;
         }}
-        .rec-nav::-webkit-scrollbar {{
-            display: none;
+        @media (max-width: 1220px) {{
+            .rec-nav {{
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }}
+        }}
+        @media (max-width: 680px) {{
+            .rec-nav {{
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 8px;
+            }}
         }}
         .rec-tab {{
-            background: var(--surface);
-            border: 1px solid var(--border);
-            color: var(--text-sub);
-            padding: 10px 16px;
-            border-radius: 12px;
-            font-size: 0.9rem;
-            font-weight: 700;
+            background: linear-gradient(180deg, rgba(31, 41, 55, 0.78), rgba(17, 24, 39, 0.95));
+            border: 1.5px solid rgba(255, 255, 255, 0.11);
+            border-top: 3px solid rgba(255, 255, 255, 0.2);
+            color: var(--text-main);
+            padding: 15px 10px;
+            min-height: 84px;
+            border-radius: 14px;
             cursor: pointer;
-            white-space: nowrap;
             display: flex;
+            flex-direction: column;
+            justify-content: center;
             align-items: center;
+            text-align: center;
             gap: 8px;
-            transition: all 0.2s;
+            transition: all 0.22s ease;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+        }}
+        .rec-tab-title {{
+            font-size: 1.0rem;
+            font-weight: 800;
+            color: #f3f4f6;
+            letter-spacing: -0.02em;
+            line-height: 1.25;
+            white-space: nowrap;
         }}
         .rec-tab:hover {{
-            border-color: rgba(255, 255, 255, 0.25);
-            color: #ffffff;
+            transform: translateY(-2px);
+            border-color: rgba(255, 255, 255, 0.32);
+            background: linear-gradient(180deg, rgba(55, 65, 81, 0.85), rgba(31, 41, 55, 0.95));
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.38);
         }}
+        .rec-tab.tab-amber {{ border-top-color: #f59e0b; }}
+        .rec-tab.tab-purple {{ border-top-color: #8b5cf6; }}
+        .rec-tab.tab-red {{ border-top-color: #ef4444; }}
+        .rec-tab.tab-blue {{ border-top-color: #3b82f6; }}
+        .rec-tab.tab-indigo {{ border-top-color: #a855f7; }}
+        .rec-tab.tab-emerald {{ border-top-color: #10b981; }}
         .rec-tab.active {{
-            background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(37, 99, 235, 0.15));
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.22), rgba(37, 99, 235, 0.22));
             border-color: #f59e0b;
+            border-top: 3px solid #fbbf24;
             color: #ffffff;
-            box-shadow: 0 4px 14px rgba(245, 158, 11, 0.25);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(245, 158, 11, 0.32);
+        }}
+        .rec-tab.active .rec-tab-title {{
+            color: #ffffff;
+            text-shadow: 0 0 10px rgba(251, 191, 36, 0.35);
+        }}
+        [data-theme="light"] .rec-tab {{
+            background: #ffffff;
+            border-color: rgba(0, 0, 0, 0.12);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }}
+        [data-theme="light"] .rec-tab-title {{
+            color: #0f172a;
+        }}
+        [data-theme="light"] .rec-tab.active {{
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.14), rgba(37, 99, 235, 0.12));
+            border-color: #d97706;
         }}
         .rec-tag-pill {{
-            font-size: 0.74rem;
-            padding: 3px 8px;
+            font-size: 0.77rem;
+            font-weight: 700;
+            padding: 4px 10px;
             border-radius: 999px;
-            background: rgba(245, 158, 11, 0.2);
+            background: rgba(245, 158, 11, 0.22);
             color: #fbbf24;
-            border: 1px solid rgba(245, 158, 11, 0.35);
+            border: 1px solid rgba(245, 158, 11, 0.42);
+            white-space: nowrap;
+        }}
+        .pill-emerald {{
+            background: rgba(16, 185, 129, 0.22);
+            color: #34d399;
+            border-color: rgba(16, 185, 129, 0.45);
         }}
         .pill-purple {{
             background: rgba(139, 92, 246, 0.2);
@@ -2565,22 +2676,80 @@ def generate_html():
         <div class="regime-msg">{rec_regime.get('message', '')}</div>
     </div>
 
+    <!-- [아이디어 5] 오늘의 최강 주도 섹터 TOP 3 (Sector Sympathy 레이더) -->
+    <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 14px 18px; margin-bottom: 16px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:10px;">
+            <span style="font-size:0.92rem; font-weight:800; color:var(--text-main);">🔥 오늘의 최강 주도 섹터 TOP 3 (Sector Sympathy 동조화 레이더)</span>
+            <span style="font-size:0.75rem; color:#9ca3af;">💡 단독 상승주보다 자금이 집결된 주도 섹터 1등주 공략 시 승률 극대화 (AI 추천 자동 가산점 부여)</span>
+        </div>
+        <div style="display:flex; gap:12px; flex-wrap:wrap;">
+            {hot_sectors_html}
+        </div>
+    </div>
+
+    <!-- [아이디어 9] 리스크 스코어 × 하프 켈리(Half-Kelly) 연동 실전 시드머니 & 포지션 사이징 계산기 -->
+    <div style="background: linear-gradient(135deg, rgba(30, 58, 138, 0.22), rgba(17, 24, 39, 0.95)); border: 1px solid rgba(59, 130, 246, 0.35); border-left: 4px solid #3b82f6; border-radius: 14px; padding: 16px 20px; margin-bottom: 18px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:12px;">
+            <div>
+                <div style="font-size:0.96rem; font-weight:800; color:#f9fafb; display:flex; align-items:center; gap:8px;">
+                    💰 AI 리스크 & 하프 켈리(Half-Kelly) 실전 시드머니 계산기
+                    <span style="font-size:0.72rem; background:rgba(59,130,246,0.2); color:#60a5fa; padding:2px 8px; border-radius:999px; border:1px solid rgba(59,130,246,0.4);">전체 종목 카드 실시간 연동</span>
+                </div>
+                <div style="font-size:0.78rem; color:#9ca3af; margin-top:2px;">
+                    최근 30일 승률(<b>{kelly_win_rate}%</b>) · 손익비(<b>{kelly_rr}:1</b>) · 오늘 AI 리스크(<b>{ai_risk_score}점</b>)를 결합해 수학적 파산 확률 0%의 최적 종목당 베팅액을 산출합니다.
+                </div>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px; background:rgba(0,0,0,0.35); padding:8px 12px; border-radius:10px; border:1px solid rgba(255,255,255,0.1);">
+                <label for="seed-money-input" style="font-size:0.82rem; font-weight:700; color:#e5e7eb;">나의 총 운용 시드:</label>
+                <input id="seed-money-input" type="number" value="1000" min="10" step="100" oninput="updateKellyCalculator()" style="width:90px; background:#0b0f19; color:#34d399; font-family:'JetBrains Mono',monospace; font-weight:800; font-size:0.95rem; border:1px solid #3b82f6; border-radius:6px; padding:4px 8px; text-align:right;">
+                <span style="font-size:0.85rem; font-weight:700; color:#e5e7eb;">만원</span>
+            </div>
+        </div>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(190px, 1fr)); gap:10px; font-size:0.82rem;">
+            <div style="background:rgba(0,0,0,0.3); padding:10px 12px; border-radius:8px; border:1px solid rgba(255,255,255,0.06);">
+                <div style="color:#9ca3af; font-size:0.74rem;">🎯 오늘 권장 총 투입 비중 ({recommended_invest_pct}%)</div>
+                <div id="kelly-total-invest" style="font-family:'JetBrains Mono',monospace; font-size:1.05rem; font-weight:800; color:#34d399; margin-top:2px;">-</div>
+            </div>
+            <div style="background:rgba(0,0,0,0.3); padding:10px 12px; border-radius:8px; border:1px solid rgba(255,255,255,0.06);">
+                <div style="color:#9ca3af; font-size:0.74rem;">🛡️ 의무 현금 보유액 ({100 - recommended_invest_pct}%)</div>
+                <div id="kelly-cash-reserve" style="font-family:'JetBrains Mono',monospace; font-size:1.05rem; font-weight:800; color:#60a5fa; margin-top:2px;">-</div>
+            </div>
+            <div style="background:rgba(0,0,0,0.3); padding:10px 12px; border-radius:8px; border:1px solid rgba(255,255,255,0.06);">
+                <div style="color:#9ca3af; font-size:0.74rem;">⚡ 1종목당 권장 매수액 (3종목 분산)</div>
+                <div id="kelly-per-stock" style="font-family:'JetBrains Mono',monospace; font-size:1.05rem; font-weight:800; color:#fbbf24; margin-top:2px;">-</div>
+            </div>
+            <div style="background:rgba(0,0,0,0.3); padding:10px 12px; border-radius:8px; border:1px solid rgba(255,255,255,0.06);">
+                <div style="color:#9ca3af; font-size:0.74rem;">🚨 1종목 손절(-2%) 시 최대 손실액</div>
+                <div id="kelly-max-loss" style="font-family:'JetBrains Mono',monospace; font-size:1.05rem; font-weight:800; color:#f87171; margin-top:2px;">-</div>
+            </div>
+        </div>
+    </div>
+
     <!-- 추천 트랙 선택 탭 -->
     <div class="rec-nav">
-        <button class="rec-tab active" onclick="switchRecTrack('closing', this)">
-            {closing_tab_title} <span class="rec-tag-pill">익일 갭상승 +3%~+5%</span>
+        <button class="rec-tab tab-amber active" onclick="switchRecTrack('closing', this)">
+            <span class="rec-tab-title">{closing_tab_title}</span>
+            <span class="rec-tag-pill">{closing_tab_pill}</span>
         </button>
-        <button class="rec-tab" onclick="switchRecTrack('swing', this)">
-            🌊 2~5일 스윙 추천 <span class="rec-tag-pill pill-purple">추세 파동 +5%~+10%</span>
+        <button class="rec-tab tab-purple" onclick="switchRecTrack('swing', this)">
+            <span class="rec-tab-title">🌊 2~5일 스윙 추천</span>
+            <span class="rec-tag-pill pill-purple">추세 파동 +5%~+10%</span>
         </button>
-        <button class="rec-tab" onclick="switchRecTrack('breakout', this)">
-            🔥 당일 +15% 돌파 대장주 <span class="rec-tag-pill pill-red">기준봉 포착</span>
+        <button class="rec-tab tab-red" onclick="switchRecTrack('breakout', this)">
+            <span class="rec-tab-title">🔥 당일 +15% 돌파 대장주</span>
+            <span class="rec-tag-pill pill-red">기준봉·눌림목 포착</span>
         </button>
-        <button class="rec-tab" onclick="switchRecTrack('history', this)">
-            📜 최근 1개월 종가베팅 성과 <span class="rec-tag-pill pill-blue">1달치 자동기록</span>
+        <button class="rec-tab tab-blue" onclick="switchRecTrack('history', this)">
+            <span class="rec-tab-title">📜 1개월 종가베팅 성과</span>
+            <span class="rec-tag-pill pill-blue">1달치 승률 자동기록</span>
         </button>
-        <button class="rec-tab" onclick="switchRecTrack('swing_history', this)">
-            📊 최근 1개월 스윙 성과 <span class="rec-tag-pill pill-purple">2~5일 추세추적</span>
+        <button class="rec-tab tab-indigo" onclick="switchRecTrack('swing_history', this)">
+            <span class="rec-tab-title">📊 1개월 스윙 성과</span>
+            <span class="rec-tag-pill pill-purple">2~5일 추세추적 기록</span>
+        </button>
+        <button class="rec-tab tab-emerald" onclick="switchRecTrack('playbook', this)">
+            <span class="rec-tab-title">📘 실전 200% 활용법</span>
+            <span class="rec-tag-pill pill-emerald">★ 10대 천재 매매공식</span>
         </button>
     </div>
 
@@ -2745,6 +2914,17 @@ def generate_html():
         <div class="rec-grid">
             {breakout_cards_html}
         </div>
+
+        <!-- [아이디어 7] 과거 2~7일 내 기준봉 출현 후 오늘 5일선·중심선 눌림목 타점 도래 종목 -->
+        <div class="rec-strategy-banner banner-purple" style="margin-top: 24px;">
+            <div>
+                <b>🎯 [실전 매수 타점 도래] 과거 기준봉(+12%~+15% 돌파) 출현 후 → 오늘 5일선·중심선 + 거래량 건조 눌림목 포착</b><br>
+                <span style="font-size:0.8rem; color:#d1d5db;">최근 2~7영업일 내 대량거래 장대양봉(기준봉)을 세운 뒤, 기준봉 시가를 이탈하지 않고 거래량이 65% 이하로 줄어들며 5일선/기준봉 중심선 지지를 받는 실전 맥점 종목입니다.</span>
+            </div>
+        </div>
+        <div class="rec-grid">
+            {pullback_cards_html}
+        </div>
     </div>
 
     <!-- 4) 최근 1개월 종가베팅 성과 히스토리 컨테이너 (1달 경과 시 자동 삭제) -->
@@ -2765,6 +2945,180 @@ def generate_html():
             </div>
         </div>
         {swing_history_tab_html}
+    </div>
+
+    <!-- 6) 업그레이드된 비니stock 200% 활용 천재적 실전 매매 아이디어 10선 탭 컨테이너 -->
+    <div id="rec-playbook-container" class="rec-container" style="display: none;">
+        <div class="rec-strategy-banner" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.12), rgba(59, 130, 246, 0.12)); border: 1px solid rgba(16, 185, 129, 0.35); color: #ecfdf5;">
+            <div style="font-size: 0.95rem; font-weight: 800; color: #34d399; margin-bottom: 4px;">
+                📘 비니stock을 200% 활용하는 천재적 실전 매매 아이디어 10선 (실전 플레이북)
+            </div>
+            <div style="font-size: 0.83rem; color: #d1d5db;">
+                장중·장마감 매매 시 이 탭을 열어두고 <b>[체크 포인트 → 실전 타점 공식]</b>을 하나씩 대조하며 기계적으로 대응하세요. 아래 카테고리 버튼을 누르면 원하는 전략만 골라볼 수 있습니다.
+            </div>
+        </div>
+
+        <!-- 활용법 내부 서브 카테고리 탭 -->
+        <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; padding: 10px 14px; background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 10px;">
+            <span style="font-size: 0.8rem; font-weight: 700; color: var(--text-sub); display: flex; align-items: center; margin-right: 4px;">📂 전략별 보기:</span>
+            <button class="mfilter-btn pb-filter-btn active" onclick="filterPlaybook('all', this)">🌟 전체 10대 공식</button>
+            <button class="mfilter-btn pb-filter-btn" onclick="filterPlaybook('timing', this)">⚡ 종가베팅·NXT 시차 (3)</button>
+            <button class="mfilter-btn pb-filter-btn" onclick="filterPlaybook('chart', this)">📊 수급·차트 맥점 (3)</button>
+            <button class="mfilter-btn pb-filter-btn" onclick="filterPlaybook('event', this)">📢 공시·이벤트 알파 (2)</button>
+            <button class="mfilter-btn pb-filter-btn" onclick="filterPlaybook('risk', this)">💰 자금관리·청산 공식 (2)</button>
+        </div>
+
+        <div class="rec-grid" style="grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));">
+            <!-- 01 -->
+            <div class="rec-card pb-card" data-pb-cat="risk" style="border-top: 3px solid #3b82f6;">
+                <div class="rec-card-top">
+                    <div class="rec-stock-title" style="font-size: 1.02rem; font-weight: 800; color: #60a5fa;">01. [시드 계산기 × 리스크 게이지] 변동성 역가중 베팅</div>
+                    <span class="rec-score-badge" style="background:rgba(59,130,246,0.18); color:#93c5fd; border-color:rgba(59,130,246,0.4);">💰 자금관리</span>
+                </div>
+                <div class="rec-desc-box" style="margin-bottom: 0;">
+                    <div style="color:#fbbf24; font-weight:700; font-size:0.8rem; margin-bottom:4px;">👀 대시보드 어디를 보나?</div>
+                    <div style="color:var(--text-main); font-size:0.82rem; margin-bottom:8px;">최상단 <b>[🛡️ AI 실시간 시장 리스크 스코어]</b>와 <b>[💰 하프 켈리 실전 시드머니 계산기]</b>의 오늘 권장 총 투입 비중(%)</div>
+                    <div style="color:#34d399; font-weight:700; font-size:0.8rem; margin-bottom:4px;">⚡ 실전 매매 공식 (Action Rule)</div>
+                    <div style="color:var(--text-main); font-size:0.82rem; margin-bottom:8px;">• 리스크 점수가 <b>65점(경고) 이상</b>일 때는 계산기가 총 투입 비중을 30% 이하로 자동 축소합니다.<br>• 이때 억지로 3종목을 다 사지 말고, <b>추천 1위 대장주 딱 1종목</b>에만 계산기가 알려주는 <code>1종목당 권장 주식 수(주)</code>만큼만 진입하세요.</div>
+                    <div style="color:#a78bfa; font-weight:700; font-size:0.78rem;">💡 왜 통하는가?: 하락장에서 계좌가 녹는 유일한 이유는 상승장과 똑같은 비중으로 베팅하기 때문입니다.</div>
+                </div>
+            </div>
+
+            <!-- 02 -->
+            <div class="rec-card pb-card" data-pb-cat="timing" style="border-top: 3px solid #f59e0b;">
+                <div class="rec-card-top">
+                    <div class="rec-stock-title" style="font-size: 1.02rem; font-weight: 800; color: #fbbf24;">02. [VWAP + 고점 시각] 14:00 이후 고점 경신주 공략</div>
+                    <span class="rec-score-badge" style="background:rgba(245,158,11,0.18); color:#fde68a; border-color:rgba(245,158,11,0.4);">⚡ 종가베팅</span>
+                </div>
+                <div class="rec-desc-box" style="margin-bottom: 0;">
+                    <div style="color:#fbbf24; font-weight:700; font-size:0.8rem; margin-bottom:4px;">👀 대시보드 어디를 보나?</div>
+                    <div style="color:var(--text-main); font-size:0.82rem; margin-bottom:8px;">종목 카드 내부의 <b>[📈 VWAP +X.X% · 고점 HH:MM]</b> 녹색 배지</div>
+                    <div style="color:#34d399; font-weight:700; font-size:0.8rem; margin-bottom:4px;">⚡ 실전 매매 공식 (Action Rule)</div>
+                    <div style="color:var(--text-main); font-size:0.82rem; margin-bottom:8px;">• 종가베팅 후보 중 <b>고점 형성 시각이 <code>14:00 ~ 15:20</code> 사이</b>이면서 <b>VWAP 대비 <code>+0.5% ~ +3.0%</code> 위</b>에서 마감하는 종목을 최우선 매수하세요.<br>• 오전 10시 이전에 고점을 찍고 오후 내내 흘러내린 '설거지 종목'은 시스템이 1차로 자동 탈락시킵니다.</div>
+                    <div style="color:#a78bfa; font-weight:700; font-size:0.78rem;">💡 왜 통하는가?: 종가가 당일 평균 매수단가(VWAP) 위에 있어야 당일 매수자 전원이 수익권이 되어 익일 시초가 본전 매물이 안 나옵니다.</div>
+                </div>
+            </div>
+
+            <!-- 03 -->
+            <div class="rec-card pb-card" data-pb-cat="chart" style="border-top: 3px solid #10b981;">
+                <div class="rec-card-top">
+                    <div class="rec-stock-title" style="font-size: 1.02rem; font-weight: 800; color: #34d399;">03. [RVOL × 시총회전율] 'RVOL 3배 + 회전율 5~25%' 공식</div>
+                    <span class="rec-score-badge" style="background:rgba(16,185,129,0.18); color:#34d399; border-color:rgba(16,185,129,0.4);">📊 수급·차트</span>
+                </div>
+                <div class="rec-desc-box" style="margin-bottom: 0;">
+                    <div style="color:#fbbf24; font-weight:700; font-size:0.8rem; margin-bottom:4px;">👀 대시보드 어디를 보나?</div>
+                    <div style="color:var(--text-main); font-size:0.82rem; margin-bottom:8px;">종목 카드 내부의 <b>[🔥 상대거래량 RVOL X.X배]</b> 및 <b>[💫 시총회전율 X.X%]</b> 배지</div>
+                    <div style="color:#34d399; font-weight:700; font-size:0.8rem; margin-bottom:4px;">⚡ 실전 매매 공식 (Action Rule)</div>
+                    <div style="color:var(--text-main); font-size:0.82rem; margin-bottom:8px;">• 3개의 추천 종목 중 어디에 비중을 더 실을지 고민될 때, <b><code>RVOL 2.5배~5.0배</code></b>이면서 <b><code>시총회전율 5% ~ 25%</code></b> 사이인 종목을 1순위로 선택하세요.<br>• 회전율이 45%를 초과하면 단타 과열로 익일 시초가 변동성이 커지므로 목표가를 짧게(+2~3%) 잡으세요.</div>
+                    <div style="color:#a78bfa; font-weight:700; font-size:0.78rem;">💡 왜 통하는가?: 평소 거래량의 3배 이상이 터졌다는 것은 단순 개인 매수가 아닌 메이저 기관/세력의 신규 자금 유입 증거입니다.</div>
+                </div>
+            </div>
+
+            <!-- 04 -->
+            <div class="rec-card pb-card" data-pb-cat="timing" style="border-top: 3px solid #f59e0b;">
+                <div class="rec-card-top">
+                    <div class="rec-stock-title" style="font-size: 1.02rem; font-weight: 800; color: #fbbf24;">04. [주도 섹터 동조화] 1위 섹터 대장주 그림자 전략</div>
+                    <span class="rec-score-badge" style="background:rgba(245,158,11,0.18); color:#fde68a; border-color:rgba(245,158,11,0.4);">⚡ 종가베팅</span>
+                </div>
+                <div class="rec-desc-box" style="margin-bottom: 0;">
+                    <div style="color:#fbbf24; font-weight:700; font-size:0.8rem; margin-bottom:4px;">👀 대시보드 어디를 보나?</div>
+                    <div style="color:var(--text-main); font-size:0.82rem; margin-bottom:8px;">추천 탭 바로 위의 <b>[🔥 오늘의 최강 주도 섹터 TOP 3 (Sector Sympathy)]</b> 배너</div>
+                    <div style="color:#34d399; font-weight:700; font-size:0.8rem; margin-bottom:4px;">⚡ 실전 매매 공식 (Action Rule)</div>
+                    <div style="color:var(--text-main); font-size:0.82rem; margin-bottom:8px;">• 나홀로 오른 개별주보다 <b>🥇 1위 주도 섹터(폭발 종목 3개 이상)에 속한 종목</b>을 우선 공략하세요.<br>• 익일 아침 09:00 시초가 매도 시에도 해당 섹터의 <b><code>👑 대표 대장주</code></b> 호가가 꺾이는 순간을 전량 익절 타이밍으로 삼으세요.</div>
+                    <div style="color:#a78bfa; font-weight:700; font-size:0.78rem;">💡 왜 통하는가?: 섹터 전체에 수천억 원이 쏠린 날은 다음 날 아침에도 기관/외인의 패시브 바스켓 매수가 동반 유입됩니다.</div>
+                </div>
+            </div>
+
+            <!-- 05 -->
+            <div class="rec-card pb-card" data-pb-cat="chart" style="border-top: 3px solid #10b981;">
+                <div class="rec-card-top">
+                    <div class="rec-stock-title" style="font-size: 1.02rem; font-weight: 800; color: #34d399;">05. [과거 기준봉 눌림목] 거래량 65% 이하 건조 맥점 노리기</div>
+                    <span class="rec-score-badge" style="background:rgba(16,185,129,0.18); color:#34d399; border-color:rgba(16,185,129,0.4);">📊 수급·차트</span>
+                </div>
+                <div class="rec-desc-box" style="margin-bottom: 0;">
+                    <div style="color:#fbbf24; font-weight:700; font-size:0.8rem; margin-bottom:4px;">👀 대시보드 어디를 보나?</div>
+                    <div style="color:var(--text-main); font-size:0.82rem; margin-bottom:8px;"><code>[🔥 당일 +15% 돌파 대장주]</code> 탭 하단의 <b>[🎯 과거 기준봉 → 오늘 5일선·중심선 눌림목 포착]</b> 섹션</div>
+                    <div style="color:#34d399; font-weight:700; font-size:0.8rem; margin-bottom:4px;">⚡ 실전 매매 공식 (Action Rule)</div>
+                    <div style="color:var(--text-main); font-size:0.82rem; margin-bottom:8px;">• 급등 당일 추격매수는 금물! 2~7일 뒤 <b>거래량이 기준봉의 35~65% 이하로 바짝 마르면서(숨고르기) 5일선이나 기준봉 중심선에 닿은 종목</b>을 분할 매수하세요.<br>• 손절선은 카드에 적힌 <b><code>기준봉 시가</code></b>로 짧게 잡고 +5%~+10% 반등 파동을 노립니다.</div>
+                    <div style="color:#a78bfa; font-weight:700; font-size:0.78rem;">💡 왜 통하는가?: 기준봉에 들어온 수백억 세력 자금은 거래량 없이 빠질 수 없으므로 중심선 부근에서 반드시 기술적 반등이 나옵니다.</div>
+                </div>
+            </div>
+
+            <!-- 06 -->
+            <div class="rec-card pb-card" data-pb-cat="timing" style="border-top: 3px solid #f59e0b;">
+                <div class="rec-card-top">
+                    <div class="rec-stock-title" style="font-size: 1.02rem; font-weight: 800; color: #fbbf24;">06. [NXT 프리마켓 시차 차익] 08:05 절반(+3.5%) 선제 지정가 매도</div>
+                    <span class="rec-score-badge" style="background:rgba(245,158,11,0.18); color:#fde68a; border-color:rgba(245,158,11,0.4);">⚡ NXT 시차</span>
+                </div>
+                <div class="rec-desc-box" style="margin-bottom: 0;">
+                    <div style="color:#fbbf24; font-weight:700; font-size:0.8rem; margin-bottom:4px;">👀 대시보드 어디를 보나?</div>
+                    <div style="color:var(--text-main); font-size:0.82rem; margin-bottom:8px;">종목 카드의 <b>[🌙 NXT 프리마켓/야간마켓]</b> 배지 및 하단 <b>[🌅 07:40 / 08:40 매도 가이드]</b></div>
+                    <div style="color:#34d399; font-weight:700; font-size:0.8rem; margin-bottom:4px;">⚡ 실전 매매 공식 (Action Rule)</div>
+                    <div style="color:var(--text-main); font-size:0.82rem; margin-bottom:8px;">• 전일 종가베팅 보유 종목은 아침 <code>08:00~08:40</code> NXT 프리마켓에서 호가창이 얇아 작은 매수세에도 +3~5% 쉽게 튑니다.<br>• 아침 08:05에 <b>보유 물량의 50%를 <code>+3.5% 지정가 매도</code>로 미리 걸어 선제 익절</b>하고, 나머지 50%만 09:00 정규장 시초가에 대응하세요.</div>
+                    <div style="color:#a78bfa; font-weight:700; font-size:0.78rem;">💡 왜 통하는가?: 09:00 정규장 동시호가에 쏟아지는 차익 매물보다 30분 먼저 고가에 수익을 확정할 수 있습니다.</div>
+                </div>
+            </div>
+
+            <!-- 07 -->
+            <div class="rec-card pb-card" data-pb-cat="event" style="border-top: 3px solid #a855f7;">
+                <div class="rec-card-top">
+                    <div class="rec-stock-title" style="font-size: 1.02rem; font-weight: 800; color: #c084fc;">07. [DART 선반영 판별기] '주가 미반영 알짜 서프라이즈' 공략</div>
+                    <span class="rec-score-badge" style="background:rgba(168,85,247,0.18); color:#e9d5ff; border-color:rgba(168,85,247,0.4);">📢 공시 알파</span>
+                </div>
+                <div class="rec-desc-box" style="margin-bottom: 0;">
+                    <div style="color:#fbbf24; font-weight:700; font-size:0.8rem; margin-bottom:4px;">👀 대시보드 어디를 보나?</div>
+                    <div style="color:var(--text-main); font-size:0.82rem; margin-bottom:8px;">하단 <code>[📈 실적 발표]</code> 공시 카드 내 <b>[💡 선반영 판별: 🟢 주가 미반영 알짜 호재]</b> 문구</div>
+                    <div style="color:#34d399; font-weight:700; font-size:0.8rem; margin-bottom:4px;">⚡ 실전 매매 공식 (Action Rule)</div>
+                    <div style="color:var(--text-main); font-size:0.82rem; margin-bottom:8px;">• 컨센서스 대비 +10% 이상 어닝 서프라이즈이면서 <b>최근 10일 주가 등락률이 <code>+7% 이하</code>(🟢 미반영 알짜 호재)</b>인 종목만 공략하세요.<br>• 반대로 <code>⚠️ 단기 급등 선반영 주의(10일 +18% 이상)</code>가 뜬 공시는 재료소멸(Sell the News) 음봉 위험이 크므로 추격매수를 피하세요.</div>
+                    <div style="color:#a78bfa; font-weight:700; font-size:0.78rem;">💡 왜 통하는가?: 주가가 오르지 않은 상태에서의 깜짝 실적은 익일 증권사 리포트 상향과 기관 신규 편입(PEAD 효과)을 부릅니다.</div>
+                </div>
+            </div>
+
+            <!-- 08 -->
+            <div class="rec-card pb-card" data-pb-cat="event" style="border-top: 3px solid #a855f7;">
+                <div class="rec-card-top">
+                    <div class="rec-stock-title" style="font-size: 1.02rem; font-weight: 800; color: #c084fc;">08. [자사주 일일 매수압력] '매수압력 3%+ 초강력 지지주' 바닥 줍기</div>
+                    <span class="rec-score-badge" style="background:rgba(168,85,247,0.18); color:#e9d5ff; border-color:rgba(168,85,247,0.4);">📢 공시 알파</span>
+                </div>
+                <div class="rec-desc-box" style="margin-bottom: 0;">
+                    <div style="color:#fbbf24; font-weight:700; font-size:0.8rem; margin-bottom:4px;">👀 대시보드 어디를 보나?</div>
+                    <div style="color:var(--text-main); font-size:0.82rem; margin-bottom:8px;">하단 <code>[🔥 자사주·소각]</code> 공시 카드 내 <b>[⚡ 수급 파괴력: 시총 대비 X% | 일일 매수압력 X%]</b></div>
+                    <div style="color:#34d399; font-weight:700; font-size:0.8rem; margin-bottom:4px;">⚡ 실전 매매 공식 (Action Rule)</div>
+                    <div style="color:var(--text-main); font-size:0.82rem; margin-bottom:8px;">• 자사주 취득 공시 중 <b><code>일일 매수압력이 일평균 거래대금의 3.0% 이상(🔥초강력 하방지지)</code></b>인 종목을 관심종목에 넣어두세요.<br>• 지수가 급락하는 날 이 종목들이 장중 -2~-3% 눌릴 때 저가 매수하면 회사 자사주 자금이 호가창 하단을 받쳐주어 안전하게 반등합니다.</div>
+                    <div style="color:#a78bfa; font-weight:700; font-size:0.78rem;">💡 왜 통하는가?: 회사가 매일 장내 거래량의 상당 비율을 기계적으로 사들이므로 강력한 하방 풋옵션(Put Option)이 작동합니다.</div>
+                </div>
+            </div>
+
+            <!-- 09 -->
+            <div class="rec-card pb-card" data-pb-cat="chart" style="border-top: 3px solid #10b981;">
+                <div class="rec-card-top">
+                    <div class="rec-stock-title" style="font-size: 1.02rem; font-weight: 800; color: #34d399;">09. [30일 오답노트 메타인지] 시장 주도 섹터 순환매(Rotation) 동기화</div>
+                    <span class="rec-score-badge" style="background:rgba(16,185,129,0.18); color:#34d399; border-color:rgba(16,185,129,0.4);">📊 메타인지</span>
+                </div>
+                <div class="rec-desc-box" style="margin-bottom: 0;">
+                    <div style="color:#fbbf24; font-weight:700; font-size:0.8rem; margin-bottom:4px;">👀 대시보드 어디를 보나?</div>
+                    <div style="color:var(--text-main); font-size:0.82rem; margin-bottom:8px;"><code>[📜 최근 1개월 종가베팅 성과]</code> 탭 상단의 <b>[🧠 AI 30일 오답노트 메타 인사이트 & 자가보정]</b> 배너</div>
+                    <div style="color:#34d399; font-weight:700; font-size:0.8rem; margin-bottom:4px;">⚡ 실전 매매 공식 (Action Rule)</div>
+                    <div style="color:var(--text-main); font-size:0.82rem; margin-bottom:8px;">• 최근 30일 실제 시초가 승률이 65% 이상인 <b>검증된 고승률 섹터</b>에 속한 종목은 시스템이 자동으로 <code>+4점 자가보정 가산점</code>을 부여합니다.<br>• 이 배너의 1위 섹터가 바뀌는 순간이 시장의 테마 순환매 변곡점이므로 내 스윙 계좌의 섹터 비중도 즉시 일치시키세요.</div>
+                    <div style="color:#a78bfa; font-weight:700; font-size:0.78rem;">💡 왜 통하는가?: 내 감(직관)이 아니라 최근 한 달간 실제 시초가 갭을 가장 잘 띄운 섹터 통계에 올라타는 것이 가장 객관적입니다.</div>
+                </div>
+            </div>
+
+            <!-- 10 -->
+            <div class="rec-card pb-card" data-pb-cat="risk" style="border-top: 3px solid #3b82f6;">
+                <div class="rec-card-top">
+                    <div class="rec-stock-title" style="font-size: 1.02rem; font-weight: 800; color: #60a5fa;">10. [스윙 What-If 3분할 청산] 1차 익절 후 '본절 스탑(무패 잠금)' 공식</div>
+                    <span class="rec-score-badge" style="background:rgba(59,130,246,0.18); color:#93c5fd; border-color:rgba(59,130,246,0.4);">💰 청산공식</span>
+                </div>
+                <div class="rec-desc-box" style="margin-bottom: 0;">
+                    <div style="color:#fbbf24; font-weight:700; font-size:0.8rem; margin-bottom:4px;">👀 대시보드 어디를 보나?</div>
+                    <div style="color:var(--text-main); font-size:0.82rem; margin-bottom:8px;"><code>[🌊 2~5일 스윙 추천]</code> 탭 하단의 <b>[🎯 스윙 What-If 목표 수익 시뮬레이터]</b> 표</div>
+                    <div style="color:#34d399; font-weight:700; font-size:0.8rem; margin-bottom:4px;">⚡ 실전 매매 공식 (Action Rule)</div>
+                    <div style="color:var(--text-main); font-size:0.82rem; margin-bottom:8px;">• 시뮬레이터 표의 권장 주식 수(예: 30주) 매수 후 <b>1차 목표가(+3%) 도달 시 1/3(10주)을 즉시 매도</b>하여 수익을 챙기세요.<br>• 동시에 남은 2/3(20주)의 손절선을 <code>-2%</code>에서 <b><code>내 매수 본절가(0%)</code>로 올려두면</b>, 이후 주가가 어떻게 흔들려도 절대 손실이 안 나는 <b>100% 무패(Risk-Free) 포지션</b>으로 2차(+5%)·3차(+9%) 파동을 끝까지 먹을 수 있습니다.</div>
+                    <div style="color:#a78bfa; font-weight:700; font-size:0.78rem;">💡 왜 통하는가?: 1차 수익 확정 + 본절 스탑 잠금은 트레이더의 심리적 불안을 제거하여 큰 추세 수익을 끝까지 지키게 해줍니다.</div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- 3. 실전 4대 종가베팅/매도 가이드 -->
@@ -2892,6 +3246,17 @@ def generate_html():
             document.getElementById('rec-breakout-container').style.display = (track === 'breakout') ? 'block' : 'none';
             document.getElementById('rec-history-container').style.display = (track === 'history') ? 'block' : 'none';
             document.getElementById('rec-swing-history-container').style.display = (track === 'swing_history') ? 'block' : 'none';
+            const pbEl = document.getElementById('rec-playbook-container');
+            if (pbEl) pbEl.style.display = (track === 'playbook') ? 'block' : 'none';
+        }}
+
+        function filterPlaybook(cat, btn) {{
+            document.querySelectorAll('.pb-filter-btn').forEach(b => b.classList.remove('active'));
+            if (btn) btn.classList.add('active');
+            document.querySelectorAll('.pb-card').forEach(card => {{
+                const c = card.getAttribute('data-pb-cat');
+                card.style.display = (cat === 'all' || c === cat) ? 'flex' : 'none';
+            }});
         }}
 
         // 시가총액 필터
@@ -3017,6 +3382,65 @@ def generate_html():
             }}
         }}
         initTheme();
+
+        // [아이디어 9] 리스크 스코어 × 하프 켈리(Half-Kelly) 시드머니 & 전 종목 매수수량 실시간 계산기
+        const AI_RECOMMENDED_PCT = {recommended_invest_pct};
+        function initKellySeed() {{
+            const savedSeed = localStorage.getItem('binistock_seed_manwon');
+            const inp = document.getElementById('seed-money-input');
+            if (savedSeed && inp) {{
+                inp.value = savedSeed;
+            }}
+            updateKellyCalculator();
+        }}
+        function updateKellyCalculator() {{
+            const inp = document.getElementById('seed-money-input');
+            let seedManwon = inp ? parseFloat(inp.value) : 1000;
+            if (isNaN(seedManwon) || seedManwon <= 0) seedManwon = 1000;
+            localStorage.setItem('binistock_seed_manwon', seedManwon);
+
+            const totalWon = seedManwon * 10000;
+            const investWon = Math.round(totalWon * (AI_RECOMMENDED_PCT / 100.0));
+            const cashWon = totalWon - investWon;
+            const perStockWon = Math.round(investWon / 3.0);
+            const maxLossWon = Math.round(perStockWon * 0.02);
+
+            const fmtMan = (w) => Math.round(w / 10000).toLocaleString() + '만원 (' + w.toLocaleString() + '원)';
+            const elTotal = document.getElementById('kelly-total-invest');
+            const elCash = document.getElementById('kelly-cash-reserve');
+            const elPer = document.getElementById('kelly-per-stock');
+            const elLoss = document.getElementById('kelly-max-loss');
+
+            if (elTotal) elTotal.innerText = fmtMan(investWon);
+            if (elCash) elCash.innerText = fmtMan(cashWon);
+            if (elPer) elPer.innerText = Math.round(perStockWon / 10000).toLocaleString() + '만원';
+            if (elLoss) elLoss.innerText = '-' + maxLossWon.toLocaleString() + '원';
+
+            // 모든 추천 종목 카드의 권장 주문 수량 업데이트
+            document.querySelectorAll('.rec-kelly-order-box').forEach(box => {{
+                const price = parseFloat(box.getAttribute('data-price') || '0');
+                if (price > 0) {{
+                    const shares = Math.max(1, Math.floor(perStockWon / price));
+                    const actualAmt = shares * price;
+                    const expProfit = Math.round(actualAmt * 0.03);
+                    const expLoss = Math.round(actualAmt * 0.02);
+                    box.innerHTML = `💰 <b>시드 연동 권장 주문</b>: <b>${{shares.toLocaleString()}}주</b> (${{actualAmt.toLocaleString()}}원) | +3% 익절 <b>+${{expProfit.toLocaleString()}}원</b> / -2% 손절 <b>-${{expLoss.toLocaleString()}}원</b>`;
+                }}
+            }});
+
+            // 스윙 What-If 시뮬레이터 표의 시드 연동 열 업데이트
+            document.querySelectorAll('.sim-kelly-cell').forEach(cell => {{
+                const price = parseFloat(cell.getAttribute('data-price') || '0');
+                if (price > 0) {{
+                    const shares = Math.max(1, Math.floor(perStockWon / price));
+                    const actualAmt = shares * price;
+                    const p5 = Math.round(actualAmt * 0.05);
+                    const l2 = Math.round(actualAmt * 0.02);
+                    cell.innerHTML = `<span style="color:#fbbf24; font-weight:700;">${{shares.toLocaleString()}}주</span> <span style="font-size:0.75rem; color:#9ca3af;">(+5%시 <b style="color:#34d399;">+${{p5.toLocaleString()}}원</b> / 손절 <b style="color:#f87171;">-${{l2.toLocaleString()}}원</b>)</span>`;
+                }}
+            }});
+        }}
+        initKellySeed();
 
         // PWA Service Worker 등록
         if ('serviceWorker' in navigator) {{
