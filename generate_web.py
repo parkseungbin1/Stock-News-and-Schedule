@@ -196,7 +196,7 @@ def generate_html():
         amount_eok = pick.get('amount_eok', 0)
         marcap_str = pick.get('marcap_str', '')
         marcap_badge = f'<span class="rec-marcap-badge">시총 {marcap_str}</span>' if marcap_str else ''
-        amount_str = f" ({amount_eok:,}억)" if amount_eok else ""
+        amount_str = f" (거래대금 {amount_eok:,}억)" if amount_eok else ""
 
         t1 = pick.get('target_1') or (int(round(price * 1.03)) if price else 0)
         t1_pct = pick.get('target_1_pct', '+3.0%')
