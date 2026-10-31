@@ -469,9 +469,9 @@ def format_earnings(item, actual, cons, watch):
     if op_info.get('turnaround'):
         tags.append(f"🔄 <b>{op_info['turnaround']}</b>")
     if op_info.get('yoy') is not None:
-        tags.append(f"YoY {op_info['yoy']:+.1f}%")
+        tags.append(f"전년동기대비(YoY) {op_info['yoy']:+.1f}%")
     if op_info.get('qoq') is not None and not op_info.get('turnaround'):
-        tags.append(f"QoQ {op_info['qoq']:+.1f}%")
+        tags.append(f"직전분기대비(QoQ) {op_info['qoq']:+.1f}%")
     if tags:
         line += f"   {' | '.join(tags)}\n"
 

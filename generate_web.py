@@ -387,7 +387,13 @@ def generate_html():
             disc_cache = {}
 
     cached_seen = disc_cache.get('seen', [])
-    earnings_cards = disc_cache.get('earnings_cards', [])
+    earnings_cards = [
+        c.replace("| YoY ", "| 전년동기대비(YoY) ")
+         .replace("| QoQ ", "| 직전분기대비(QoQ) ")
+         .replace("(컨센 ", "(시장예상치 ")
+         .replace("[YoY ", "[전년동기대비 ")
+        for c in disc_cache.get('earnings_cards', [])
+    ]
     buyback_cards = disc_cache.get('buyback_cards', [])
     ir_cards = disc_cache.get('ir_cards', [])
 
