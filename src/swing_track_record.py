@@ -175,7 +175,15 @@ def evaluate_swing_performance():
                     continue
 
                 # 추천일 이후의 거래일 데이터만 필터링
-                sub = df[df.index.strftime('%Y-%m-%d') > h_date]
+                if h_date in df.index:
+                    entry_p = int(df.loc[h_date, 'Close'])
+                    p['entry_price'] = entry_p
+                    p['price'] = entry_p
+                    t1 = int(round(entry_p * 1.05))
+                    t2 = int(round(entry_p * 1.09))
+                    sl = int(round(entry_p * 0.97))
+                    p['target_1'], p['target_2'], p['stop_loss'] = t1, t2, sl
+                sub = df[df.index.strftime('%Y-%m-%d') > h_date].head(5)
                 if sub.empty:
                     all_done = False
                     continue

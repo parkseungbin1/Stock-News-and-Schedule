@@ -238,12 +238,23 @@ def evaluate_latest_performance():
             open_p = float(nxt['Open'].iloc[0])
             gap_pct = ((open_p - close_p) / close_p) * 100
 
-            is_success = gap_pct >= 1.5
+            open_p = float(nxt['Open'].iloc[0])
+            high_p = float(nxt['High'].iloc[0])
+            if target['date'] in df.index:
+                close_p = int(df.loc[target['date'], 'Close'])
+                p['close_price'] = close_p
+                p['price'] = close_p
+            gap_pct = ((open_p - close_p) / close_p) * 100
+            high_pct = ((high_p - close_p) / close_p) * 100
+
+            is_success = (gap_pct >= 1.5) or (high_pct >= 3.0)
             if is_success:
                 success_count += 1
 
             p['open_price'] = int(open_p)
+            p['next_high_price'] = int(high_p)
             p['gap_pct'] = round(gap_pct, 2)
+            p['high_pct'] = round(high_pct, 2)
             p['is_success'] = is_success
 
             badge = "🎯 갭상승 성공" if is_success else ("✨ 보합권" if gap_pct >= 0 else "🔻 갭하락")
@@ -293,7 +304,7 @@ def get_self_tuning_insights():
     data = load_history()
     history = [h for h in data.get('history', []) if is_valid_trading_date(h.get('date', ''))]
     now = datetime.now(KST)
-    if len(history) < 3:
+    if False:  # 가짜 샘플 데이터 주입 영구 비활성화 (100% 실거래 KRX 데이터만 사용)
         b_days = get_past_business_days(now, 3)
         sample_history = [
             {
@@ -392,7 +403,7 @@ def render_monthly_history_html():
 
     # 기록이 적을 때를 대비한 샘플 보강 (토/일 제외 평일 거래일로만 산출)
     now = datetime.now(KST)
-    if len(history) < 3:
+    if False:  # 가짜 샘플 데이터 주입 영구 비활성화 (100% 실거래 KRX 데이터만 사용)
         b_days = get_past_business_days(now, 3)
         sample_history = [
             {
@@ -506,7 +517,10 @@ def render_monthly_history_html():
             if gap is not None:
                 gap_class = "up" if gap > 0 else "down"
                 badge = '<span class="res-badge win">🎯 익절 성공</span>' if is_win else ('<span class="res-badge even">✨ 보합</span>' if gap >= 0 else '<span class="res-badge loss">🔻 손절/이탈</span>')
-                res_str = f"종가 {close_p:,}원 → 시초가 <b>{open_p:,}원</b> (<span class='{gap_class}'>{gap:+.2f}%</span>) {badge}"
+                high_p = p.get('next_high_price')
+                high_pct = p.get('high_pct')
+                high_str = f" · 장중최고 <b>{high_p:,}원</b> (<span class='{'up' if high_pct and high_pct > 0 else 'down'}'>{high_pct:+.2f}%</span>)" if high_p and high_pct is not None else ""
+                res_str = f"종가 {close_p:,}원 → 시초가 <b>{open_p:,}원</b> (<span class='{gap_class}'>{gap:+.2f}%</span>){high_str} {badge}"
             else:
                 res_str = f"종가 <b>{close_p:,}원</b> 매수 체결 → <i>내일 아침 09:00 시초가 확인 대기</i>"
 

@@ -1,156 +1,6 @@
 {
   "history": [
     {
-      "date": "2026-10-21",
-      "evaluated": true,
-      "success_count": 2,
-      "total_count": 3,
-      "picks": [
-        {
-          "code": "000100",
-          "name": "유한양행",
-          "market": "KOSPI",
-          "sector": "제약/바이오",
-          "catalyst": "렉라자 글로벌 처방 확대 및 마일스톤 유입",
-          "catalyst_url": "https://m.stock.naver.com/domestic/stock/000100/news",
-          "catalyst_source": "한국경제",
-          "close_price": 142000,
-          "open_price": 146000,
-          "gap_pct": 2.82,
-          "is_success": true,
-          "chart_url": "https://m.stock.naver.com/domestic/stock/000100/total"
-        },
-        {
-          "code": "237690",
-          "name": "에스티팜",
-          "market": "KOSDAQ",
-          "sector": "제약/바이오",
-          "catalyst": "올리고핵산 원료의약품 공급 계약 및 CAPA 증설",
-          "catalyst_url": "https://m.stock.naver.com/domestic/stock/237690/news",
-          "catalyst_source": "매일경제",
-          "close_price": 98500,
-          "open_price": 101500,
-          "gap_pct": 3.05,
-          "is_success": true,
-          "chart_url": "https://m.stock.naver.com/domestic/stock/237690/total"
-        },
-        {
-          "code": "141080",
-          "name": "리가켐바이오",
-          "market": "KOSDAQ",
-          "sector": "제약/바이오",
-          "catalyst": "ADC 플랫폼 추가 기술이전 기대감 및 임상 진척",
-          "catalyst_url": "https://m.stock.naver.com/domestic/stock/141080/news",
-          "catalyst_source": "이데일리",
-          "close_price": 125000,
-          "open_price": 124000,
-          "gap_pct": -0.8,
-          "is_success": false,
-          "chart_url": "https://m.stock.naver.com/domestic/stock/141080/total"
-        }
-      ]
-    },
-    {
-      "date": "2026-10-22",
-      "evaluated": true,
-      "success_count": 3,
-      "total_count": 3,
-      "picks": [
-        {
-          "code": "032860",
-          "name": "인화정공",
-          "market": "KOSDAQ",
-          "sector": "조선/기계",
-          "catalyst": "선박엔진 부품 수주 급증 및 실적 턴어라운드",
-          "catalyst_url": "https://m.stock.naver.com/domestic/stock/032860/news",
-          "catalyst_source": "파이낸셜뉴스",
-          "close_price": 44000,
-          "open_price": 45550,
-          "gap_pct": 3.52,
-          "is_success": true,
-          "chart_url": "https://m.stock.naver.com/domestic/stock/032860/total"
-        },
-        {
-          "code": "413630",
-          "name": "씨피시스템",
-          "market": "KOSDAQ",
-          "sector": "기계/로봇",
-          "catalyst": "케이블체인 국내 1위 및 글로벌 전동화 부품 납품",
-          "catalyst_url": "https://m.stock.naver.com/domestic/stock/413630/news",
-          "catalyst_source": "헤럴드경제",
-          "close_price": 4360,
-          "open_price": 4470,
-          "gap_pct": 2.52,
-          "is_success": true,
-          "chart_url": "https://m.stock.naver.com/domestic/stock/413630/total"
-        },
-        {
-          "code": "089890",
-          "name": "코세스",
-          "market": "KOSDAQ",
-          "sector": "반도체",
-          "catalyst": "반도체 레이저 리워크 장비 독점 공급 호조",
-          "catalyst_url": "https://m.stock.naver.com/domestic/stock/089890/news",
-          "catalyst_source": "전자신문",
-          "close_price": 15600,
-          "open_price": 16200,
-          "gap_pct": 3.85,
-          "is_success": true,
-          "chart_url": "https://m.stock.naver.com/domestic/stock/089890/total"
-        }
-      ]
-    },
-    {
-      "date": "2026-10-23",
-      "evaluated": true,
-      "success_count": 3,
-      "total_count": 3,
-      "picks": [
-        {
-          "code": "042700",
-          "name": "한미반도체",
-          "market": "KOSPI",
-          "sector": "반도체",
-          "catalyst": "TC본더 글로벌 독점 공급 수혜 및 HBM 증설",
-          "catalyst_url": "https://m.stock.naver.com/domestic/stock/042700/news",
-          "catalyst_source": "머니투데이",
-          "close_price": 124500,
-          "open_price": 129000,
-          "gap_pct": 3.61,
-          "is_success": true,
-          "chart_url": "https://m.stock.naver.com/domestic/stock/042700/total"
-        },
-        {
-          "code": "028050",
-          "name": "삼성E&A",
-          "market": "KOSPI",
-          "sector": "플랜트/건설",
-          "catalyst": "사우디 아람코 파드힐리 가스전 대규모 수주 잭팟",
-          "catalyst_url": "https://m.stock.naver.com/domestic/stock/028050/news",
-          "catalyst_source": "한국경제",
-          "close_price": 27500,
-          "open_price": 28600,
-          "gap_pct": 4.0,
-          "is_success": true,
-          "chart_url": "https://m.stock.naver.com/domestic/stock/028050/total"
-        },
-        {
-          "code": "126340",
-          "name": "비나텍",
-          "market": "KOSDAQ",
-          "sector": "2차전지",
-          "catalyst": "슈퍼 커패시터 북미 데이터센터 백업 전원 공급 기대",
-          "catalyst_url": "https://m.stock.naver.com/domestic/stock/126340/news",
-          "catalyst_source": "이데일리",
-          "close_price": 118600,
-          "open_price": 121500,
-          "gap_pct": 2.45,
-          "is_success": true,
-          "chart_url": "https://m.stock.naver.com/domestic/stock/126340/total"
-        }
-      ]
-    },
-    {
       "date": "2026-10-26",
       "evaluated": true,
       "picks": [
@@ -162,14 +12,19 @@
           "catalyst": "삼현, 북미 최대 자동화 전시회 참가…글로벌 로봇 공급망 공략",
           "catalyst_url": "https://n.news.naver.com/mnews/article/018/0006311842",
           "catalyst_source": "이데일리",
-          "close_price": 46800,
-          "change_pct": 5.64,
-          "target_1": 48204,
-          "stop_loss": 45864,
+          "close_price": 47600,
+          "change_pct": 8.43,
+          "target_1": 49028,
+          "stop_loss": 46648,
           "chart_url": "https://m.stock.naver.com/domestic/stock/437730/total",
           "open_price": 46600,
-          "gap_pct": -0.43,
-          "is_success": false
+          "gap_pct": -2.1,
+          "is_success": false,
+          "price": 47600,
+          "target_2": 49980,
+          "next_high_price": 48950,
+          "next_low_price": 46100,
+          "high_pct": 2.84
         },
         {
           "code": "179880",
@@ -179,14 +34,19 @@
           "catalyst": "멜콘, 청약 경쟁률 1741.48대 1…증거금 6.7兆",
           "catalyst_url": "https://n.news.naver.com/mnews/article/003/0014230817",
           "catalyst_source": "뉴시스",
-          "close_price": 13140,
-          "change_pct": 7.27,
-          "target_1": 13534,
-          "stop_loss": 12877,
+          "close_price": 11960,
+          "change_pct": -1.4,
+          "target_1": 12319,
+          "stop_loss": 11721,
           "chart_url": "https://m.stock.naver.com/domestic/stock/179880/total",
           "open_price": 12510,
-          "gap_pct": -4.79,
-          "is_success": false
+          "gap_pct": 4.6,
+          "is_success": true,
+          "price": 11960,
+          "target_2": 12558,
+          "next_high_price": 15830,
+          "next_low_price": 12500,
+          "high_pct": 32.36
         },
         {
           "code": "468670",
@@ -196,23 +56,28 @@
           "catalyst": "브릴스 기관·외인 대량 수급 유입 및 업종 주도 모멘텀",
           "catalyst_url": "https://m.stock.naver.com/domestic/stock/468670/news",
           "catalyst_source": "실시간 수급",
-          "close_price": 16750,
-          "change_pct": 6.08,
-          "target_1": 17252,
-          "stop_loss": 16415,
+          "close_price": 19510,
+          "change_pct": 25.22,
+          "target_1": 20095,
+          "stop_loss": 19120,
           "chart_url": "https://m.stock.naver.com/domestic/stock/468670/total",
           "open_price": 19450,
-          "gap_pct": 16.12,
-          "is_success": true
+          "gap_pct": -0.31,
+          "is_success": true,
+          "price": 19510,
+          "target_2": 20486,
+          "next_high_price": 22450,
+          "next_low_price": 18430,
+          "high_pct": 15.07
         }
       ],
-      "success_count": 1,
+      "success_count": 2,
       "total_count": 3
     },
     {
       "date": "2026-10-27",
       "evaluated": true,
-      "success_count": 1,
+      "success_count": 3,
       "total_count": 3,
       "picks": [
         {
@@ -225,13 +90,13 @@
           "catalyst_source": "뉴시스",
           "close_price": 15830,
           "price": 15830,
-          "change_pct": 26.54,
+          "change_pct": 32.36,
           "open_price": 17170,
           "gap_pct": 8.46,
           "is_success": true,
-          "target_1": 16304,
+          "target_1": 16305,
           "target_1_pct": "+3.0%",
-          "target_2": 16621,
+          "target_2": 16622,
           "target_2_pct": "+5.0%",
           "stop_loss": 15513,
           "stop_loss_pct": "-2.0%",
@@ -243,7 +108,10 @@
             "신규상장",
             "수급폭발"
           ],
-          "chart_url": "https://m.stock.naver.com/domestic/stock/179880/total"
+          "chart_url": "https://m.stock.naver.com/domestic/stock/179880/total",
+          "next_high_price": 19990,
+          "next_low_price": 15830,
+          "high_pct": 26.28
         },
         {
           "code": "437730",
@@ -255,10 +123,10 @@
           "catalyst_source": "이데일리",
           "close_price": 48700,
           "price": 48700,
-          "change_pct": 4.51,
+          "change_pct": 2.31,
           "open_price": 48400,
           "gap_pct": -0.62,
-          "is_success": false,
+          "is_success": true,
           "target_1": 50161,
           "target_1_pct": "+3.0%",
           "target_2": 51135,
@@ -272,7 +140,10 @@
             "종가베팅",
             "로봇/부품"
           ],
-          "chart_url": "https://m.stock.naver.com/domestic/stock/437730/total"
+          "chart_url": "https://m.stock.naver.com/domestic/stock/437730/total",
+          "next_high_price": 52400,
+          "next_low_price": 47800,
+          "high_pct": 7.6
         },
         {
           "code": "468670",
@@ -284,11 +155,11 @@
           "catalyst_source": "실시간 수급",
           "close_price": 20650,
           "price": 20650,
-          "change_pct": 6.17,
+          "change_pct": 5.84,
           "open_price": 20700,
           "gap_pct": 0.24,
-          "is_success": false,
-          "target_1": 21269,
+          "is_success": true,
+          "target_1": 21270,
           "target_1_pct": "+3.0%",
           "target_2": 21682,
           "target_2_pct": "+5.0%",
@@ -301,14 +172,17 @@
             "종가베팅",
             "AI로봇"
           ],
-          "chart_url": "https://m.stock.naver.com/domestic/stock/468670/total"
+          "chart_url": "https://m.stock.naver.com/domestic/stock/468670/total",
+          "next_high_price": 22350,
+          "next_low_price": 20000,
+          "high_pct": 8.23
         }
       ]
     },
     {
       "date": "2026-10-28",
       "evaluated": true,
-      "success_count": 1,
+      "success_count": 3,
       "total_count": 3,
       "picks": [
         {
@@ -321,10 +195,10 @@
           "catalyst_source": "머니투데이",
           "close_price": 18800,
           "price": 18800,
-          "change_pct": 9.49,
+          "change_pct": 18.76,
           "open_price": 19010,
           "gap_pct": 1.12,
-          "is_success": false,
+          "is_success": true,
           "target_1": 19364,
           "target_1_pct": "+3.0%",
           "target_2": 19740,
@@ -339,7 +213,10 @@
             "신고가돌파",
             "주도주"
           ],
-          "chart_url": "https://m.stock.naver.com/domestic/stock/179880/total"
+          "chart_url": "https://m.stock.naver.com/domestic/stock/179880/total",
+          "next_high_price": 19840,
+          "next_low_price": 16220,
+          "high_pct": 5.53
         },
         {
           "code": "000660",
@@ -351,10 +228,10 @@
           "catalyst_source": "한국경제",
           "close_price": 1508000,
           "price": 1508000,
-          "change_pct": 8.49,
+          "change_pct": 9.75,
           "open_price": 1511000,
           "gap_pct": 0.2,
-          "is_success": false,
+          "is_success": true,
           "target_1": 1553240,
           "target_1_pct": "+3.0%",
           "target_2": 1583400,
@@ -369,7 +246,10 @@
             "대장주",
             "외인매수"
           ],
-          "chart_url": "https://m.stock.naver.com/domestic/stock/000660/total"
+          "chart_url": "https://m.stock.naver.com/domestic/stock/000660/total",
+          "next_high_price": 1587000,
+          "next_low_price": 1479000,
+          "high_pct": 5.24
         },
         {
           "code": "028050",
@@ -381,10 +261,10 @@
           "catalyst_source": "매일경제",
           "close_price": 63400,
           "price": 63400,
-          "change_pct": 0.63,
+          "change_pct": 0.96,
           "open_price": 64200,
           "gap_pct": 1.26,
-          "is_success": false,
+          "is_success": true,
           "target_1": 65302,
           "target_1_pct": "+3.0%",
           "target_2": 66570,
@@ -399,14 +279,17 @@
             "수주호재",
             "기관매수"
           ],
-          "chart_url": "https://m.stock.naver.com/domestic/stock/028050/total"
+          "chart_url": "https://m.stock.naver.com/domestic/stock/028050/total",
+          "next_high_price": 65500,
+          "next_low_price": 61900,
+          "high_pct": 3.31
         }
       ]
     },
     {
       "date": "2026-10-29",
       "evaluated": true,
-      "success_count": 3,
+      "success_count": 2,
       "total_count": 3,
       "picks": [
         {
@@ -417,17 +300,17 @@
           "catalyst": "김동선 테크 부문 성장 시동…한화비전, 3분기 영업익 1026억 호실적 발표",
           "catalyst_url": "https://m.stock.naver.com/domestic/stock/489790/news",
           "catalyst_source": "더팩트",
-          "close_price": 43700,
-          "price": 43700,
-          "change_pct": 8.71,
+          "close_price": 49150,
+          "price": 49150,
+          "change_pct": 21.51,
           "open_price": 49450,
-          "gap_pct": 13.16,
+          "gap_pct": 0.61,
           "is_success": true,
-          "target_1": 45011,
+          "target_1": 50624,
           "target_1_pct": "+3.0%",
-          "target_2": 45885,
+          "target_2": 51608,
           "target_2_pct": "+5.0%",
-          "stop_loss": 42826,
+          "stop_loss": 48167,
           "stop_loss_pct": "-2.0%",
           "score": 96,
           "amount_eok": 478,
@@ -440,7 +323,10 @@
             "실적호재",
             "우상향"
           ],
-          "chart_url": "https://m.stock.naver.com/domestic/stock/489790/total"
+          "chart_url": "https://m.stock.naver.com/domestic/stock/489790/total",
+          "next_high_price": 52000,
+          "next_low_price": 48050,
+          "high_pct": 5.8
         },
         {
           "code": "138040",
@@ -450,17 +336,17 @@
           "catalyst": "메리츠금융지주 기관·외인 대량 수급 유입 및 주주환원 자사주 소각 모멘텀",
           "catalyst_url": "https://m.stock.naver.com/domestic/stock/138040/news",
           "catalyst_source": "한국경제",
-          "close_price": 128800,
-          "price": 128800,
-          "change_pct": 4.29,
+          "close_price": 132000,
+          "price": 132000,
+          "change_pct": 7.32,
           "open_price": 131900,
-          "gap_pct": 2.41,
-          "is_success": true,
-          "target_1": 132664,
+          "gap_pct": -0.08,
+          "is_success": false,
+          "target_1": 135960,
           "target_1_pct": "+3.0%",
-          "target_2": 135240,
+          "target_2": 138600,
           "target_2_pct": "+5.0%",
-          "stop_loss": 126224,
+          "stop_loss": 129360,
           "stop_loss_pct": "-2.0%",
           "score": 93,
           "amount_eok": 147,
@@ -473,7 +359,10 @@
             "기관수급",
             "주주환원"
           ],
-          "chart_url": "https://m.stock.naver.com/domestic/stock/138040/total"
+          "chart_url": "https://m.stock.naver.com/domestic/stock/138040/total",
+          "next_high_price": 133600,
+          "next_low_price": 129400,
+          "high_pct": 1.21
         },
         {
           "code": "030960",
@@ -483,17 +372,17 @@
           "catalyst": "북미회담 기대감 및 남북경협·품절주 품귀 현상 거래량 폭발",
           "catalyst_url": "https://m.stock.naver.com/domestic/stock/030960/news",
           "catalyst_source": "머니투데이",
-          "close_price": 6920,
-          "price": 6920,
-          "change_pct": 22.48,
+          "close_price": 6540,
+          "price": 6540,
+          "change_pct": 15.14,
           "open_price": 7210,
-          "gap_pct": 4.19,
+          "gap_pct": 10.24,
           "is_success": true,
-          "target_1": 7404,
+          "target_1": 6736,
           "target_1_pct": "+3.0%",
-          "target_2": 7612,
+          "target_2": 6867,
           "target_2_pct": "+5.0%",
-          "stop_loss": 6781,
+          "stop_loss": 6409,
           "stop_loss_pct": "-2.0%",
           "score": 91,
           "amount_eok": 456,
@@ -506,7 +395,10 @@
             "거래대금폭발",
             "품절주"
           ],
-          "chart_url": "https://m.stock.naver.com/domestic/stock/030960/total"
+          "chart_url": "https://m.stock.naver.com/domestic/stock/030960/total",
+          "next_high_price": 7500,
+          "next_low_price": 6230,
+          "high_pct": 14.68
         }
       ]
     },
@@ -522,17 +414,17 @@
           "catalyst_url": "https://n.news.naver.com/mnews/article/003/0014290783",
           "catalyst_source": "뉴시스",
           "catalyst_body": "삼성바이오로직스가 임금·단체협상을 두고 갈등을 빚고 있는 상생노동조합(노조)의 태도를 우려하고 나섰다. 노조가 한국노동조합총연맹(한국노총)과 연대해 회사를 압박하는 것처럼 비춰지고 있어서다. 삼성바",
-          "close_price": 1416000,
-          "price": 1416000,
-          "change_pct": 3.66,
+          "close_price": 1432000,
+          "price": 1432000,
+          "change_pct": 4.68,
           "amount_eok": 717,
           "marcap": 65547986616000,
           "marcap_str": "65조 5,480억",
-          "target_1": 1458480,
+          "target_1": 1474960,
           "target_1_pct": "+3.0%",
-          "target_2": 1486800,
+          "target_2": 1503600,
           "target_2_pct": "+5.0%",
-          "stop_loss": 1387680,
+          "stop_loss": 1403360,
           "stop_loss_pct": "-2.0%",
           "score": 87,
           "reason": "거래대금 717억 폭발 주도주 · 고가 마감 양봉(윗꼬리 18%) · 차트: ⚡ 20일선 지지 우상향 파동",
@@ -558,17 +450,17 @@
           "catalyst_url": "https://n.news.naver.com/mnews/article/001/0016401067",
           "catalyst_source": "연합뉴스",
           "catalyst_body": "의료 인공지능(AI) 기업 루닛이 미국 바이오기업과 협업한다는 소식과 국내 증권사의 긍정 평가에 힘입어 26일 상한가로 마감했다. 이날 코스닥에서 루닛은 30.00% 오른 1만4천690원에 거래를 ",
-          "close_price": 15630,
-          "price": 15630,
-          "change_pct": 4.34,
+          "close_price": 15400,
+          "price": 15400,
+          "change_pct": 1.78,
           "amount_eok": 462,
           "marcap": 1163781353400,
           "marcap_str": "1조 1,638억",
-          "target_1": 16098,
+          "target_1": 15862,
           "target_1_pct": "+3.0%",
-          "target_2": 16411,
+          "target_2": 16170,
           "target_2_pct": "+5.0%",
-          "stop_loss": 15317,
+          "stop_loss": 15092,
           "stop_loss_pct": "-2.0%",
           "score": 84,
           "reason": "거래대금 462억 폭발 주도주 · 고가 마감 양봉(윗꼬리 33%) · 차트: ⚡ 20일선 지지 우상향 파동",
