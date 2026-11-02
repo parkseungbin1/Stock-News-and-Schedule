@@ -52,32 +52,32 @@
 
 **01. 07:00 모닝 브리핑**
 ```bash
-curl -X POST -H "Accept: application/vnd.github.v3+json" -H "Authorization: token <YOUR_GITHUB_TOKEN_FROM_ENV>" https://api.github.com/repos/parkseungbin1/Stock-News-and-Schedule/actions/workflows/smart-alert.yml/dispatches -d '{"ref":"main", "inputs":{"action":"digest_0700"}}'
+curl -X POST -H "Accept: application/vnd.github.v3+json" -H "Authorization: token <YOUR_GITHUB_TOKEN_FROM_ENV>" https://api.github.com/repos/parkseungbin1/binistock/actions/workflows/smart-alert.yml/dispatches -d '{"ref":"main", "inputs":{"action":"digest_0700"}}'
 ```
 
 **02. 07:40 프리마켓 가이드**
 ```bash
-curl -X POST -H "Accept: application/vnd.github.v3+json" -H "Authorization: token <YOUR_GITHUB_TOKEN_FROM_ENV>" https://api.github.com/repos/parkseungbin1/Stock-News-and-Schedule/actions/workflows/smart-alert.yml/dispatches -d '{"ref":"main", "inputs":{"action":"morning_735"}}'
+curl -X POST -H "Accept: application/vnd.github.v3+json" -H "Authorization: token <YOUR_GITHUB_TOKEN_FROM_ENV>" https://api.github.com/repos/parkseungbin1/binistock/actions/workflows/smart-alert.yml/dispatches -d '{"ref":"main", "inputs":{"action":"morning_735"}}'
 ```
 
 **03. 08:10 장전 공시 요약**
 ```bash
-curl -X POST -H "Accept: application/vnd.github.v3+json" -H "Authorization: token <YOUR_GITHUB_TOKEN_FROM_ENV>" https://api.github.com/repos/parkseungbin1/Stock-News-and-Schedule/actions/workflows/smart-alert.yml/dispatches -d '{"ref":"main", "inputs":{"action":"disclosure_0810"}}'
+curl -X POST -H "Accept: application/vnd.github.v3+json" -H "Authorization: token <YOUR_GITHUB_TOKEN_FROM_ENV>" https://api.github.com/repos/parkseungbin1/binistock/actions/workflows/smart-alert.yml/dispatches -d '{"ref":"main", "inputs":{"action":"disclosure_0810"}}'
 ```
 
 **04. 08:40 정규장 개장 가이드**
 ```bash
-curl -X POST -H "Accept: application/vnd.github.v3+json" -H "Authorization: token <YOUR_GITHUB_TOKEN_FROM_ENV>" https://api.github.com/repos/parkseungbin1/Stock-News-and-Schedule/actions/workflows/smart-alert.yml/dispatches -d '{"ref":"main", "inputs":{"action":"morning_835"}}'
+curl -X POST -H "Accept: application/vnd.github.v3+json" -H "Authorization: token <YOUR_GITHUB_TOKEN_FROM_ENV>" https://api.github.com/repos/parkseungbin1/binistock/actions/workflows/smart-alert.yml/dispatches -d '{"ref":"main", "inputs":{"action":"morning_835"}}'
 ```
 
 **05. 15:10 종가베팅 가이드**
 ```bash
-curl -X POST -H "Accept: application/vnd.github.v3+json" -H "Authorization: token <YOUR_GITHUB_TOKEN_FROM_ENV>" https://api.github.com/repos/parkseungbin1/Stock-News-and-Schedule/actions/workflows/smart-alert.yml/dispatches -d '{"ref":"main", "inputs":{"action":"closing_1510"}}'
+curl -X POST -H "Accept: application/vnd.github.v3+json" -H "Authorization: token <YOUR_GITHUB_TOKEN_FROM_ENV>" https://api.github.com/repos/parkseungbin1/binistock/actions/workflows/smart-alert.yml/dispatches -d '{"ref":"main", "inputs":{"action":"closing_1510"}}'
 ```
 
 **06. 19:40 야간마켓 가이드**
 ```bash
-curl -X POST -H "Accept: application/vnd.github.v3+json" -H "Authorization: token <YOUR_GITHUB_TOKEN_FROM_ENV>" https://api.github.com/repos/parkseungbin1/Stock-News-and-Schedule/actions/workflows/smart-alert.yml/dispatches -d '{"ref":"main", "inputs":{"action":"night_1940"}}'
+curl -X POST -H "Accept: application/vnd.github.v3+json" -H "Authorization: token <YOUR_GITHUB_TOKEN_FROM_ENV>" https://api.github.com/repos/parkseungbin1/binistock/actions/workflows/smart-alert.yml/dispatches -d '{"ref":"main", "inputs":{"action":"night_1940"}}'
 ```
 
 </details>

@@ -115,7 +115,7 @@ def run_check():
             pass
 
     print("  [조회 옵션 안내]")
-    print("  * 온라인 실시간 웹 대시보드 : https://parkseungbin1.github.io/Stock-News-and-Schedule/")
+    print("  * 온라인 실시간 웹 대시보드 : https://parkseungbin1.github.io/binistock/")
     dist_html = ROOT / "dist" / "index.html"
     if dist_html.exists():
         print("  * 로컬 대시보드 파일 : dist\\index.html")
@@ -135,6 +135,6 @@ if __name__ == '__main__':
         if dist_file.exists():
             webbrowser.open(dist_file.as_uri())
         else:
-            webbrowser.open("https://parkseungbin1.github.io/Stock-News-and-Schedule/")
+            webbrowser.open("https://parkseungbin1.github.io/binistock/")
     except Exception:
         pass

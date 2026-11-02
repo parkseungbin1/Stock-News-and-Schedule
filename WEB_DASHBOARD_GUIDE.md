@@ -10,7 +10,7 @@
 flowchart TD
     A["실시간 금융 API\n(CME 나스닥 선물 / Naver / OpenDART)"] --> B["generate_web.py\n(다크/라이트 HTML5 대시보드 생성)"]
     B --> C["GitHub Actions\n(정규장/NXT 마감 자동 빌드 & 푸시)"]
-    C --> D["GitHub Pages 무료 호스팅\n(https://parkseungbin1.github.io/Stock-News-and-Schedule/)"]
+    C --> D["GitHub Pages 무료 호스팅\n(https://parkseungbin1.github.io/binistock/)"]
     D --> E["📱 스마트폰 / 💻 PC 브라우저\n(어디서나 주소 클릭으로 30초 실시간 자동 갱신)"]
 ```
 
@@ -93,7 +93,7 @@ flowchart TD
 
 ### 🍎 아이폰 (Safari)
 1. 사파리 브라우저에서 내 대시보드 주소 접속:
-   👉 **`https://parkseungbin1.github.io/Stock-News-and-Schedule/`**
+   👉 **`https://parkseungbin1.github.io/binistock/`**
 2. 하단 중앙의 **공유 아이콘** (네모 위로 화살표) 클릭
 3. 메뉴에서 **[홈 화면에 추가]** 클릭 ➡️ 이름 확인 후 [추가]
 

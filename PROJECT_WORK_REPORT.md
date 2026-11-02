@@ -1,7 +1,7 @@
 # 📑 BiniStock 주식 알림 시스템 전면 개편 및 고도화 작업 완료 보고서
 
 > **작성 일시**: 2026-10-23  
-> **프로젝트**: `parkseungbin1/Stock-News-and-Schedule`  
+> **프로젝트**: `parkseungbin1/binistock`  
 > **환경**: 100% 클라우드 서버리스 (GitHub Actions + cron-job.org), PC 전원 무관 동작  
 
 ---

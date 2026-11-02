@@ -2491,7 +2491,7 @@ def generate_html():
                 <div class="cloud-action-card">
                     <div class="cac-title">🚀 방법 1. 원클릭 깃허브 액션 즉시 실행 (가장 추천)</div>
                     <div class="cac-desc">모바일 브라우저에서 깃허브 액션 페이지로 바로 이동하여 [Run workflow] 버튼을 누릅니다. (약 1분 후 최신 웹 자동 배포)</div>
-                    <a href="https://github.com/parkseungbin1/Stock-News-and-Schedule/actions/workflows/deploy-web.yml" target="_blank" rel="noopener noreferrer" class="cac-btn primary">
+                    <a href="https://github.com/parkseungbin1/binistock/actions/workflows/deploy-web.yml" target="_blank" rel="noopener noreferrer" class="cac-btn primary">
                         ⚡ 깃허브 실행창 바로가기 (Run workflow)
                     </a>
                 </div>
@@ -3343,7 +3343,7 @@ def generate_html():
                 status.innerHTML = '⏳ 깃허브 클라우드 서버에 실시간 재분석 요청을 전송 중...';
             }}
 
-            fetch('https://api.github.com/repos/parkseungbin1/Stock-News-and-Schedule/actions/workflows/deploy-web.yml/dispatches', {{
+            fetch('https://api.github.com/repos/parkseungbin1/binistock/actions/workflows/deploy-web.yml/dispatches', {{
                 method: 'POST',
                 headers: {{
                     'Accept': 'application/vnd.github.v3+json',

@@ -104,7 +104,7 @@ def fetch_kr_market(code):
     return close, ratio, foreign_str, inst_str, foreign_num, inst_num
 
 
-DASHBOARD_URL = "https://parkseungbin1.github.io/Stock-News-and-Schedule/"
+DASHBOARD_URL = "https://parkseungbin1.github.io/binistock/"
 
 
 def fetch_vix():
