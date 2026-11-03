@@ -950,16 +950,16 @@ def get_recommendations(dart_disclosures=None, market_context=None, force_refres
         logger.debug(f"기준봉 눌림목 스캔 예외: {e}")
 
     # 급락장 또는 휴장일 등으로 후보가 부족할 경우 안전 보강
-    if not closing_picks:
-        closing_picks = get_fallback_recommendations()['closing']
-    if not swing_picks:
-        swing_picks = get_fallback_recommendations()['swing']
-    if not breakout_picks:
-        breakout_picks = get_fallback_recommendations()['breakout']
+    # if not closing_picks:
+    #     closing_picks = []
+    # if not swing_picks:
+    #     swing_picks = []
+    # if not breakout_picks:
+    #     breakout_picks = []
 
     # 실시간 테마/업종, 핵심 뉴스(재료) 및 모바일 네이버 증권 차트 링크 보강
-    if not pullback_picks:
-        pullback_picks = get_fallback_recommendations().get('pullback', [])
+    # if not pullback_picks:
+    #     pullback_picks = []
 
     for p in (closing_picks + swing_picks + breakout_picks + pullback_picks):
         if 'turnover_pct' not in p:
@@ -1006,72 +1006,4 @@ def get_recommendations(dart_disclosures=None, market_context=None, force_refres
 
 
 def get_fallback_recommendations():
-    """안전 폴백용 대표 우량 종목 추천 데이터"""
-    return {
-        'regime': {
-            'status': 'neutral',
-            'badge': '🔵 박스권 안정 환경 (정밀 선별)',
-            'badge_class': 'regime-neutral',
-            'message': '지수가 견고한 박스권 흐름을 보이고 있습니다. 거래대금 상위 주도주와 20일선 눌림목 반등 종목 위주로 원칙 매매를 진행하세요.',
-            'position_advice': '정상 비중 분할 매수 / 목표 손익비 엄수'
-        },
-        'closing': [
-            {
-                'code': '000660', 'name': 'SK하이닉스', 'market': 'KOSPI', 'price': 191500,
-                'change_pct': 3.25, 'amount_eok': 4200, 'target_1': 197200, 'target_1_pct': '+3.0%',
-                'target_2': 201000, 'target_2_pct': '+5.0%', 'stop_loss': 187600, 'stop_loss_pct': '-2.0%',
-                'holding_period': '당일 15:10~15:30 매수 → 익일 09:00~09:20 전량 분할 매도',
-                'score': 94, 'reason': '거래대금 4,200억 집중 · 20일 박스권 상단 저항 돌파 안착',
-                'tags': ['종가베팅', '단단한양봉', '박스권상단돌파'],
-                'sr_status': '🎯 20일 박스권 상단 저항 돌파 안착',
-                'support_price': 188000,
-                'next_resistance': '205,000원 (+7.0% 여유)',
-                'room_pct': 7.0,
-                'marcap': 139412000000000,
-                'marcap_str': '139조 4,120억',
-                'is_breakout': True
-            }
-        ],
-        'swing': [
-            {
-                'code': '033780', 'name': 'KT&G', 'market': 'KOSPI', 'price': 193600,
-                'change_pct': 0.85, 'amount_eok': 541, 'target_1': 203200, 'target_1_pct': '+5.0%',
-                'target_2': 211000, 'target_2_pct': '+9.0%', 'stop_loss': 187700, 'stop_loss_pct': '-3.0%',
-                'holding_period': '2~5영업일 분할 매도',
-                'score': 91, 'reason': '20일선(191,000원) 눌림목 지지 · 이격도 1.3% 안정 구간 · 주주환원 자사주',
-                'marcap': 14500000000000,
-                'marcap_str': '14조 5,000억',
-                'tags': ['20일선눌림목', '추세우상향', '안정적손익비']
-            }
-        ],
-        'breakout': [
-            {
-                'code': '028050', 'name': '삼성E&A', 'market': 'KOSPI', 'price': 27500,
-                'change_pct': 16.14, 'amount_eok': 6789, 'target_1': 29400, 'target_1_pct': '+7.0%',
-                'target_2': 31600, 'target_2_pct': '+15.0%', 'stop_loss': 24000, 'stop_loss_pct': '기준봉 시초가 이탈',
-                'holding_period': '당일 추격매수 금지 ⚠️ → 향후 2~5일 5일선/눌림목 지지 시 분할 매수 타겟',
-                'score': 98, 'reason': '거래대금 6,789억 폭발 · +16.1% 강력 돌파 장대양봉 · 사우디 수주 호재',
-                'marcap': 5390000000000,
-                'marcap_str': '5조 3,900억',
-                'tags': ['강력기준봉', '거래대금폭발', '눌림목공략대기']
-            }
-        ],
-        'pullback': [
-            {
-                'code': '042700', 'name': '한미반도체', 'market': 'KOSPI', 'price': 124500,
-                'change_pct': 1.20, 'amount_eok': 890, 'target_1': 130700, 'target_1_pct': '+5.0%',
-                'target_2': 136900, 'target_2_pct': '+10.0%', 'stop_loss': 118000, 'stop_loss_pct': '기준봉 시가 손절',
-                'holding_period': '3일 전 기준봉(+14.5%) 출현 → 현재 5일선·중심선 눌림목 매수 적기',
-                'score': 94, 'reason': '3일 전 +14.5% 기준봉 출현 · 거래량 38%로 건조(숨고르기) · 기준봉 중심선 및 5일선 지지 안착',
-                'marcap': 12000000000000, 'marcap_str': '12조원',
-                'sr_status': '🎯 기준봉(3일전 +14.5%) 중심선·5일선 눌림목 지지',
-                'support_price': 121000, 'next_resistance': '132,000원 (기준봉 고점 탈환)',
-                'tags': ['기준봉눌림목타점', '거래량38%수축', '5일선지지']
-            }
-        ],
-        'hot_sectors': [
-            {'sector': '반도체', 'count': 5, 'total_amount_eok': 6800, 'avg_chg': 5.8, 'leader_name': 'SK하이닉스', 'leader_chg': 6.4},
-            {'sector': '전력/원전', 'count': 4, 'total_amount_eok': 4200, 'avg_chg': 6.2, 'leader_name': 'HD현대일렉트릭', 'leader_chg': 7.8},
-            {'sector': '방산/우주', 'count': 3, 'total_amount_eok': 3100, 'avg_chg': 4.9, 'leader_name': '한화에어로스페이스', 'leader_chg': 5.5}
-        ]
-    }
+    return {"regime": {"status": "neutral", "badge": "정밀 선별", "badge_class": "regime-neutral", "message": "원칙 준수", "position_advice": "현금 관망"}, "closing": [], "swing": [], "breakout": [], "pullback": [], "hot_sectors": []}
