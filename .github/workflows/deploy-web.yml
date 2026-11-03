@@ -81,7 +81,7 @@ jobs:
           git diff --cached --quiet && exit 0
           git commit -m "chore: update betting and swing track records [skip ci]"
           git remote set-url origin "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
-          for i in 1 2 3; do git pull --rebase -X theirs origin main && git push origin main && break; sleep 5; done
+          for i in 1 2 3; do git pull --rebase --autostash -X theirs origin main && git push origin main && break; sleep 5; done
 
 
       - name: Upload Artifact

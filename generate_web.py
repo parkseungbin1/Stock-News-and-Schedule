@@ -121,7 +121,10 @@ def generate_html():
         risk_desc = "단기 변동성 주의: 분할 매수 및 익절 원칙 준수"
 
     try:
-        from src.track_record import get_latest_closing_record, render_monthly_history_html
+        from src.track_record import get_latest_closing_record, render_monthly_history_html, evaluate_latest_performance
+        for _ in range(5):
+            if not evaluate_latest_performance():
+                break
         latest_record = get_latest_closing_record()
     except Exception as e:
         latest_record = None

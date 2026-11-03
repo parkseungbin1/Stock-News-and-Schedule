@@ -71,14 +71,20 @@ def record_swing_picks(picks):
     if not picks:
         return
     now = datetime.now(KST)
-    if now.weekday() >= 5:
-        return
-
-    # 정규장 마감 이후(15:00 KST) 또는 장중 최초 등록
-    hm = now.hour * 100 + now.minute
-    date_str = now.strftime('%Y-%m-%d')
-
     data = load_swing_history()
+    existing_dates = {h.get('date') for h in data.get('history', [])}
+    hm = now.hour * 100 + now.minute
+    if now.weekday() >= 5 or hm < 1500:
+        cur = now - timedelta(days=1)
+        while cur.weekday() >= 5:
+            cur -= timedelta(days=1)
+        prev_bday = cur.strftime('%Y-%m-%d')
+        if prev_bday not in existing_dates:
+            date_str = prev_bday
+        else:
+            return
+    else:
+        date_str = now.strftime('%Y-%m-%d')
     existing = [h for h in data.get('history', []) if h.get('date') == date_str]
 
     pick_items = []

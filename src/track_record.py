@@ -89,18 +89,19 @@ def record_closing_picks(picks):
     if not picks:
         return
     now = datetime.now(KST)
-    # 주말(토/일)에는 정규장이 열리지 않으므로 기록 금지
-    if now.weekday() >= 5:
-        logger.info("주말(토/일)이므로 종가베팅 트랙 레코드 기록 건너뜀")
-        return
-    # 평일 정규장 마감(15:00 KST) 이후 당일 종가베팅 추천 확정 기록
-    hm = now.hour * 100 + now.minute
-    if hm < 1500:
-        logger.info(f"정규장 마감 전({now:%H:%M}) → 종가베팅 트랙 레코드 기록 대기")
-        return
-    date_str = now.strftime('%Y-%m-%d')
-
     data = load_history()
+    existing_dates = {h.get('date') for h in data.get('history', [])}
+    hm = now.hour * 100 + now.minute
+    if now.weekday() >= 5 or hm < 1500:
+        prev_bday = get_past_business_days(now, 1)[0]
+        if prev_bday not in existing_dates:
+            logger.info(f'직전 거래일({prev_bday}) 종가베팅 기록 누락 감지 -> 자동 복구 기록 수행')
+            date_str = prev_bday
+        else:
+            logger.info(f'정규장 마감 전({now:%H:%M}) 및 직전 거래일({prev_bday}) 기록 존재 -> 대기')
+            return
+    else:
+        date_str = now.strftime('%Y-%m-%d')
     existing = [h for h in data.get('history', []) if h.get('date') == date_str]
     if existing and existing[0].get('evaluated'):
         logger.info(f"[{date_str}] 이미 성과 검증 완료된 기록이므로 보존")

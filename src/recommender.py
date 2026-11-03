@@ -509,6 +509,16 @@ def get_recommendations(dart_disclosures=None, market_context=None, force_refres
         logger.error(f"KRX 종목 목록 수집 실패: {e}")
         fb = get_fallback_recommendations()
         fb['regime'] = regime
+        try:
+            from src.track_record import record_closing_picks
+            record_closing_picks(fb.get('closing', []))
+        except Exception:
+            pass
+        try:
+            from src.swing_track_record import record_swing_picks
+            record_swing_picks(fb.get('swing', []))
+        except Exception:
+            pass
         _RECOMMENDATIONS_CACHE = fb
         return fb
 
