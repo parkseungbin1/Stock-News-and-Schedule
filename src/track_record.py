@@ -103,7 +103,7 @@ def record_closing_picks(picks):
     else:
         date_str = now.strftime('%Y-%m-%d')
     existing = [h for h in data.get('history', []) if h.get('date') == date_str]
-    if existing and existing[0].get('evaluated'):
+    if existing and existing[0].get('picks'):
         logger.info(f"[{date_str}] 이미 성과 검증 완료된 기록이므로 보존")
         return
     pick_items = []
