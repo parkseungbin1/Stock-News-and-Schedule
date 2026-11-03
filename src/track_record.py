@@ -245,6 +245,10 @@ def evaluate_latest_performance():
                 close_p = int(df.loc[target['date'], 'Close'])
                 p['close_price'] = close_p
                 p['price'] = close_p
+                p['target_1'] = int(round(close_p * 1.03))
+                p['target_2'] = int(round(close_p * 1.05))
+                p['stop_loss'] = int(round(close_p * 0.98))
+                p['support_price'] = int(round(close_p * 0.98))
             gap_pct = ((open_p - close_p) / close_p) * 100
             high_pct = ((high_p - close_p) / close_p) * 100
 

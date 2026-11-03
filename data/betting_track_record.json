@@ -641,53 +641,6 @@
       "evaluated": true,
       "success_count": 1,
       "total_count": 2
-    },
-    {
-      "date": "2026-11-02",
-      "picks": [
-        {
-          "code": "000660",
-          "name": "SK하이닉스",
-          "market": "KOSPI",
-          "sector": "주도주",
-          "catalyst": "",
-          "catalyst_url": "https://m.stock.naver.com/domestic/stock/000660/news",
-          "catalyst_source": "",
-          "catalyst_body": "",
-          "close_price": 1480000,
-          "price": 1480000,
-          "change_pct": 3.25,
-          "amount_eok": 4200,
-          "marcap": 139412000000000,
-          "marcap_str": "139조 4,120억",
-          "target_1": 197200,
-          "target_1_pct": "+3.0%",
-          "target_2": 201000,
-          "target_2_pct": "+5.0%",
-          "stop_loss": 187600,
-          "stop_loss_pct": "-2.0%",
-          "score": 94,
-          "reason": "거래대금 4,200억 집중 · 20일 박스권 상단 저항 돌파 안착",
-          "holding_period": "당일 15:10~15:30 매수 → 익일 09:00~09:20 전량 분할 매도",
-          "tags": [
-            "종가베팅",
-            "단단한양봉",
-            "박스권상단돌파"
-          ],
-          "sr_status": "🎯 20일 박스권 상단 저항 돌파 안착",
-          "support_price": 188000,
-          "next_resistance": "205,000원 (+7.0% 여유)",
-          "chart_url": "https://m.stock.naver.com/domestic/stock/000660/total",
-          "open_price": 1410000,
-          "next_high_price": 1433000,
-          "gap_pct": -4.73,
-          "high_pct": -3.18,
-          "is_success": false
-        }
-      ],
-      "evaluated": true,
-      "success_count": 0,
-      "total_count": 1
     }
   ]
 }
