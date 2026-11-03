@@ -589,7 +589,12 @@
           "sr_status": "⚡ 20일선 지지 우상향 파동",
           "support_price": 1336100,
           "next_resistance": "1,489,000원 (+3.1%)",
-          "chart_url": "https://m.stock.naver.com/domestic/stock/207940/total"
+          "chart_url": "https://m.stock.naver.com/domestic/stock/207940/total",
+          "open_price": 1446000,
+          "next_high_price": 1473000,
+          "gap_pct": 0.98,
+          "high_pct": 2.86,
+          "is_success": false
         },
         {
           "code": "328130",
@@ -625,10 +630,17 @@
           "sr_status": "⚡ 20일선 지지 우상향 파동",
           "support_price": 12369,
           "next_resistance": "16,290원 (+4.6%)",
-          "chart_url": "https://m.stock.naver.com/domestic/stock/328130/total"
+          "chart_url": "https://m.stock.naver.com/domestic/stock/328130/total",
+          "open_price": 15270,
+          "next_high_price": 16050,
+          "gap_pct": -0.84,
+          "high_pct": 4.22,
+          "is_success": true
         }
       ],
-      "evaluated": false
+      "evaluated": true,
+      "success_count": 1,
+      "total_count": 2
     },
     {
       "date": "2026-11-02",
@@ -642,8 +654,8 @@
           "catalyst_url": "https://m.stock.naver.com/domestic/stock/000660/news",
           "catalyst_source": "",
           "catalyst_body": "",
-          "close_price": 191500,
-          "price": 191500,
+          "close_price": 1480000,
+          "price": 1480000,
           "change_pct": 3.25,
           "amount_eok": 4200,
           "marcap": 139412000000000,
@@ -665,10 +677,17 @@
           "sr_status": "🎯 20일 박스권 상단 저항 돌파 안착",
           "support_price": 188000,
           "next_resistance": "205,000원 (+7.0% 여유)",
-          "chart_url": "https://m.stock.naver.com/domestic/stock/000660/total"
+          "chart_url": "https://m.stock.naver.com/domestic/stock/000660/total",
+          "open_price": 1410000,
+          "next_high_price": 1433000,
+          "gap_pct": -4.73,
+          "high_pct": -3.18,
+          "is_success": false
         }
       ],
-      "evaluated": false
+      "evaluated": true,
+      "success_count": 0,
+      "total_count": 1
     }
   ]
 }
