@@ -243,9 +243,9 @@
           "entry_price": 132000,
           "price": 132000,
           "change_pct": 7.32,
-          "highest_price": 133600,
+          "highest_price": 135000,
           "lowest_price": 128700,
-          "max_return_pct": 1.21,
+          "max_return_pct": 2.27,
           "final_return_pct": 1.21,
           "target_1": 138600,
           "target_1_pct": "+5.0%",
@@ -256,10 +256,10 @@
           "amount_eok": 340,
           "marcap": 21554328762400,
           "marcap_str": "21조 5,543억",
-          "status": "진행중 (3일차)",
+          "status": "진행중 (4일차)",
           "is_success": false,
           "completed": false,
-          "holding_days": 3,
+          "holding_days": 4,
           "chart_url": "https://m.stock.naver.com/domestic/stock/138040/total"
         }
       ]
@@ -300,9 +300,9 @@
           "highest_price": 198700,
           "lowest_price": 191000,
           "max_return_pct": 1.33,
-          "status": "진행중 (2일차)",
+          "status": "진행중 (3일차)",
           "completed": false,
-          "holding_days": 2
+          "holding_days": 3
         }
       ]
     },
@@ -338,12 +338,12 @@
             "안정적손익비"
           ],
           "chart_url": "https://m.stock.naver.com/domestic/stock/033780/total",
-          "highest_price": 195000,
+          "highest_price": 196400,
           "lowest_price": 191000,
-          "max_return_pct": 0.93,
-          "status": "진행중 (1일차)",
+          "max_return_pct": 1.66,
+          "status": "진행중 (2일차)",
           "completed": false,
-          "holding_days": 1
+          "holding_days": 2
         }
       ],
       "evaluated": false
@@ -361,10 +361,10 @@
           "catalyst_source": "연합뉴스",
           "entry_price": 97600,
           "price": 97600,
-          "change_pct": 1.56,
-          "amount_eok": 201,
-          "marcap": 3704919855000,
-          "marcap_str": "3조 7,049억",
+          "change_pct": 1.88,
+          "amount_eok": 112,
+          "marcap": 3716319608400,
+          "marcap_str": "3조 7,163억",
           "target_1": 102480,
           "target_1_pct": "+5.0%",
           "target_2": 106384,
@@ -380,12 +380,12 @@
             "안정적손익비"
           ],
           "chart_url": "https://m.stock.naver.com/domestic/stock/012750/total",
-          "highest_price": 97500,
-          "lowest_price": 97500,
-          "max_return_pct": 0.0,
-          "status": "진행중",
+          "highest_price": 99300,
+          "lowest_price": 96300,
+          "max_return_pct": 1.74,
+          "status": "진행중 (1일차)",
           "completed": false,
-          "holding_days": 0
+          "holding_days": 1
         }
       ],
       "evaluated": false

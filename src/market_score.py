@@ -212,7 +212,10 @@ def get_morning_sell_guide(time_label="07:40", is_nxt=True):
 
     target_title = "08:00 NXT 프리마켓 시초가 매도 가이드" if is_nxt else "09:00 정규장 최종 시초가 매도 가이드"
 
-    msg = f"🌅 <b>[{target_title}]</b> ({time_label} 알림)\n"
+    now_kst = datetime.now(KST)
+    ko_wd = ['월', '화', '수', '목', '금', '토', '일'][now_kst.weekday()]
+    date_str = f"{now_kst.strftime('%m/%d')}({ko_wd})"
+    msg = f"🌅 <b>[{target_title}]</b> ({date_str} {time_label} 알림)\n"
     msg += "━━━━━━━━━━━━━━━━━━━━\n"
     msg += f"🎯 <b>핵심 전략</b>: <b>{core_action}</b>\n"
     msg += f"📊 <b>시장 점수</b>: <b>{score}점</b> [{gauge}] {icon} | <b>{status_label}</b>\n"
@@ -329,7 +332,10 @@ def get_closing_betting_guide():
     vix_str = f"🌪️ VIX: <b>{vix_close}</b>" if vix_close else ""
     us10y_str = f"📈 美10년물: <b>{us10y_price:.2f}%</b>" if us10y_price else ""
 
-    msg = f"🎯 <b>[15:30 정규장 1차 종가베팅 가이드]</b> (15:10 알림)\n"
+    now_kst = datetime.now(KST)
+    ko_wd = ['월', '화', '수', '목', '금', '토', '일'][now_kst.weekday()]
+    date_str = f"{now_kst.strftime('%m/%d')}({ko_wd})"
+    msg = f"🎯 <b>[15:30 정규장 1차 종가베팅 가이드]</b> ({date_str} 15:10 알림)\n"
     msg += "━━━━━━━━━━━━━━━━━━━━\n"
     msg += f"🎯 <b>핵심 전략</b>: <b>{core_action}</b>\n"
     msg += f"📊 <b>시장 점수</b>: <b>{score}점</b> [{gauge}] | <b>{betting_label}</b>\n"
@@ -446,7 +452,10 @@ def get_evening_betting_guide():
     vix_str = f"🌪️ VIX: <b>{vix_close}</b>" if vix_close else ""
     us10y_str = f"📈 美10년물: <b>{us10y_price:.2f}%</b>" if us10y_price else ""
 
-    msg = f"🎯 <b>[20:00 NXT 야간 최종 종가베팅 가이드]</b> (19:40 알림)\n"
+    now_kst = datetime.now(KST)
+    ko_wd = ['월', '화', '수', '목', '금', '토', '일'][now_kst.weekday()]
+    date_str = f"{now_kst.strftime('%m/%d')}({ko_wd})"
+    msg = f"🎯 <b>[20:00 NXT 야간 최종 종가베팅 가이드]</b> ({date_str} 19:40 알림)\n"
     msg += "━━━━━━━━━━━━━━━━━━━━\n"
     msg += f"🎯 <b>핵심 전략</b>: <b>{core_action}</b>\n"
     msg += f"📊 <b>최종 점수</b>: <b>{score}점</b> [{gauge}] | <b>{betting_label}</b>\n"

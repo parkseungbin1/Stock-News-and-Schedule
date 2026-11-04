@@ -36,6 +36,9 @@ KST = timezone(timedelta(hours=9))
 def generate_html():
     now_kst = datetime.now(KST)
     now_str = now_kst.strftime("%Y-%m-%d %H:%M:%S KST")
+    ko_weekdays = ['월', '화', '수', '목', '금', '토', '일']
+    guide_date_badge = f"{now_kst.strftime('%Y-%m-%d')} ({ko_weekdays[now_kst.weekday()]}) 최신"
+    guide_date_label = f"{now_kst.strftime('%Y년 %m월 %d일')} ({ko_weekdays[now_kst.weekday()]})"
 
     # 1. 시황 지표 수집
     fut_price, fut_ratio = fetch_nasdaq_futures()
@@ -3134,7 +3137,13 @@ def generate_html():
     </div>
 
     <!-- 3. 실전 4대 종가베팅/매도 가이드 -->
-    <div class="section-title">⏱️ 실전 4대 트레이딩 라이프사이클 가이드</div>
+    <div class="section-title" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+        <span>⏱️ 실전 4대 트레이딩 라이프사이클 가이드</span>
+        <span style="font-size: 0.82rem; font-weight: 600; color: #38bdf8; background: rgba(56, 189, 248, 0.12); padding: 4px 12px; border-radius: 12px; border: 1px solid rgba(56, 189, 248, 0.3);">📅 {guide_date_badge}</span>
+    </div>
+    <div style="font-size: 0.82rem; color: #9ca3af; margin-top: -8px; margin-bottom: 14px;">
+        💡 <b>{guide_date_label}</b> 기준 장전 매도(07:40/08:40)부터 장마감 종가베팅(15:10/19:40)까지 4대 시간대별 실시간 대응 전략입니다.
+    </div>
     <div class="tabs">
         <button class="tab-btn{t0_act}" onclick="showGuide('g0740', this)">🌅 07:40 NXT 매도</button>
         <button class="tab-btn{t1_act}" onclick="showGuide('g0840', this)">🌅 08:40 정규장 매도</button>
