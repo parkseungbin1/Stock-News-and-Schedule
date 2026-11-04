@@ -19,9 +19,14 @@ on:
 
 permissions:
   contents: write
+  pages: write
+  id-token: write
 
 jobs:
   dispatch:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     timeout-minutes: 8
 
@@ -68,3 +73,23 @@ jobs:
           git commit -m "chore: update betting and swing track records [skip ci]"
           git remote set-url origin "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
           for i in 1 2 3; do git pull --rebase --autostash -X theirs origin main && git push origin main && break; sleep 5; done
+
+      - name: Check dist directory for web deployment
+        id: check_dist
+        run: |
+          if [ -d "dist" ] && [ -f "dist/index.html" ]; then
+            echo "has_dist=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_dist=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Upload Pages Artifact
+        if: steps.check_dist.outputs.has_dist == 'true'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: 'dist'
+
+      - name: Deploy to GitHub Pages
+        if: steps.check_dist.outputs.has_dist == 'true'
+        id: deployment
+        uses: actions/deploy-pages@v4

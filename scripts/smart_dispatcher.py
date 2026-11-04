@@ -85,8 +85,8 @@ def main():
         run_py('market_alert.py', ['--mode', 'morning_840', '--force'])
 
     elif action == 'closing_1510':
-        # 5. 15:10 [15:30 정규장 1차 종가베팅 가이드] + AI 종가베팅 주도주 TOP 3
         run_py('market_alert.py', ['--mode', 'closing', '--force'])
+        run_py('generate_web.py')
 
     elif action == 'night_1940':
         # 6. 19:40 [20:00 NXT 야간 최종 종가베팅 가이드] + 야간 대장주 TOP 3

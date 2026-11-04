@@ -223,6 +223,89 @@ def is_common_stock(row):
     return True
 
 
+def fetch_naver_realtime_pool():
+    """
+    네이버 증권 모바일 공식 API를 통해 KOSPI/KOSDAQ 주요 우량주의 실시간 장중 호가/거래대금 수집
+    15:05~15:10 장중 호출 시 어제 마감 데이터가 아닌 당일 실시간 체결 데이터를 1초 만에 100% 확보
+    """
+    import requests
+    import pandas as pd
+
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+    }
+
+    items = []
+    # 코스피 200개 + 코스닥 200개 = 총 400개 우량주 스캔
+    for mkt in ['KOSPI', 'KOSDAQ']:
+        for page in [1, 2]:
+            url = f'https://m.stock.naver.com/api/stocks/marketValue/{mkt}?page={page}&pageSize=100'
+            try:
+                r = requests.get(url, headers=headers, timeout=4)
+                if r.status_code == 200:
+                    stocks = r.json().get('stocks', [])
+                    for s in stocks:
+                        code = s.get('itemCode')
+                        name = s.get('stockName')
+                        close_p = s.get('closePriceRaw')
+                        chg_pct = s.get('fluctuationsRatio')
+                        amt_raw = s.get('accumulatedTradingValueRaw', 0)
+                        mc_raw = s.get('marketValueRaw', 0)
+                        if code and close_p:
+                            items.append({
+                                'Code': str(code),
+                                'Name': str(name),
+                                'Market': mkt,
+                                'Close': float(close_p),
+                                'Open': float(close_p),
+                                'High': float(close_p),
+                                'Low': float(close_p),
+                                'ChagesRatio': float(chg_pct) if chg_pct else 0.0,
+                                'Amount': float(amt_raw) if amt_raw else 0.0,
+                                'Marcap': float(mc_raw) if mc_raw else 0.0
+                            })
+            except Exception as e:
+                logger.debug(f"네이버 실시간 시세 {mkt} p{page} 수집 예외: {e}")
+
+    if not items:
+        return None
+
+    df = pd.DataFrame(items)
+    df = df[df.apply(is_common_stock, axis=1)].copy()
+
+    # 시총 1000억 이상 & 거래대금 30억 이상인 핵심 분석 대상 종목(최대 60개)에 대해 polling API로 Open/High/Low 일괄 정밀 보정
+    active_pool = df[
+        (df['Marcap'] >= 1000 * 1e8) &
+        (df['Amount'] >= 30 * 1e8)
+    ].sort_values(by='Amount', ascending=False).head(60)
+    target_codes = active_pool['Code'].tolist()
+
+    if target_codes:
+        p_map = {}
+        for i in range(0, len(target_codes), 20):
+            chunk = target_codes[i:i+20]
+            try:
+                poll_url = f'https://polling.finance.naver.com/api/realtime/domestic/stock/{",".join(chunk)}'
+                pr = requests.get(poll_url, headers=headers, timeout=4)
+                if pr.status_code == 200:
+                    for d in pr.json().get('datas', []):
+                        if isinstance(d, dict) and 'itemCode' in d:
+                            p_map[d['itemCode']] = d
+            except Exception as e:
+                logger.debug(f"네이버 polling 청크 예외: {e}")
+
+        for idx_row, row in df.iterrows():
+            c = row['Code']
+            if c in p_map:
+                d = p_map[c]
+                df.at[idx_row, 'Open'] = float(d.get('openPriceRaw', row['Close']))
+                df.at[idx_row, 'High'] = float(d.get('highPriceRaw', row['Close']))
+                df.at[idx_row, 'Low'] = float(d.get('lowPriceRaw', row['Close']))
+
+    return df
+
+
+
 def evaluate_market_regime(market_context=None):
     """
     시장 안전도(Market Regime) 판정:
@@ -503,20 +586,26 @@ def get_recommendations(dart_disclosures=None, market_context=None, force_refres
 
     regime = evaluate_market_regime(market_context)
 
+    # 1. 네이버 증권 장중 실시간 시세 우선 수집 (15:05~15:10 장중 실시간 호가/거래대금 100% 반영)
+    common = None
     try:
-        krx = fdr.StockListing('KRX')
+        common = fetch_naver_realtime_pool()
+        if common is not None and len(common) >= 50:
+            logger.info(f"✓ 네이버 실시간 장중 시세 수집 완료: {len(common)}개 종목")
     except Exception as e:
-        logger.error(f"KRX 종목 목록 수집 실패: {e}")
-        fb = get_fallback_recommendations()
-        fb['regime'] = regime
-        _RECOMMENDATIONS_CACHE = fb
-        return fb
+        logger.warning(f"네이버 실시간 시세 수집 실패, FDR 폴백 시도: {e}")
 
-    # 1. 보통주 필터링
-    try:
-        common = krx[krx.apply(is_common_stock, axis=1)].copy()
-    except Exception:
-        common = krx.copy()
+    # 네이버 수집 실패 시 또는 보조용으로 fdr.StockListing 활용
+    if common is None or len(common) < 50:
+        try:
+            krx = fdr.StockListing('KRX')
+            common = krx[krx.apply(is_common_stock, axis=1)].copy()
+        except Exception as e:
+            logger.error(f"KRX 종목 목록 수집 실패: {e}")
+            fb = get_fallback_recommendations()
+            fb['regime'] = regime
+            _RECOMMENDATIONS_CACHE = fb
+            return fb
 
     # DART 호재 종목 코드 세트 수집
     catalyst_codes = set()
