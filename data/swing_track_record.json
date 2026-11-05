@@ -200,7 +200,7 @@
     },
     {
       "date": "2026-10-29",
-      "evaluated": false,
+      "evaluated": true,
       "picks": [
         {
           "code": "207940",
@@ -243,10 +243,10 @@
           "entry_price": 132000,
           "price": 132000,
           "change_pct": 7.32,
-          "highest_price": 135000,
+          "highest_price": 139200,
           "lowest_price": 128700,
-          "max_return_pct": 2.27,
-          "final_return_pct": 1.21,
+          "max_return_pct": 5.45,
+          "final_return_pct": 5.45,
           "target_1": 138600,
           "target_1_pct": "+5.0%",
           "target_2": 143880,
@@ -256,10 +256,10 @@
           "amount_eok": 340,
           "marcap": 21554328762400,
           "marcap_str": "21조 5,543억",
-          "status": "진행중 (4일차)",
-          "is_success": false,
-          "completed": false,
-          "holding_days": 4,
+          "status": "1차 목표 달성",
+          "is_success": true,
+          "completed": true,
+          "holding_days": 5,
           "chart_url": "https://m.stock.naver.com/domestic/stock/138040/total"
         }
       ]
@@ -297,12 +297,12 @@
             "안정적손익비"
           ],
           "chart_url": "https://m.stock.naver.com/domestic/stock/033780/total",
-          "highest_price": 198700,
+          "highest_price": 201000,
           "lowest_price": 191000,
-          "max_return_pct": 1.33,
-          "status": "진행중 (3일차)",
+          "max_return_pct": 2.5,
+          "status": "진행중 (4일차)",
           "completed": false,
-          "holding_days": 3
+          "holding_days": 4
         }
       ]
     },
@@ -338,12 +338,12 @@
             "안정적손익비"
           ],
           "chart_url": "https://m.stock.naver.com/domestic/stock/033780/total",
-          "highest_price": 196400,
+          "highest_price": 201000,
           "lowest_price": 191000,
-          "max_return_pct": 1.66,
-          "status": "진행중 (2일차)",
+          "max_return_pct": 4.04,
+          "status": "진행중 (3일차)",
           "completed": false,
-          "holding_days": 2
+          "holding_days": 3
         }
       ],
       "evaluated": false
@@ -380,12 +380,12 @@
             "안정적손익비"
           ],
           "chart_url": "https://m.stock.naver.com/domestic/stock/012750/total",
-          "highest_price": 99300,
+          "highest_price": 99800,
           "lowest_price": 96300,
-          "max_return_pct": 1.74,
-          "status": "진행중 (1일차)",
+          "max_return_pct": 2.25,
+          "status": "진행중 (2일차)",
           "completed": false,
-          "holding_days": 1
+          "holding_days": 2
         }
       ],
       "evaluated": false
@@ -422,8 +422,124 @@
             "안정적손익비"
           ],
           "chart_url": "https://m.stock.naver.com/domestic/stock/064400/total",
-          "highest_price": 74300,
-          "lowest_price": 74300,
+          "highest_price": 75600,
+          "lowest_price": 70500,
+          "max_return_pct": 1.75,
+          "status": "손절 이탈",
+          "completed": true,
+          "holding_days": 1,
+          "is_success": false,
+          "final_return_pct": -3.0
+        }
+      ],
+      "evaluated": true
+    },
+    {
+      "date": "2026-11-05",
+      "picks": [
+        {
+          "code": "064400",
+          "name": "LG씨엔에스",
+          "market": "KOSPI",
+          "sector": "AI/로봇",
+          "catalyst": "[특징주] LG CNS, AI·클라우드 성장과 GPU 수주 기대감에 8% 강세",
+          "catalyst_url": "https://n.news.naver.com/mnews/article/366/0001201864",
+          "catalyst_source": "조선비즈",
+          "entry_price": 72300,
+          "price": 72300,
+          "change_pct": -1.36,
+          "amount_eok": 513,
+          "marcap": 7004854040400,
+          "marcap_str": "7조 49억",
+          "target_1": 75915,
+          "target_1_pct": "+5.0%",
+          "target_2": 78807,
+          "target_2_pct": "+9.0%",
+          "stop_loss": 70131,
+          "stop_loss_pct": "-3.0%",
+          "score": 84,
+          "reason": "20일선(71,175원) 눌림목 지지 · 이격도 1.6% 안정 구간",
+          "holding_period": "2~5영업일 분할 매도",
+          "tags": [
+            "20일선눌림목",
+            "추세우상향",
+            "안정적손익비"
+          ],
+          "chart_url": "https://m.stock.naver.com/domestic/stock/064400/total",
+          "highest_price": 72300,
+          "lowest_price": 72300,
+          "max_return_pct": 0.0,
+          "status": "진행중",
+          "completed": false,
+          "holding_days": 0
+        },
+        {
+          "code": "003230",
+          "name": "삼양식품",
+          "market": "KOSPI",
+          "sector": "기타 식품",
+          "catalyst": "\"전 애인보다 핫해\" 미국 홀렸다…불닭 앞세운 삼양식품, 美라면 1위",
+          "catalyst_url": "https://n.news.naver.com/mnews/article/008/0005437043",
+          "catalyst_source": "머니투데이",
+          "entry_price": 1227000,
+          "price": 1227000,
+          "change_pct": 3.2,
+          "amount_eok": 893,
+          "marcap": 9243009405000,
+          "marcap_str": "9조 2,430억",
+          "target_1": 1288350,
+          "target_1_pct": "+5.0%",
+          "target_2": 1337430,
+          "target_2_pct": "+9.0%",
+          "stop_loss": 1190190,
+          "stop_loss_pct": "-3.0%",
+          "score": 82,
+          "reason": "20일선(1,182,700원) 눌림목 지지 · 이격도 3.6% 안정 구간",
+          "holding_period": "2~5영업일 분할 매도",
+          "tags": [
+            "20일선눌림목",
+            "추세우상향",
+            "안정적손익비"
+          ],
+          "chart_url": "https://m.stock.naver.com/domestic/stock/003230/total",
+          "highest_price": 1227000,
+          "lowest_price": 1227000,
+          "max_return_pct": 0.0,
+          "status": "진행중",
+          "completed": false,
+          "holding_days": 0
+        },
+        {
+          "code": "090430",
+          "name": "아모레퍼시픽",
+          "market": "KOSPI",
+          "sector": "화학/소재",
+          "catalyst": "한국 화장품 수출액 세계 2위…지식재산처, 아모레퍼시픽과 간담회",
+          "catalyst_url": "https://n.news.naver.com/mnews/article/421/0009271449",
+          "catalyst_source": "뉴스1",
+          "entry_price": 133900,
+          "price": 133900,
+          "change_pct": 4.86,
+          "amount_eok": 271,
+          "marcap": 7832180430100,
+          "marcap_str": "7조 8,322억",
+          "target_1": 140595,
+          "target_1_pct": "+5.0%",
+          "target_2": 145951,
+          "target_2_pct": "+9.0%",
+          "stop_loss": 129883,
+          "stop_loss_pct": "-3.0%",
+          "score": 78,
+          "reason": "20일선(130,880원) 눌림목 지지 · 이격도 2.3% 안정 구간",
+          "holding_period": "2~5영업일 분할 매도",
+          "tags": [
+            "20일선눌림목",
+            "추세우상향",
+            "안정적손익비"
+          ],
+          "chart_url": "https://m.stock.naver.com/domestic/stock/090430/total",
+          "highest_price": 133900,
+          "lowest_price": 133900,
           "max_return_pct": 0.0,
           "status": "진행중",
           "completed": false,
