@@ -12,7 +12,7 @@
 
 ---
 
-## 🕒 등록된 6대 알림 스케줄
+## 🕒 등록된 8대 알림 스케줄
 
 | 번호 | 알림 이름 | 실행 시각 (KST) | 발송 내용 |
 | :---: | :--- | :---: | :--- |
@@ -20,8 +20,10 @@
 | **02** | `02. 07:40 프리마켓 가이드` | **07:40** | ⏰ 08:00 NXT 개장 전 1차 시초가 매도 가이드 |
 | **03** | `03. 08:10 장전 공시 요약` | **08:10** | 📋 당일 장전 주요 IR / DART 실적 공시 |
 | **04** | `04. 08:40 정규장 개장 가이드` | **08:40** | 🚀 09:00 정규장 개장 전 최종 시초가 가이드 |
-| **05** | `05. 15:10 종가베팅 가이드` | **15:10** | 🎯 15:30 정규장 종가베팅 + **AI 주도주 TOP 3** |
-| **06** | `06. 19:40 야간마켓 가이드` | **19:40** | 🌙 20:00 NXT 야간마켓 최종 종가베팅 가이드 |
+| **05** | `05. 13:00 오후장 수급 점검` | **13:00** | ☀️ 오후장 개시 시황 & 외인/기관 수급 점검 |
+| **06** | `06. 14:00 종가베팅 사전점검` | **14:00** | 🎯 15:10 종가베팅 1시간 전 사전 레이더 & 리스크 점검 |
+| **07** | `07. 15:10 종가베팅 가이드` | **15:10** | 🔥 15:30 정규장 종가베팅 + **AI 주도주 TOP 3** |
+| **08** | `08. 19:40 야간마켓 가이드` | **19:40** | 🌙 20:00 NXT 야간마켓 최종 종가베팅 가이드 |
 
 *(토요일/일요일은 주식 시장 휴장이므로 서버에서 자동으로 발송을 스킵합니다.)*
 
@@ -48,7 +50,7 @@
 혹시 크론잡이 삭제되었거나 새로 만들 때는 cron-job.org에서 **`CREATE CRONJOB` $\rightarrow$ `<> IMPORT FROM CURL`**을 누르고 아래 명령어를 넣으시면 됩니다:
 
 <details>
-<summary><b>▼ 6개 알림별 cURL 백업 펼치기</b></summary>
+<summary><b>▼ 8개 알림별 cURL 백업 펼치기</b></summary>
 
 **01. 07:00 모닝 브리핑**
 ```bash
@@ -70,12 +72,22 @@ curl -X POST -H "Accept: application/vnd.github.v3+json" -H "Authorization: toke
 curl -X POST -H "Accept: application/vnd.github.v3+json" -H "Authorization: token <YOUR_GITHUB_TOKEN_FROM_ENV>" https://api.github.com/repos/parkseungbin1/binistock/actions/workflows/smart-alert.yml/dispatches -d '{"ref":"main", "inputs":{"action":"morning_835"}}'
 ```
 
-**05. 15:10 종가베팅 가이드**
+**05. 13:00 오후장 수급 점검**
+```bash
+curl -X POST -H "Accept: application/vnd.github.v3+json" -H "Authorization: token <YOUR_GITHUB_TOKEN_FROM_ENV>" https://api.github.com/repos/parkseungbin1/binistock/actions/workflows/smart-alert.yml/dispatches -d '{"ref":"main", "inputs":{"action":"midday_1300"}}'
+```
+
+**06. 14:00 종가베팅 사전점검**
+```bash
+curl -X POST -H "Accept: application/vnd.github.v3+json" -H "Authorization: token <YOUR_GITHUB_TOKEN_FROM_ENV>" https://api.github.com/repos/parkseungbin1/binistock/actions/workflows/smart-alert.yml/dispatches -d '{"ref":"main", "inputs":{"action":"preclosing_1400"}}'
+```
+
+**07. 15:10 종가베팅 가이드**
 ```bash
 curl -X POST -H "Accept: application/vnd.github.v3+json" -H "Authorization: token <YOUR_GITHUB_TOKEN_FROM_ENV>" https://api.github.com/repos/parkseungbin1/binistock/actions/workflows/smart-alert.yml/dispatches -d '{"ref":"main", "inputs":{"action":"closing_1510"}}'
 ```
 
-**06. 19:40 야간마켓 가이드**
+**08. 19:40 야간마켓 가이드**
 ```bash
 curl -X POST -H "Accept: application/vnd.github.v3+json" -H "Authorization: token <YOUR_GITHUB_TOKEN_FROM_ENV>" https://api.github.com/repos/parkseungbin1/binistock/actions/workflows/smart-alert.yml/dispatches -d '{"ref":"main", "inputs":{"action":"night_1940"}}'
 ```
