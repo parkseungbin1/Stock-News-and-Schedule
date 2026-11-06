@@ -324,8 +324,9 @@ def evaluate_market_regime(market_context=None):
     kp_for_num = market_context.get('kp_for_num', 0)
     cnn_score = market_context.get('cnn_score')
 
-    # 1) 시장 급락/패닉 경계 모드
-    if kp_for_num <= -2500 or fut_ratio <= -1.2 or (cnn_score is not None and cnn_score <= 20):
+    # 1) 시장 급락/패닉/방어 경계 모드 (외인 -1,000억 이상 매도 or 선물 -0.6% or CNN 공포 <= 35)
+    risk_val = market_context.get('ai_risk_score') if market_context else None
+    if kp_for_num <= -1000 or fut_ratio <= -0.6 or (cnn_score is not None and cnn_score <= 35) or (risk_val is not None and risk_val >= 50):
         return {
             'status': 'warning',
             'badge': '⚠️ 시장 급락 경계 모드 (리스크 방어)',
@@ -352,6 +353,75 @@ def evaluate_market_regime(market_context=None):
         'message': '지수가 견고한 박스권 흐름을 보이고 있습니다. 거래대금 상위 주도주와 20일선 눌림목 반등 종목 위주로 원칙 매매를 진행하세요.',
         'position_advice': '정상 비중 분할 매수 / 목표 손익비 엄수'
     }
+
+
+def resolve_swing_targets(close_p: int, regime: dict = None, risk_score: int = None, market_context: dict = None) -> dict:
+    if risk_score is None and market_context:
+        risk_score = market_context.get('ai_risk_score')
+
+    # risk_score가 없으면 실시간 시황 지표를 직접 조회하여 판정
+    if risk_score is None:
+        try:
+            from src.risk_score import compute_risk_score
+            from src.market_score import fetch_kr_market, fetch_nasdaq_futures, fetch_cnn_fear_greed, fetch_vix
+            _, kp_r, _, _, kp_for_n, _ = fetch_kr_market('KOSPI')
+            _, fut_r = fetch_nasdaq_futures()
+            cnn_s, _ = fetch_cnn_fear_greed()
+            vix_c, _ = fetch_vix()
+            vix_val = float(str(vix_c).replace(',', '')) if vix_c else 20.0
+            live_ctx = {
+                'fut_ratio': fut_r or 0.0,
+                'kp_ratio': kp_r or 0.0,
+                'cnn_score': cnn_s or 50.0,
+                'vix': vix_val
+            }
+            risk_score = compute_risk_score(live_ctx)
+        except Exception:
+            risk_score = 50
+    """
+    시장 환경 및 AI 리스크 점수(0~100)에 따른 동적 스윙 목표가 & 손절가 산출
+    • 하락장/혼조장/리스크 50점 이상 (warning or risk >= 50):
+        방어형 3분할 (+3% 1/3 익절 후 본절 스탑 상향, +5% 1/3, +9% 잔량, 손절 -3%)
+        👉 이유: 반등 탄력이 짧으므로 +3%에서 조기 수익을 챙기고 본절을 잠가 계좌 방어
+    • 상승장/주도주장/리스크 50점 미만 (bull or risk < 50):
+        추세형 2분할 (+5% 1/2 익절 후 본절 스탑 상향, +9% 잔량, 손절 -3%)
+        👉 이유: 주도주 추세 파동이 길게 나오므로 3% 푼돈에 자르지 않고 +5%~+9% 이상 수익 극대화
+    """
+    regime_status = (regime.get('status') if regime else 'neutral') or 'neutral'
+    is_defensive = (regime_status == 'warning') or (risk_score is not None and risk_score >= 50)
+    if not is_defensive and regime and regime.get('position_advice') and '축소' in regime.get('position_advice', ''):
+        is_defensive = True
+
+    if is_defensive:
+        return {
+            'mode': 'DEFENSIVE',
+            'mode_label': '🛡️ 방어형 3분할 (하락/혼조장)',
+            'mode_desc': '반등 탄력이 짧은 약세·혼조장이므로 1차 +3%에서 1/3 조기 익절 후 손절선을 본절로 상향합니다.',
+            'target_1': int(round(close_p * 1.03)),
+            'target_1_pct': '+3.0%',
+            'target_2': int(round(close_p * 1.05)),
+            'target_2_pct': '+5.0%',
+            'target_3': int(round(close_p * 1.09)),
+            'target_3_pct': '+9.0%',
+            'stop_loss': int(round(close_p * 0.97)),
+            'stop_loss_pct': '-3.0%',
+            'holding_period': '2~5영업일 3분할 매도 (1차 +3% 1/3 익절 → 본절 상향 → 2차 +5% 1/3 → 3차 +9% 잔량)',
+        }
+    else:
+        return {
+            'mode': 'TREND',
+            'mode_label': '🚀 추세형 2분할 (상승/주도주장)',
+            'mode_desc': '주도주 상승 탄력이 강한 장세이므로 1차 +5%에서 50% 분할 익절 후 +9% 이상 파동을 극대화합니다.',
+            'target_1': int(round(close_p * 1.05)),
+            'target_1_pct': '+5.0%',
+            'target_2': int(round(close_p * 1.09)),
+            'target_2_pct': '+9.0%',
+            'target_3': None,
+            'target_3_pct': None,
+            'stop_loss': int(round(close_p * 0.97)),
+            'stop_loss_pct': '-3.0%',
+            'holding_period': '2~5영업일 추세 매도 (1차 +5% 1/2 익절 → 본절 상향 → 2차 +9% 잔량)',
+        }
 
 
 def fetch_nxt_over_market_info(code: str) -> dict:
@@ -840,6 +910,7 @@ def get_recommendations(dart_disclosures=None, market_context=None, force_refres
                     reasons.append("실적/호재 공시 연계")
                     tags.append("실적모멘텀")
 
+                stg = resolve_swing_targets(close_p, regime=regime, market_context=market_context)
                 swing_picks.append({
                     'code': code,
                     'name': name,
@@ -847,16 +918,18 @@ def get_recommendations(dart_disclosures=None, market_context=None, force_refres
                     'price': int(close_p),
                     'change_pct': round(change_pct, 2),
                     'amount_eok': int(amount_eok),
-                    # 스윙 3분할 청산: 1차 +3%(1/3 익절 → 잔량 손절선 본절 상향) → 2차 +5%(1/3) → 3차 +9%(잔량)
-                    'target_1': int(close_p * 1.03),
-                    'target_1_pct': '+3.0%',
-                    'target_2': int(close_p * 1.05),
-                    'target_2_pct': '+5.0%',
-                    'target_3': int(close_p * 1.09),
-                    'target_3_pct': '+9.0%',
-                    'stop_loss': int(close_p * 0.97),
-                    'stop_loss_pct': '-3.0%',
-                    'holding_period': '2~5영업일 3분할 매도 (1차 +3% 1/3 익절 → 손절선 본절 상향 → 2차 +5% 1/3 → 3차 +9% 잔량)',
+                    'swing_mode': stg['mode'],
+                    'swing_mode_label': stg['mode_label'],
+                    'swing_mode_desc': stg['mode_desc'],
+                    'target_1': stg['target_1'],
+                    'target_1_pct': stg['target_1_pct'],
+                    'target_2': stg['target_2'],
+                    'target_2_pct': stg['target_2_pct'],
+                    'target_3': stg['target_3'],
+                    'target_3_pct': stg['target_3_pct'],
+                    'stop_loss': stg['stop_loss'],
+                    'stop_loss_pct': stg['stop_loss_pct'],
+                    'holding_period': stg['holding_period'],
                     'score': int(min(score, 98)),
                     'reason': " · ".join(reasons),
                     'tags': tags,
@@ -1089,6 +1162,7 @@ def get_recommendations(dart_disclosures=None, market_context=None, force_refres
         'regime': regime,
         'closing': closing_picks,
         'swing': swing_picks,
+        'swing_regime': resolve_swing_targets(10000, regime=regime, market_context=market_context),
         'breakout': breakout_picks,
         'pullback': pullback_picks,
         'hot_sectors': hot_sectors,

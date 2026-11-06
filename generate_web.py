@@ -67,12 +67,31 @@ def generate_html():
     g1940_js = guide_1940.replace(bt, bt_esc)
 
     # 2-1. AI 실전 추천 종목 수집 (종가베팅 & 2~5일 스윙)
+    # 2-0. 실시간 복합 AI 리스크 사전 계산
+    try:
+        from src.risk_score import compute_risk_score, get_risk_assessment
+        vix_val_init = float(str(vix_close).replace(',', '')) if vix_close else 20.0
+        pre_risk_ctx = {
+            'fut_ratio': fut_ratio if fut_ratio is not None else 0.0,
+            'sox_ratio': sox_ratio if sox_ratio is not None else 0.0,
+            'kp_ratio': kp_ratio if kp_ratio is not None else 0.0,
+            'kd_ratio': kd_ratio if kd_ratio is not None else 0.0,
+            'fx_ratio': fx_ratio if fx_ratio is not None else 0.0,
+            'cnn_score': cnn_score if cnn_score is not None else 50.0,
+            'vix': vix_val_init,
+            'us10y': us10y_diff if us10y_diff is not None else 0.0,
+        }
+        pre_ai_risk = compute_risk_score(pre_risk_ctx)
+    except Exception:
+        pre_ai_risk = 50
+
     market_ctx = {
         'fut_ratio': fut_ratio,
         'kp_for_num': kp_for_num,
         'kd_for_num': kd_for_num,
         'cnn_score': cnn_score,
         'vix_close': vix_close,
+        'ai_risk_score': pre_ai_risk,
     }
     try:
         rec_data = recommender.get_recommendations(market_context=market_ctx)
@@ -381,6 +400,11 @@ def generate_html():
         """
 
     closing_cards_html = "".join([render_rec_card(p, "theme-closing") for p in closing_picks])
+    # 시장 환경 연동 스윙 레짐 요약
+    active_swing_stg = rec_data.get('swing_regime') or (swing_picks[0] if swing_picks else {})
+    swing_regime_label = active_swing_stg.get('mode_label', '🛡️ 방어형 3분할 (하락/혼조장)')
+    swing_regime_summary = active_swing_stg.get('mode_desc', '1차 +3%에서 1/3 조기 익절 후 손절선을 본절로 상향')
+
     # 스윙 추천일 배지: 스캔 시각 + (이전에도 추천된 종목이면) 최초 추천일 D+n
     ko_wd_list = ['월', '화', '수', '목', '금', '토', '일']
     hm_now = now_kst.hour * 100 + now_kst.minute
@@ -406,8 +430,9 @@ def generate_html():
         prev_html = ''
         if fr and fr['date'] < now_kst.strftime('%Y-%m-%d'):
             prev_html = f" · 🔁 <b>최초 추천 {fr['date']}</b> (진입가 {fr['entry']:,}원 · {fr['status']})"
+        m_lbl = sp.get('swing_mode_label', '🛡️ 시장환경 연동')
         sp['rec_date_html'] = (
-            f'<div class="rec-date-badge">📅 추천일 <b>{swing_scan_label}</b> 스캔 · {swing_basis}{prev_html}</div>'
+            f'<div class="rec-date-badge">📅 추천일 <b>{swing_scan_label}</b> 스캔 · {swing_basis} <span style="margin-left:6px; background:rgba(255,255,255,0.12); padding:1px 6px; border-radius:4px; font-weight:700;">{m_lbl}</span>{prev_html}</div>'
         )
     swing_cards_html = "".join([render_rec_card(p, "theme-swing") for p in swing_picks])
     breakout_cards_html = "".join([render_rec_card(p, "theme-breakout") for p in breakout_picks])
@@ -3216,7 +3241,7 @@ def generate_html():
     <div id="rec-swing-container" class="rec-container" style="display: none;">
         <div class="rec-strategy-banner banner-purple">
             <div>
-                <b>🌊 2~5일 스윙 전략 핵심 가이드 ({swing_scan_label} 스캔)</b>: 20일선 우상향 눌림목 매수 → <b>1차 +3%에서 1/3 익절 후 잔량 손절선을 본절로 상향</b> → 2차 +5% 1/3 → 3차 +9% 잔량 익절 (최초 손절 -3%, 최대 5영업일 보유)
+                <b>🌊 2~5일 스윙 전략 핵심 가이드 ({swing_scan_label} 스캔)</b>: 현재 시장 환경(<b>{swing_regime_label}</b>) 연동 → <b>{swing_regime_summary}</b> (최초 손절 -3%, 최대 5영업일 보유)
             </div>
         </div>
 
