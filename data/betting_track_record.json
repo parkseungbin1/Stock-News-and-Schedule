@@ -1208,6 +1208,48 @@
       "evaluated": true,
       "success_count": 0,
       "total_count": 3
+    },
+    {
+      "date": "2026-11-06",
+      "picks": [
+        {
+          "code": "030530",
+          "name": "원익홀딩스",
+          "market": "KOSDAQ",
+          "sector": "화학/소재",
+          "catalyst": "원익홀딩스 기관·외인 대량 수급 유입 및 업종 주도 모멘텀",
+          "catalyst_url": "https://m.stock.naver.com/domestic/stock/030530/news",
+          "catalyst_source": "실시간 수급",
+          "catalyst_body": "당일 거래대금 폭발 및 지지저항 돌파 주도주",
+          "close_price": 28650,
+          "price": 28650,
+          "change_pct": 6.31,
+          "amount_eok": 1162,
+          "marcap": 2212868155650,
+          "marcap_str": "2조 2,129억",
+          "target_1": 29509,
+          "target_1_pct": "+3.0%",
+          "target_2": 30082,
+          "target_2_pct": "+5.0%",
+          "stop_loss": 28077,
+          "stop_loss_pct": "-2.0%",
+          "score": 91,
+          "reason": "거래대금 1,162억 폭발 주도주 · 고가 마감 양봉(윗꼬리 9%) · 차트: ⚡ 20일선 지지 우상향 파동 · 당일 VWAP 상회(+6.1% · 고점 14:23)",
+          "holding_period": "당일 15:10~15:30 매수 → 익일 09:00~09:20 전량 분할 매도",
+          "tags": [
+            "거래대금폭발",
+            "단단한양봉",
+            "익일시초가노림",
+            "20일선지지",
+            "우상향파동"
+          ],
+          "sr_status": "⚡ 20일선 지지 우상향 파동",
+          "support_price": 26047,
+          "next_resistance": "34,500원 (+20.4%)",
+          "chart_url": "https://m.stock.naver.com/domestic/stock/030530/total"
+        }
+      ],
+      "evaluated": false
     }
   ]
 }

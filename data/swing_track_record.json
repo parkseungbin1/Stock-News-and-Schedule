@@ -557,6 +557,84 @@
         }
       ],
       "evaluated": true
+    },
+    {
+      "date": "2026-11-06",
+      "picks": [
+        {
+          "code": "003230",
+          "name": "삼양식품",
+          "market": "KOSPI",
+          "sector": "기타 식품",
+          "catalyst": "\"전 애인보다 핫해\" 미국 홀렸다…불닭 앞세운 삼양식품, 美라면 1위",
+          "catalyst_url": "https://n.news.naver.com/mnews/article/008/0005437043",
+          "catalyst_source": "머니투데이",
+          "entry_price": 1220000,
+          "price": 1220000,
+          "change_pct": -0.57,
+          "amount_eok": 593,
+          "marcap": 9190278300000,
+          "marcap_str": "9조 1,903억",
+          "target_1": 1281000,
+          "target_1_pct": "+5.0%",
+          "target_2": 1329800,
+          "target_2_pct": "+9.0%",
+          "stop_loss": 1183400,
+          "stop_loss_pct": "-3.0%",
+          "score": 81,
+          "reason": "20일선(1,185,650원) 눌림목 지지 · 이격도 2.8% 안정 구간",
+          "holding_period": "2~5영업일 분할 매도",
+          "tags": [
+            "20일선눌림목",
+            "추세우상향",
+            "안정적손익비"
+          ],
+          "chart_url": "https://m.stock.naver.com/domestic/stock/003230/total",
+          "highest_price": 1220000,
+          "lowest_price": 1220000,
+          "max_return_pct": 0.0,
+          "status": "진행중",
+          "completed": false,
+          "holding_days": 0
+        },
+        {
+          "code": "064400",
+          "name": "LG씨엔에스",
+          "market": "KOSPI",
+          "sector": "AI/로봇",
+          "catalyst": "[공시] 엘지씨엔에스 단일판매ㆍ공급계약체결",
+          "catalyst_url": "https://m.stock.naver.com/domestic/stock/064400/disclosure",
+          "catalyst_source": "DART 전자공시",
+          "entry_price": 75100,
+          "price": 75100,
+          "change_pct": 3.44,
+          "amount_eok": 668,
+          "marcap": 7276134694800,
+          "marcap_str": "7조 2,761억",
+          "target_1": 78855,
+          "target_1_pct": "+5.0%",
+          "target_2": 81859,
+          "target_2_pct": "+9.0%",
+          "stop_loss": 72847,
+          "stop_loss_pct": "-3.0%",
+          "score": 75,
+          "reason": "20일선(71,570원) 눌림목 지지 · 이격도 4.7% 안정 구간",
+          "holding_period": "2~5영업일 분할 매도",
+          "tags": [
+            "20일선눌림목",
+            "추세우상향",
+            "안정적손익비"
+          ],
+          "chart_url": "https://m.stock.naver.com/domestic/stock/064400/total",
+          "highest_price": 75100,
+          "lowest_price": 75100,
+          "max_return_pct": 0.0,
+          "status": "진행중",
+          "completed": false,
+          "holding_days": 0
+        }
+      ],
+      "evaluated": false
     }
   ]
 }
