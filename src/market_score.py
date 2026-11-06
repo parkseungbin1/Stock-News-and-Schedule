@@ -536,8 +536,17 @@ def get_midday_market_guide():
     ko_wd = ['월', '화', '수', '목', '금', '토', '일'][now_kst.weekday()]
     date_str = f"{now_kst.strftime('%m/%d')}({ko_wd})"
 
+    # 1. 실제 국내 지수 등락률(가장 핵심!) 및 수급 반영
+    avg_kr_ratio = (kp_ratio + kd_ratio) / 2
     total_major = kp_for_num + kp_inst_num + kd_for_num + kd_inst_num
-    score = 50.0 + (fut_ratio * 15) * 0.35 + min(max(total_major / 150, -30), 30) * 0.35 - (fx_ratio * 15) * 0.15
+
+    score = 50.0
+    # 국내 지수 실제 등락 반영 (지수 -5% 시 -30점 직행)
+    score += min(max(avg_kr_ratio * 6.0, -35), 35)
+    # 외인/기관 메이저 수급 반영
+    score += min(max(total_major / 100.0, -25), 25)
+    # 미 선물 및 환율 반영
+    score += (fut_ratio * 10) * 0.20 - (fx_ratio * 15) * 0.15
     score = min(max(round(score), 0), 100)
     gauge = make_gauge_bar(score)
 
@@ -547,16 +556,39 @@ def get_midday_market_guide():
     fut_arr = arr(fut_ratio) if fut_price else ''
     fx_desc = '원화 강세' if fx_ratio < 0 else '원화 약세'
 
-    if total_major > 1000:
-        supply_tone = "🟢 외인/기관 메이저 양매수 유입 (오후장 지수 견인 기대)"
-    elif total_major < -1000:
-        supply_tone = "🔴 외인/기관 쌍끌이 매도세 지속 (오후장 보수적 관망 권장)"
+    # 2. 실제 지수 상황에 따른 정밀 팩트 판정
+    if avg_kr_ratio <= -2.5:
+        market_status = f"🔴 전면 급락/투매 장세 (코스피 {kp_ratio:+.2f}%, 코스닥 {kd_ratio:+.2f}%)"
+        action_plan = (
+            f"• <b>현 시장 팩트</b>: 코스피가 {kp_ratio:+.2f}% 급락 중이며 외인이 {kp_for}억 원을 대규모 투매하고 있습니다.\n"
+            f"• <b>실전 전략</b>: 테마주고 대형주고 가릴 것 없이 시장 전반이 초토화된 하락장입니다. 절대 물타기 금지!\n"
+            f"• <b>원칙</b>: 신규 매수를 전면 중단하고 100% 현금을 보존하며 장 마감까지 관망하세요."
+        )
+    elif avg_kr_ratio <= -0.8:
+        market_status = f"🟠 지수 약세 조정 장세 (코스피 {kp_ratio:+.2f}%, 코스닥 {kd_ratio:+.2f}%)"
+        action_plan = (
+            f"• <b>현 시장 팩트</b>: 지수가 하방 압력을 받고 있으며 외인/기관 합산 {total_major:+,}억 매도세가 우세합니다.\n"
+            f"• <b>실전 전략</b>: 지수 관련 대형주는 무겁고 지수 방어가 어렵습니다. 무리한 진입 자제.\n"
+            f"• <b>원칙</b>: 14:00 사전 레이더에서 거래대금을 지키는 극소수 알짜 종목만 체크하세요."
+        )
+    elif abs(avg_kr_ratio) < 0.8:
+        market_status = f"🟡 박스권 보합/횡보 장세 (코스피 {kp_ratio:+.2f}%, 코스닥 {kd_ratio:+.2f}%)"
+        action_plan = (
+            f"• <b>현 시장 팩트</b>: 지수가 뚜렷한 방향성 없이 보합권 등락 중입니다. (수급 합산: {total_major:+,}억)\n"
+            f"• <b>실전 전략</b>: 지수 변동폭이 좁아 개별 호재를 동반한 종목 위주로 순환매가 돕니다.\n"
+            f"• <b>원칙</b>: 뇌동매매를 피하고 14:00~15:10 종가베팅 골든타임까지 호가창을 관망하세요."
+        )
     else:
-        supply_tone = "🟡 수급 공방전 진행 중 (종목별 차별화 장세)"
+        market_status = f"🟢 지수 견조한 상승 장세 (코스피 {kp_ratio:+.2f}%, 코스닥 {kd_ratio:+.2f}%)"
+        action_plan = (
+            f"• <b>현 시장 팩트</b>: 지수가 강세를 보이며 외인/기관 메이저 수급이 지수를 견인 중입니다.\n"
+            f"• <b>실전 전략</b>: 당일 주도 섹터 1등주의 오후 눌림목 구간을 적극 체크하세요.\n"
+            f"• <b>원칙</b>: 14:00 종가베팅 사전 후보 종목 압축에 집중하세요."
+        )
 
     msg = f"☀️ <b>[13:00 오후장 개시 & 수급 중간점검]</b> ({date_str} 13:00 알림)\n"
     msg += "━━━━━━━━━━━━━━━━━━━━\n"
-    msg += f"🎯 <b>수급 판정</b>: <b>{supply_tone}</b>\n"
+    msg += f"🎯 <b>시장 판정</b>: <b>{market_status}</b>\n"
     msg += f"📊 <b>오후장 점수</b>: <b>{score}점</b> [{gauge}] | <b>메이저 순매수: {total_major:+,}억</b>\n"
     msg += "━━━━━━━━━━━━━━━━━━━━\n\n"
 
@@ -567,17 +599,7 @@ def get_midday_market_guide():
         msg += f"• 🇺🇸 NQ선물: <b>{fut_price:,.1f}</b> ({fut_ratio:+.2f}%) {fut_arr} | 💱 환율: <b>{fx_close}원</b> ({fx_desc})\n"
     msg += f"• 🧭 CNN 심리: <b>{cnn_score:.0f}점</b> ({cnn_rating.upper()})\n\n"
 
-    msg += "💡 <b>오후장 실전 대응 가이드</b>\n"
-    if score >= 60:
-        msg += "• <b>전략</b>: 메이저 수급이 지수를 견인 중입니다. 거래대금 상위 주도 섹터 1등주의 오후 눌림목 구간을 주목하세요.\n"
-        msg += "• <b>원칙</b>: 무리한 추격매수보다는 14:00 이후 종가베팅 후보 압축에 집중하세요."
-    elif score >= 40:
-        msg += "• <b>전략</b>: 지수는 횡보/등락 중이며 개별 테마주 위주로 순환매가 빠르게 돕니다. 비중 조절 필수!\n"
-        msg += "• <b>원칙</b>: 14:00 종가베팅 사전 레이더 알림 전까지 무리한 뇌동매매 자제."
-    else:
-        msg += "• <b>전략</b>: 외인/기관 매도세로 지수 하방 압력이 큽니다. 신규 매수 일체 자제 및 현금 비중 확보 우선!\n"
-        msg += "• <b>원칙</b>: 손실 중인 종목 물타기 금지, 리스크 관리에 만전을 기하세요."
-
+    msg += f"💡 <b>오후장 실전 대응 가이드</b>\n{action_plan}"
     msg += f"\n\n🔗 <b>실시간 대시보드</b>: {DASHBOARD_URL}"
     return msg
 
@@ -591,8 +613,13 @@ def get_preclosing_guide():
     fut_price, fut_ratio = fetch_nasdaq_futures()
     fx_close, fx_ratio, _ = fetch_usdkrw()
 
+    avg_kr_ratio = (kp_ratio + kd_ratio) / 2
     total_major = kp_for_num + kp_inst_num + kd_for_num + kd_inst_num
-    score = 50.0 + (fut_ratio * 15) * 0.35 + min(max(total_major / 150, -30), 30) * 0.35 - (fx_ratio * 15) * 0.15
+
+    score = 50.0
+    score += min(max(avg_kr_ratio * 6.0, -35), 35)
+    score += min(max(total_major / 100.0, -25), 25)
+    score += (fut_ratio * 10) * 0.20 - (fx_ratio * 15) * 0.15
     score = min(max(round(score), 0), 100)
     gauge = make_gauge_bar(score)
 
@@ -600,15 +627,19 @@ def get_preclosing_guide():
     ko_wd = ['월', '화', '수', '목', '금', '토', '일'][now_kst.weekday()]
     date_str = f"{now_kst.strftime('%m/%d')}({ko_wd})"
 
-    if score >= 70:
+    if score >= 70 and avg_kr_ratio > -0.5:
         pre_verdict = "🟢 종가베팅 진입 적합 (15:10 적극 공략 준비)"
-        pre_guide = "• <b>예상 비중</b>: 60~80% 적극 진입 가능\n• <b>포인트</b>: 메이저 수급이 견조하여 15:10 공식 추천 종목 진입 확률이 매우 높습니다."
-    elif score >= 50:
+        pre_guide = "• <b>예상 비중</b>: 60~80% 적극 진입 가능\n• <b>포인트</b>: 지수와 메이저 수급이 견조하여 15:10 공식 추천 종목 진입 확률이 높습니다."
+    elif score >= 45 and avg_kr_ratio > -1.5:
         pre_verdict = "🟡 선별 진입 권장 (확실한 주도주 1종목만 30~50%)"
-        pre_guide = "• <b>예상 비중</b>: 30~50% 선별 진입\n• <b>포인트</b>: 지수 변동성에 유의하며 거래대금 최상위 1등주 위주로 압축 대응하세요."
+        pre_guide = "• <b>예상 비중</b>: 30~50% 선별 진입\n• <b>포인트</b>: 지수 변동성이 크므로 거래대금 최상위 & 윗꼬리 짧은 1등주로만 압축 대응하세요."
     else:
-        pre_verdict = "🔴 종가베팅 주의/보수적 관망 (비중 20% 이하 또는 전량 현금)"
-        pre_guide = "• <b>예상 비중</b>: 0~20% 극소액 또는 관망\n• <b>포인트</b>: 하방 리스크가 잔존하므로 15:10 최종 판정 점수를 반드시 재확인하세요."
+        pre_verdict = f"🔴 종가베팅 강력 주의 (지수 {avg_kr_ratio:+.2f}% 급락세 · 전량 현금 권장)"
+        pre_guide = (
+            f"• <b>현 시장 팩트</b>: 지수가 {avg_kr_ratio:+.2f}% 급락 중이며 외인/기관 메이저 매도세가 극심합니다.\n"
+            f"• <b>예상 비중</b>: 0% 전량 현금 권장 (오버나잇 갭하락 위험 극대화)\n"
+            f"• <b>포인트</b>: 15:10 종가베팅 최종 판정 점수에서도 차단될 가능성이 매우 높으니 무리한 매수를 절대 금지합니다."
+        )
 
     msg = f"🎯 <b>[14:00 종가베팅 1시간 전 사전 레이더]</b> ({date_str} 14:00 알림)\n"
     msg += "━━━━━━━━━━━━━━━━━━━━\n"
@@ -624,18 +655,22 @@ def get_preclosing_guide():
 
     msg += f"\n💡 <b>15:10 골든타임 대비 행동 요령</b>\n{pre_guide}\n"
 
-    try:
-        from src.recommender import get_recommendations
-        rec = get_recommendations()
-        closing_picks = rec.get('closing', [])
-        if closing_picks:
-            msg += "\n🔥 <b>현재 시점 유력 후보 레이더 TOP 3 (15:10 최종 확정)</b>\n"
-            for idx, s in enumerate(closing_picks[:3], 1):
-                chart_url = s.get('chart_url', f"https://m.stock.naver.com/domestic/stock/{s['code']}/total")
-                sec = s.get('sector', '주도주')
-                msg += f"{idx}. <a href=\"{chart_url}\"><b>{s['name']}</b></a> (<b>{s['change_pct']:+.2f}%</b>) 🏷️ <code>[{sec}]</code> | 💰 거래대금: <b>{s['amount_eok']:,}억</b>\n"
-    except Exception as e:
-        logger.warning(f"사전 추천 종목 조회 실패: {e}")
+    # 지수 급락(-2.5% 이하) 시에는 위험 종목 매수를 부추기지 않도록 안내
+    if avg_kr_ratio <= -2.5:
+        msg += "\n⚠️ <b>[리스크 알림]</b> 시장 전면 급락으로 상방 종목이 극히 제한적입니다. 15:10 시스템 차단 여부를 반드시 확인하세요.\n"
+    else:
+        try:
+            from src.recommender import get_recommendations
+            rec = get_recommendations()
+            closing_picks = rec.get('closing', [])
+            if closing_picks:
+                msg += "\n🔥 <b>현재 시점 유력 후보 레이더 TOP 3 (15:10 최종 확정)</b>\n"
+                for idx, s in enumerate(closing_picks[:3], 1):
+                    chart_url = s.get('chart_url', f"https://m.stock.naver.com/domestic/stock/{s['code']}/total")
+                    sec = s.get('sector', '주도주')
+                    msg += f"{idx}. <a href=\"{chart_url}\"><b>{s['name']}</b></a> (<b>{s['change_pct']:+.2f}%</b>) 🏷️ <code>[{sec}]</code> | 💰 거래대금: <b>{s['amount_eok']:,}억</b>\n"
+        except Exception as e:
+            logger.warning(f"사전 추천 종목 조회 실패: {e}")
 
     msg += f"\n🔗 <b>실시간 대시보드 (100% 실시간 갱신)</b>: {DASHBOARD_URL}"
     return msg
