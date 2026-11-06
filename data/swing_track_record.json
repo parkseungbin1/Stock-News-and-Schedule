@@ -649,7 +649,7 @@
           "entry_price": 73600,
           "price": 73600,
           "change_pct": 1.38,
-          "amount_eok": 749,
+          "amount_eok": 750,
           "marcap": 7130805772800,
           "marcap_str": "7조 1,308억",
           "target_1": 75808,
@@ -663,7 +663,7 @@
           "rule_v": 2,
           "stage": 0,
           "score": 83,
-          "reason": "20일선(71,490원) 눌림목 지지 · 이격도 2.9% 안정 구간",
+          "reason": "20일선(71,495원) 눌림목 지지 · 이격도 2.9% 안정 구간",
           "holding_period": "2~5영업일 3분할 매도",
           "tags": [
             "20일선눌림목",
