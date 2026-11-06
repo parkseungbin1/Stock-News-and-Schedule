@@ -2516,15 +2516,16 @@ def generate_html():
                 </div>
 
                 <div class="cloud-schedule-box">
-                    <div class="csb-title">⏰ 정규 종가베팅 자동 배포 스케줄 (완전 자동 / 0원)</div>
+                    <div class="csb-title">⏰ BiniStock 실시간 자동 배포 스케줄 (텔레그램 6대 알림 100% 동기화)</div>
                     <ul>
-                        <li>🎯 <b>15:00 KST</b> : 장마감 대비 1차 리스크 수집 및 선제 가이드</li>
-                        <li>🎯 <b>15:10 KST</b> : 15:10 공식 종가베팅 골든타임 최신화 (텔레그램 동시)</li>
-                        <li>🎯 <b>15:20 KST</b> : 15:20 동시호가 직전 최종 지표 배포</li>
-                        <li>🏁 <b>15:35 KST</b> : 정규장 마감 후 최종 성과 검증</li>
-                        <li>🌙 <b>20:05 KST</b> : NXT 야간 마감</li>
+                        <li>🌅 <b>07:00 KST</b> : 모닝 시황 브리핑 & 주간 캘린더</li>
+                        <li>⚡ <b>07:35 KST</b> : NXT 개장 전 1차 시초가 매도 가이드</li>
+                        <li>📑 <b>08:10 KST</b> : DART 실적 & 핵심 공시</li>
+                        <li>🎯 <b>08:35 KST</b> : 정규장 개장 전 최종 시초가 매도 가이드</li>
+                        <li>🔥 <b>15:10 KST</b> : 정규장 15:10 공식 종가베팅 골든타임</li>
+                        <li>🌙 <b>19:40 KST</b> : NXT 야간 최종 종가베팅 가이드</li>
                     </ul>
-                    <div class="csb-sub">※ 평일 15:00~15:20 골든타임에는 버튼을 누르지 않으셔도 10분마다 깃허브가 자동으로 최신화합니다.</div>
+                    <div class="csb-sub">※ 텔레그램 6대 알림 발송과 동시에 웹 대시보드가 실시간으로 자동 갱신됩니다.</div>
                 </div>
             </div>
         </div>
