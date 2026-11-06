@@ -723,7 +723,10 @@ def get_recommendations(dart_disclosures=None, market_context=None, force_refres
     # [아이디어 10] 최근 30일 트랙레코드 기반 자가보정(Self-Tuning) 우위 섹터 로드
     winning_sectors = set()
     try:
-        from src.track_record import get_self_tuning_insights
+        try:
+            from src.track_record import get_self_tuning_insights
+        except ImportError:
+            from track_record import get_self_tuning_insights
         winning_sectors = get_self_tuning_insights().get('winning_sectors', set())
     except Exception:
         pass
@@ -1147,13 +1150,19 @@ def get_recommendations(dart_disclosures=None, market_context=None, force_refres
 
     # [STEP 4] 익일 시초가 성과 자동 추적을 위한 당일 종가베팅 및 스윙 종목 기록
     try:
-        from src.track_record import record_closing_picks
+        try:
+            from src.track_record import record_closing_picks
+        except ImportError:
+            from track_record import record_closing_picks
         record_closing_picks(closing_picks)
     except Exception as e:
         logger.warning(f"종가베팅 트랙 레코드 기록 실패: {e}")
 
     try:
-        from src.swing_track_record import record_swing_picks
+        try:
+            from src.swing_track_record import record_swing_picks
+        except ImportError:
+            from swing_track_record import record_swing_picks
         record_swing_picks(swing_picks)
     except Exception as e:
         logger.warning(f"스윙 트랙 레코드 기록 실패: {e}")
