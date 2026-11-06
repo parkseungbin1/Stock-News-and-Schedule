@@ -52,7 +52,7 @@ class TelegramSender:
     
     def send_message_sync(self, message, parse_mode='HTML'):
         """
-        동기식으로 텔레그램 메시지 전송
+        동기식으로 텔레그램 메시지 전송 (HTTPS 직접 전송으로 윈도우 비동기 타임아웃 방지)
         
         Args:
             message (str): 전송할 메시지
@@ -61,6 +61,27 @@ class TelegramSender:
         Returns:
             bool: 성공 여부
         """
+        import json
+        import urllib.request
+        url = f"https://api.telegram.org/bot{self.bot_token}/sendMessage"
+        payload = {
+            'chat_id': self.chat_id,
+            'text': message,
+            'parse_mode': parse_mode,
+            'disable_web_page_preview': True
+        }
+        data = json.dumps(payload).encode('utf-8')
+        headers = {'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0'}
+        try:
+            req = urllib.request.Request(url, data=data, headers=headers)
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                res_data = json.loads(resp.read().decode('utf-8'))
+                if res_data.get('ok'):
+                    logger.info("텔레그램 메시지 전송 성공")
+                    return True
+        except Exception as e:
+            logger.warning(f"HTTPS 직접 전송 실패 ({e}), 비동기 폴백 시도...")
+
         try:
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
