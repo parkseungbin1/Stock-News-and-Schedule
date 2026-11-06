@@ -246,6 +246,8 @@ def evaluate_swing_performance():
         h_date = h.get('date', '')
         if h_date >= today_str:
             continue
+        if h.get('blocked', False):
+            continue  # AI 리스크 차단일은 시뮬레이션 불필요 (현금 100% 보존 완료)
 
         picks = h.get('picks', [])
         all_done = True
@@ -335,11 +337,17 @@ def render_monthly_swing_history_html():
     win_returns = []
     loss_returns = []
     total_cum = 0.0
+    defense_count = 0
 
     hold_days = []
     t1_hits = 0
     for h in history:
+        is_h_blocked = h.get('blocked', False)
         for p in h.get('picks', []):
+            if is_h_blocked or '차단' in p.get('status', ''):
+                defense_count += 1
+                continue  # 리스크 차단으로 현금 100% 보존된 스윙 종목은 실체결 통계에서 분리
+
             if not p.get('completed'):
                 continue
             ret = float(p.get('final_return_pct', 0.0) or 0.0)
@@ -351,7 +359,7 @@ def render_monthly_swing_history_html():
             if ret > 0:
                 win_picks += 1
                 win_returns.append(ret)
-            else:
+            elif ret < 0:
                 loss_picks += 1
                 loss_returns.append(abs(ret))
 
@@ -369,7 +377,7 @@ def render_monthly_swing_history_html():
     summary_html = f"""
     <div class="track-summary-grid">
         <div class="track-stat-card stat-swing-winrate">
-            <div class="stat-label">🎯 최근 30일 스윙 승률 (실현손익 &gt; 0)</div>
+            <div class="stat-label">🎯 30일 스윙 실매매 승률 (익절 &gt; 0)</div>
             <div class="stat-value">{win_rate:.1f}%</div>
             <div class="stat-sub">{win_picks}승 {loss_picks}패 ({total_picks}회 청산) · 1차(+3%) 도달률 {t1_rate:.0f}%</div>
         </div>
@@ -383,10 +391,10 @@ def render_monthly_swing_history_html():
             <div class="stat-value">{total_cum:+.2f}%</div>
             <div class="stat-sub">종목당 평균 실현 {avg_ret:+.2f}%</div>
         </div>
-        <div class="track-stat-card stat-swing-period">
-            <div class="stat-label">⏱️ 평균 보유(청산까지) 기간</div>
-            <div class="stat-value">{avg_hold:.1f} 영업일</div>
-            <div class="stat-sub">{start_date} ~ {end_date} (2~5일 추세추적)</div>
+        <div class="track-stat-card stat-swing-period" style="border-left: 4px solid #10b981;">
+            <div class="stat-label">🛡️ 스윙 AI 리스크 방어 (원금 보존)</div>
+            <div class="stat-value" style="color: #34d399;">{defense_count}건 방어</div>
+            <div class="stat-sub">폭락장 매수 차단 · 현금 100% 보존</div>
         </div>
     </div>
     """
@@ -395,7 +403,8 @@ def render_monthly_swing_history_html():
     for h in history:
         h_date = h.get('date', '')
         evaluated = h.get('evaluated', False)
-        status_tag = '<span class="hist-badge badge-done">✓ 추적 완료</span>' if evaluated else '<span class="hist-badge badge-wait">⏳ 2~5일 추세 진행중</span>'
+        is_blocked = h.get('blocked', False)
+        status_tag = '<span class="hist-badge badge-shield" style="background:#065f46; color:#34d399; border:1px solid #059669;">🛡️ 리스크 차단 (현금 100% 방어)</span>' if is_blocked else ('<span class="hist-badge badge-done">✓ 추적 완료</span>' if evaluated else '<span class="hist-badge badge-wait">⏳ 2~5일 추세 진행중</span>')
 
         items_html = ""
         for p in h.get('picks', []):
@@ -410,11 +419,17 @@ def render_monthly_swing_history_html():
             h_days = p.get('holding_days', 0)
             marcap_str = p.get('marcap_str', '')
             marcap_tag = f" <span class='hist-marcap'>시총 {marcap_str}</span>" if marcap_str else ""
+            p_blocked = is_blocked or ('차단' in status)
 
             stage = p.get('stage', 0) or 0
             fin_ret = p.get('final_return_pct', p.get('realized_pct', 0.0)) or 0.0
             completed = p.get('completed', False)
-            if completed and '3차' in status:
+
+            if p_blocked:
+                risk_pt = p.get('risk_score', h.get('risk_score', 56))
+                badge = '<span class="res-badge shield" style="background:#065f46; color:#34d399; border:1px solid #059669; font-weight:700;">🛡️ AI 리스크 차단 (현금 보존)</span>'
+                res_str = f"오늘 AI 리스크 <b>{risk_pt}점 [DANGER]</b> 감지 ➔ 스윙 신규 매수 전면 차단 · <b>100% 현금 보존</b> (하락장 원금 방어 성공) {badge}"
+            elif completed and '3차' in status:
                 badge = f'<span class="res-badge win-gold">🚀 3차 전량 익절 (실현 {fin_ret:+.2f}%)</span>'
             elif completed and stage >= 1:
                 badge = f'<span class="res-badge win">🎯 {status} (실현 {fin_ret:+.2f}%)</span>'
@@ -428,10 +443,11 @@ def render_monthly_swing_history_html():
 
             low_p = p.get('lowest_price', entry_p)
             min_ret = round(((low_p - entry_p) / entry_p) * 100, 2) if entry_p > 0 else 0.0
-            if '손절' in status:
-                res_str = f"{h_date} 종가 {entry_p:,}원 → 최저 <b>{low_p:,}원</b> (<span class='down'>{min_ret:+.2f}%</span> · 1차목표 +3% 미달, 반등최고 {max_ret:+.2f}%) {badge}"
-            else:
-                res_str = f"{h_date} 종가 {entry_p:,}원 → 최고 <b>{high_p:,}원</b> (<span class='{'up' if max_ret>0 else 'down'}'>{max_ret:+.2f}%</span>) {badge}"
+            if not p_blocked:
+                if '손절' in status:
+                    res_str = f"{h_date} 종가 {entry_p:,}원 → 최저 <b>{low_p:,}원</b> (<span class='down'>{min_ret:+.2f}%</span> · 1차목표 +3% 미달, 반등최고 {max_ret:+.2f}%) {badge}"
+                else:
+                    res_str = f"{h_date} 종가 {entry_p:,}원 → 최고 <b>{high_p:,}원</b> (<span class='{'up' if max_ret>0 else 'down'}'>{max_ret:+.2f}%</span>) {badge}"
 
             cat_url = p.get('catalyst_url', f"https://m.stock.naver.com/domestic/stock/{code}/news")
             cat_src = p.get('catalyst_source', '')

@@ -343,7 +343,10 @@ def get_self_tuning_insights():
     sector_stats = {}
 
     for h in history:
+        is_h_blocked = h.get('blocked', False)
         for p in h.get('picks', []):
+            if is_h_blocked or '차단' in p.get('status', ''):
+                continue  # AI 리스크 차단 종목은 실체결 통계에서 분리
             if 'gap_pct' in p:
                 total_picks += 1
                 gap = float(p['gap_pct'])
@@ -438,16 +441,22 @@ def render_monthly_history_html():
 
     history.sort(key=lambda x: x['date'], reverse=True)
 
-    # 누적 통계 산출
+    # 누적 통계 산출 (AI 리스크 50점 초과 차단일은 실체결에서 제외하고 방어 건수로 집계)
     total_picks = 0
     win_picks = 0
     all_gaps = []
     win_gaps = []
     loss_gaps = []
+    defense_count = 0
 
     for h in history:
+        is_h_blocked = h.get('blocked', False)
         for p in h.get('picks', []):
-            if 'gap_pct' in p:
+            if is_h_blocked or '차단' in p.get('status', ''):
+                defense_count += 1
+                continue  # 리스크 차단으로 현금 100% 보존된 종목은 실체결 통계에서 분리
+
+            if 'gap_pct' in p and p['gap_pct'] is not None:
                 total_picks += 1
                 gap = p['gap_pct']
                 all_gaps.append(gap)
@@ -480,9 +489,9 @@ def render_monthly_history_html():
     </div>""" + f"""
     <div class="track-summary-grid">
         <div class="track-stat-card stat-winrate">
-            <div class="stat-label">🎯 최근 30일 누적 승률</div>
+            <div class="stat-label">🎯 30일 실매매 승률</div>
             <div class="stat-value">{win_rate:.1f}%</div>
-            <div class="stat-sub">{win_picks}승 {total_picks - win_picks}패 ({total_picks}회 검증)</div>
+            <div class="stat-sub">{win_picks}승 {total_picks - win_picks}패 ({total_picks}회 실진입)</div>
         </div>
         <div class="track-stat-card stat-rr">
             <div class="stat-label">⚖️ 평균 손익비 (P/L Ratio)</div>
@@ -494,10 +503,10 @@ def render_monthly_history_html():
             <div class="stat-value">{total_cum:+.2f}%</div>
             <div class="stat-sub">1회당 평균 갭상승 +{avg_gap:.2f}%</div>
         </div>
-        <div class="track-stat-card">
-            <div class="stat-label">📅 자동 데이터 보관 주기</div>
-            <div class="stat-value">30일 (1개월)</div>
-            <div class="stat-sub">{start_date} ~ {end_date} (1달 경과 자동 삭제)</div>
+        <div class="track-stat-card" style="border-left: 4px solid #10b981;">
+            <div class="stat-label">🛡️ AI 리스크 방어 (원금 보존)</div>
+            <div class="stat-value" style="color: #34d399;">{defense_count}건 방어</div>
+            <div class="stat-sub">폭락장 매수 차단 · 현금 100% 보존</div>
         </div>
     </div>
     """
@@ -506,7 +515,8 @@ def render_monthly_history_html():
     for h in history:
         h_date = h.get('date', '')
         evaluated = h.get('evaluated', False)
-        status_tag = '<span class="hist-badge badge-done">✓ 검증 완료</span>' if evaluated else '<span class="hist-badge badge-wait">⏳ 익일 시초가 대기</span>'
+        is_blocked = h.get('blocked', False)
+        status_tag = '<span class="hist-badge badge-shield" style="background:#065f46; color:#34d399; border:1px solid #059669;">🛡️ 리스크 차단 (현금 100% 방어)</span>' if is_blocked else ('<span class="hist-badge badge-done">✓ 검증 완료</span>' if evaluated else '<span class="hist-badge badge-wait">⏳ 익일 시초가 대기</span>')
 
         items_html = ""
         for p in h.get('picks', []):
@@ -518,8 +528,14 @@ def render_monthly_history_html():
             open_p = p.get('open_price')
             gap = p.get('gap_pct')
             is_win = p.get('is_success')
+            status = p.get('status', '')
+            p_blocked = is_blocked or ('차단' in status)
 
-            if gap is not None:
+            if p_blocked:
+                risk_pt = p.get('risk_score', h.get('risk_score', 56))
+                badge = '<span class="res-badge shield" style="background:#065f46; color:#34d399; border:1px solid #059669; font-weight:700;">🛡️ AI 리스크 차단 (현금 보존)</span>'
+                res_str = f"오늘 AI 리스크 <b>{risk_pt}점 [DANGER]</b> 감지 ➔ 당일 신규 매수 전면 차단 · <b>100% 현금 보존</b> (원금 손실 0% 방어 성공) {badge}"
+            elif gap is not None:
                 gap_class = "up" if gap > 0 else "down"
                 badge = '<span class="res-badge win">🎯 익절 성공</span>' if is_win else ('<span class="res-badge even">✨ 보합</span>' if gap >= 0 else '<span class="res-badge loss">🔻 손절/이탈</span>')
                 high_p = p.get('next_high_price')

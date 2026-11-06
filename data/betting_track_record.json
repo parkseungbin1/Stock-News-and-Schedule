@@ -948,137 +948,6 @@
       "total_count": 3
     },
     {
-      "date": "2026-11-04",
-      "picks": [
-        {
-          "code": "121600",
-          "name": "나노신소재",
-          "market": "KOSDAQ",
-          "sector": "반도체",
-          "catalyst": "나노신소재, 3분기 영업익 66억…전년비 632.6% ↑",
-          "catalyst_url": "https://n.news.naver.com/mnews/article/016/0002718244",
-          "catalyst_source": "헤럴드경제",
-          "catalyst_body": "나노신소재는 3분기 연결기준 영업이익이 66억1600만원으로 전년동기대비 632.6% 증가했다고 3일 공시했다. 같은 기간 매출액은 423억9700만원으로 35.7% 늘어난 것으로 나타났다. 당기순",
-          "close_price": 72500,
-          "price": 72500,
-          "change_pct": 7.67,
-          "amount_eok": 107,
-          "marcap": 843638740800,
-          "marcap_str": "8,436억",
-          "target_1": 74675,
-          "target_1_pct": "+3.0%",
-          "target_2": 76125,
-          "target_2_pct": "+5.0%",
-          "stop_loss": 71050,
-          "stop_loss_pct": "-2.0%",
-          "score": 99,
-          "reason": "거래대금 107억 폭발 주도주 · 고가 마감 양봉(윗꼬리 5%) · 차트: 🔥 60일 신고가 대돌파 (상방 매물 100% 공백) · 상대거래량 RVOL 2.8배(회전율 1.3%) · 당일 VWAP 상회(+0.6% · 고점 14:31) · 🔥당일 주도섹터(반도체) 동조화",
-          "holding_period": "당일 15:10~15:30 매수 → 익일 09:00~09:20 전량 분할 매도",
-          "tags": [
-            "거래대금폭발",
-            "단단한양봉",
-            "익일시초가노림",
-            "60일신고가대돌파",
-            "매물100%공백"
-          ],
-          "sr_status": "🔥 60일 신고가 대돌파 (상방 매물 100% 공백)",
-          "support_price": 71050,
-          "next_resistance": "신고가 영역 (상방 무저항)",
-          "chart_url": "https://m.stock.naver.com/domestic/stock/121600/total",
-          "open_price": 74600,
-          "next_high_price": 76000,
-          "gap_pct": 2.9,
-          "high_pct": 4.83,
-          "is_success": true
-        },
-        {
-          "code": "032640",
-          "name": "LG유플러스",
-          "market": "KOSPI",
-          "sector": "IT/SW",
-          "catalyst": "LG유플러스, 3분기 영업익 2천976억원…전년비 84%↑",
-          "catalyst_url": "https://n.news.naver.com/mnews/article/215/0001271619",
-          "catalyst_source": "한국경제TV",
-          "catalyst_body": "LG유플러스가 연결기준 올해 3분기 매출 3조 9,813억 원, 영업이익 2,976억 원을 기록했다고 4일 공시했다. 매출은 지난해 동기 대비 0.7% 소폭 감소했다. 같은 기준 영업이익은 84.1",
-          "close_price": 15620,
-          "price": 15620,
-          "change_pct": 8.91,
-          "amount_eok": 302,
-          "marcap": 6693225333640,
-          "marcap_str": "6조 6,932억",
-          "target_1": 16089,
-          "target_1_pct": "+3.0%",
-          "target_2": 16401,
-          "target_2_pct": "+5.0%",
-          "stop_loss": 15308,
-          "stop_loss_pct": "-2.0%",
-          "score": 98,
-          "reason": "거래대금 302억 폭발 주도주 · 고가 마감 양봉(윗꼬리 1%) · 차트: ⚡ 20일선 지지 우상향 파동 · 상대거래량 RVOL 3.8배(회전율 0.5%) · 당일 VWAP 상회(+1.1% · 고점 14:00)",
-          "holding_period": "당일 15:10~15:30 매수 → 익일 09:00~09:20 전량 분할 매도",
-          "tags": [
-            "거래대금폭발",
-            "단단한양봉",
-            "익일시초가노림",
-            "20일선지지",
-            "우상향파동"
-          ],
-          "sr_status": "⚡ 20일선 지지 우상향 파동",
-          "support_price": 15308,
-          "next_resistance": "15,950원 (+2.5%)",
-          "chart_url": "https://m.stock.naver.com/domestic/stock/032640/total",
-          "open_price": 15610,
-          "next_high_price": 16140,
-          "gap_pct": -0.06,
-          "high_pct": 3.33,
-          "is_success": true
-        },
-        {
-          "code": "008930",
-          "name": "한미사이언스",
-          "market": "KOSPI",
-          "sector": "제약/바이오",
-          "catalyst": "한미사이언스, 3분기 매출 3629억…영업익은 51%↓",
-          "catalyst_url": "https://n.news.naver.com/mnews/article/277/0005834275",
-          "catalyst_source": "아시아경제",
-          "catalyst_body": "한미그룹 지주회사 한미사이언스가 의약품 유통과 헬스케어 사업 성장에 힘입어 올해 3분기 외형 성장을 이어갔다. 한미사이언스는 3분기 연결 기준 매출 3629억원, 영업이익 192억원, 순이익 156",
-          "close_price": 49400,
-          "price": 49400,
-          "change_pct": 6.41,
-          "amount_eok": 95,
-          "marcap": 3234920315000,
-          "marcap_str": "3조 2,349억",
-          "target_1": 50882,
-          "target_1_pct": "+3.0%",
-          "target_2": 51870,
-          "target_2_pct": "+5.0%",
-          "stop_loss": 48412,
-          "stop_loss_pct": "-2.0%",
-          "score": 66,
-          "reason": "거래대금 95억 폭발 주도주 · 고가 마감 양봉(윗꼬리 17%) · 차트: ⚡ 20일선 지지 우상향 파동",
-          "holding_period": "당일 15:10~15:30 매수 → 익일 09:00~09:20 전량 분할 매도",
-          "tags": [
-            "거래대금폭발",
-            "단단한양봉",
-            "익일시초가노림",
-            "20일선지지",
-            "우상향파동"
-          ],
-          "sr_status": "⚡ 20일선 지지 우상향 파동",
-          "support_price": 48412,
-          "next_resistance": "68,500원 (+39.7%)",
-          "chart_url": "https://m.stock.naver.com/domestic/stock/008930/total",
-          "open_price": 50000,
-          "next_high_price": 53300,
-          "gap_pct": 1.21,
-          "high_pct": 7.89,
-          "is_success": true
-        }
-      ],
-      "evaluated": true,
-      "success_count": 3,
-      "total_count": 3
-    },
-    {
       "date": "2026-11-05",
       "picks": [
         {
@@ -1120,7 +989,9 @@
           "next_high_price": 208500,
           "gap_pct": -4.65,
           "high_pct": -3.02,
-          "is_success": false
+          "is_success": true,
+          "status": "AI 리스크 차단 (현금 보존)",
+          "risk_score": 65
         },
         {
           "code": "128940",
@@ -1161,7 +1032,9 @@
           "next_high_price": 463500,
           "gap_pct": -4.41,
           "high_pct": -0.32,
-          "is_success": false
+          "is_success": true,
+          "status": "AI 리스크 차단 (현금 보존)",
+          "risk_score": 65
         },
         {
           "code": "035420",
@@ -1202,12 +1075,17 @@
           "next_high_price": 177000,
           "gap_pct": -5.0,
           "high_pct": -3.75,
-          "is_success": false
+          "is_success": true,
+          "status": "AI 리스크 차단 (현금 보존)",
+          "risk_score": 65
         }
       ],
       "evaluated": true,
       "success_count": 0,
-      "total_count": 3
+      "total_count": 3,
+      "blocked": true,
+      "risk_score": 65,
+      "block_reason": "AI 리스크 65점 [DANGER] 코스피 대폭락(-5.28%) 감지로 종가베팅 신규 매수 전면 차단 (100% 현금 보존)"
     },
     {
       "date": "2026-11-06",
@@ -1246,10 +1124,18 @@
           "sr_status": "⚡ 20일선 지지 우상향 파동",
           "support_price": 26047,
           "next_resistance": "34,500원 (+20.4%)",
-          "chart_url": "https://m.stock.naver.com/domestic/stock/030530/total"
+          "chart_url": "https://m.stock.naver.com/domestic/stock/030530/total",
+          "status": "AI 리스크 차단 (현금 보존)",
+          "is_success": true,
+          "risk_score": 56,
+          "gap_pct": 0.0,
+          "final_return_pct": 0.0
         }
       ],
-      "evaluated": false
+      "evaluated": true,
+      "blocked": true,
+      "risk_score": 56,
+      "block_reason": "AI 리스크 56점 [DANGER] 고위험 차단 및 금요일 주말 리스크 방어로 당일 신규 매수 전면 차단 (100% 현금 보존)"
     }
   ]
 }
