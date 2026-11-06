@@ -341,14 +341,16 @@
           ],
           "chart_url": "https://m.stock.naver.com/domestic/stock/033780/total",
           "highest_price": 201000,
-          "lowest_price": 190200,
+          "lowest_price": 187100,
           "max_return_pct": 4.04,
-          "status": "진행중 (4일차)",
-          "completed": false,
-          "holding_days": 4
+          "status": "손절 이탈",
+          "completed": true,
+          "holding_days": 4,
+          "is_success": false,
+          "final_return_pct": -3.0
         }
       ],
-      "evaluated": false
+      "evaluated": true
     },
     {
       "date": "2026-11-03",
