@@ -379,49 +379,24 @@ def resolve_swing_targets(close_p: int, regime: dict = None, risk_score: int = N
         except Exception:
             risk_score = 50
     """
-    시장 환경 및 AI 리스크 점수(0~100)에 따른 동적 스윙 목표가 & 손절가 산출
-    • 하락장/혼조장/리스크 50점 이상 (warning or risk >= 50):
-        방어형 3분할 (+3% 1/3 익절 후 본절 스탑 상향, +5% 1/3, +9% 잔량, 손절 -3%)
-        👉 이유: 반등 탄력이 짧으므로 +3%에서 조기 수익을 챙기고 본절을 잠가 계좌 방어
-    • 상승장/주도주장/리스크 50점 미만 (bull or risk < 50):
-        추세형 2분할 (+5% 1/2 익절 후 본절 스탑 상향, +9% 잔량, 손절 -3%)
-        👉 이유: 주도주 추세 파동이 길게 나오므로 3% 푼돈에 자르지 않고 +5%~+9% 이상 수익 극대화
+    스윙 목표가 & 손절가 산출 (원래 기준 복원: 1차 +5.0%, 2차 +9.0%, 손절 -3.0%)
+    - 손익비: 1차 1.67 : 1, 2차 3.00 : 1 (평균 2.33 : 1)
+    - 20일선 눌림목 반등 타겟: 1차 +5% 50% 분할 익절 → 본절 상향 → 2차 +9% 전량 익절
     """
-    regime_status = (regime.get('status') if regime else 'neutral') or 'neutral'
-    is_defensive = (regime_status == 'warning') or (risk_score is not None and risk_score >= 50)
-    if not is_defensive and regime and regime.get('position_advice') and '축소' in regime.get('position_advice', ''):
-        is_defensive = True
-
-    if is_defensive:
-        return {
-            'mode': 'DEFENSIVE',
-            'mode_label': '🛡️ 방어형 3분할 (하락/혼조장)',
-            'mode_desc': '반등 탄력이 짧은 약세·혼조장이므로 1차 +3%에서 1/3 조기 익절 후 손절선을 본절로 상향합니다.',
-            'target_1': int(round(close_p * 1.03)),
-            'target_1_pct': '+3.0%',
-            'target_2': int(round(close_p * 1.05)),
-            'target_2_pct': '+5.0%',
-            'target_3': int(round(close_p * 1.09)),
-            'target_3_pct': '+9.0%',
-            'stop_loss': int(round(close_p * 0.97)),
-            'stop_loss_pct': '-3.0%',
-            'holding_period': '2~5영업일 3분할 매도 (1차 +3% 1/3 익절 → 본절 상향 → 2차 +5% 1/3 → 3차 +9% 잔량)',
-        }
-    else:
-        return {
-            'mode': 'TREND',
-            'mode_label': '🚀 추세형 2분할 (상승/주도주장)',
-            'mode_desc': '주도주 상승 탄력이 강한 장세이므로 1차 +5%에서 50% 분할 익절 후 +9% 이상 파동을 극대화합니다.',
-            'target_1': int(round(close_p * 1.05)),
-            'target_1_pct': '+5.0%',
-            'target_2': int(round(close_p * 1.09)),
-            'target_2_pct': '+9.0%',
-            'target_3': None,
-            'target_3_pct': None,
-            'stop_loss': int(round(close_p * 0.97)),
-            'stop_loss_pct': '-3.0%',
-            'holding_period': '2~5영업일 추세 매도 (1차 +5% 1/2 익절 → 본절 상향 → 2차 +9% 잔량)',
-        }
+    return {
+        'mode': 'TREND',
+        'mode_label': '🚀 2~5일 스윙 (추세 파동)',
+        'mode_desc': '20일선 눌림목 반등 타겟: 1차 +5% 50% 분할 익절 → 손절선 본절 상향 → 2차 +9% 전량 익절',
+        'target_1': int(round(close_p * 1.05)),
+        'target_1_pct': '+5.0%',
+        'target_2': int(round(close_p * 1.09)),
+        'target_2_pct': '+9.0%',
+        'target_3': None,
+        'target_3_pct': None,
+        'stop_loss': int(round(close_p * 0.97)),
+        'stop_loss_pct': '-3.0%',
+        'holding_period': '2~5영업일 분할 매도 (1차 +5.0% 50% 익절 → 본절 상향 → 2차 +9.0% 잔량 전량 익절)',
+    }
 
 
 def fetch_nxt_over_market_info(code: str) -> dict:
