@@ -86,11 +86,15 @@ def main():
 
     elif action == 'closing_1510':
         run_py('market_alert.py', ['--mode', 'closing', '--force'])
-        run_py('generate_web.py')
 
     elif action == 'night_1940':
         # 6. 19:40 [20:00 NXT 야간 최종 종가베팅 가이드] + 야간 대장주 TOP 3
         run_py('market_alert.py', ['--mode', 'night', '--force'])
+
+    # 텔레그램 발송 완료 후, 항상 웹 대시보드(dist/index.html)를 즉시 실시간 동시 빌드하여 GitHub Pages로 자동 배포
+    logger.info("🌐 [웹 대시보드 실시간 동시 빌드] generate_web.py 실행 시작")
+    run_py('generate_web.py')
+    logger.info("✅ [웹 대시보드 빌드 완료] GitHub Pages 배포 단계로 연동")
 
 
 if __name__ == '__main__':
