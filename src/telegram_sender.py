@@ -2,9 +2,14 @@
 텔레그램 봇을 통한 메시지 전송
 """
 import logging
-from telegram import Bot
-from telegram.error import TelegramError
 import asyncio
+
+try:
+    from telegram import Bot
+    from telegram.error import TelegramError
+except ImportError:
+    Bot = None
+    TelegramError = Exception
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +27,7 @@ class TelegramSender:
         """
         self.bot_token = bot_token
         self.chat_id = chat_id
-        self.bot = Bot(token=bot_token)
+        self.bot = Bot(token=bot_token) if Bot else None
     
     async def send_message(self, message, parse_mode='HTML'):
         """
