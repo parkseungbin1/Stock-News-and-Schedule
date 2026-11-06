@@ -600,7 +600,18 @@ def get_midday_market_guide():
     msg += f"• 🧭 CNN 심리: <b>{cnn_score:.0f}점</b> ({cnn_rating.upper()})\n\n"
 
     msg += f"💡 <b>오후장 실전 대응 가이드</b>\n{action_plan}"
-    msg += f"\n\n🔗 <b>실시간 대시보드</b>: {DASHBOARD_URL}"
+
+    try:
+        from src.market_flow import get_market_flow_data
+        flow = get_market_flow_data()
+        sectors = flow.get("sectors", [])
+        if sectors:
+            top_secs = [f"<b>{s['sector_name']}</b> {s['stars']}({s['total_volume_str']})" for s in sectors[:3]]
+            msg += f"\n\n💸 <b>실시간 머니플로우 자금 집중 TOP 3</b>\n• " + " | ".join(top_secs)
+    except Exception:
+        pass
+
+    msg += f"\n\n🔗 <b>실시간 대시보드</b>: {DASHBOARD_URL} (👉 <a href='{DASHBOARD_URL}#tab-flow'>머니플로우 전광판</a>)"
     return msg
 
 
@@ -672,7 +683,17 @@ def get_preclosing_guide():
         except Exception as e:
             logger.warning(f"사전 추천 종목 조회 실패: {e}")
 
-    msg += f"\n🔗 <b>실시간 대시보드 (100% 실시간 갱신)</b>: {DASHBOARD_URL}"
+    try:
+        from src.market_flow import get_market_flow_data
+        flow = get_market_flow_data()
+        sectors = flow.get("sectors", [])
+        if sectors:
+            top_secs = [f"<b>{s['sector_name']}</b> {s['stars']}({s['total_volume_str']})" for s in sectors[:3]]
+            msg += f"\n💸 <b>실시간 머니플로우 자금 집중 TOP 3</b>\n• " + " | ".join(top_secs) + "\n"
+    except Exception:
+        pass
+
+    msg += f"\n🔗 <b>실시간 대시보드 (100% 실시간 갱신)</b>: {DASHBOARD_URL} (👉 <a href='{DASHBOARD_URL}#tab-flow'>머니플로우 전광판</a>)"
     return msg
 
 

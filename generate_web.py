@@ -95,6 +95,15 @@ def generate_html():
     hm_kst = now_kst.hour * 100 + now_kst.minute
     is_closing_window = (now_kst.weekday() < 5) and (1500 <= hm_kst <= 1545)
 
+        # 2-X. 오늘의 시장 흐름 (머니플로우) 데이터 로드 & HTML 렌더링
+    try:
+        from src.market_flow import get_market_flow_data, render_market_flow_html
+        flow_data = get_market_flow_data()
+        market_flow_html = render_market_flow_html(flow_data)
+    except Exception as e:
+        print(f"시장 흐름 데이터 로드 실패: {e}")
+        market_flow_html = '<div class="empty-card">시장 흐름 데이터를 불러오지 못했습니다.</div>'
+
     # 2-2. AI 실시간 복합 리스크 스코어 계산 (0~100)
     try:
         from src.risk_score import compute_risk_score, get_risk_assessment
@@ -1554,6 +1563,317 @@ def generate_html():
         .rec-tab.tab-blue {{ border-top-color: #3b82f6; }}
         .rec-tab.tab-indigo {{ border-top-color: #a855f7; }}
         .rec-tab.tab-emerald {{ border-top-color: #10b981; }}
+        .rec-tab.tab-rose {{ border-top-color: #f43f5e; }}
+        .rec-tab.tab-rose.active {{
+            background: linear-gradient(135deg, rgba(244, 63, 94, 0.22), rgba(37, 99, 235, 0.22));
+            border-color: #f43f5e;
+            border-top: 3px solid #fb7185;
+            box-shadow: 0 6px 20px rgba(244, 63, 94, 0.32);
+        }}
+
+        /* 실시간 머니플로우 전광판 (어웨이크형) 전용 CSS */
+        .tmf-container {{
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            margin-top: 6px;
+        }}
+        .tmf-hero-box {{
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            padding: 16px 20px;
+            background: linear-gradient(135deg, rgba(244, 63, 94, 0.14), rgba(30, 41, 59, 0.75));
+            border: 1px solid rgba(244, 63, 94, 0.32);
+            border-left: 4px solid #f43f5e;
+            border-radius: 14px;
+        }}
+        .tmf-hero-title {{
+            font-size: 1.05rem;
+            font-weight: 800;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }}
+        .tmf-live-badge {{
+            font-size: 0.72rem;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 999px;
+            background: rgba(244, 63, 94, 0.25);
+            color: #fda4af;
+            border: 1px solid rgba(244, 63, 94, 0.5);
+        }}
+        .tmf-hero-desc {{
+            font-size: 0.8rem;
+            color: #94a3b8;
+            margin-top: 4px;
+        }}
+        .tmf-hero-right {{
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 4px;
+        }}
+        .tmf-stat-badge {{
+            font-size: 0.76rem;
+            color: #cbd5e1;
+            background: rgba(0, 0, 0, 0.35);
+            padding: 4px 10px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }}
+        .tmf-filter-bar {{
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 2px;
+        }}
+        .tmf-filter-btn {{
+            background: var(--surface);
+            border: 1px solid var(--border);
+            color: var(--text-sub);
+            padding: 8px 14px;
+            border-radius: 10px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }}
+        .tmf-filter-btn:hover {{
+            color: var(--text-main);
+            border-color: rgba(255, 255, 255, 0.25);
+        }}
+        .tmf-filter-btn.active {{
+            background: #2563eb;
+            color: #fff;
+            border-color: #3b82f6;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
+        }}
+        .tmf-filter-btn.tmf-btn-up.active {{
+            background: #059669;
+            border-color: #10b981;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
+        }}
+        .tmf-filter-btn.tmf-btn-down.active {{
+            background: #dc2626;
+            border-color: #ef4444;
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.35);
+        }}
+        .tmf-grid {{
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+            gap: 16px;
+        }}
+        @media (max-width: 768px) {{
+            .tmf-grid {{
+                grid-template-columns: 1fr;
+            }}
+            .tmf-hero-right {{
+                align-items: flex-start;
+            }}
+        }}
+        .tmf-card {{
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }}
+        .tmf-card:hover {{
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+        }}
+        .tmf-card.tmf-up {{
+            border-top: 3px solid #10b981;
+        }}
+        .tmf-card.tmf-down {{
+            border-top: 3px solid #3b82f6;
+        }}
+        .tmf-card-header {{
+            padding: 12px 16px;
+            background: rgba(0, 0, 0, 0.25);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }}
+        .tmf-header-title-row {{
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }}
+        .tmf-sector-name {{
+            font-size: 0.98rem;
+            font-weight: 800;
+            color: #f8fafc;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }}
+        .tmf-sector-stars {{
+            color: #fbbf24;
+            font-size: 0.88rem;
+        }}
+        .tmf-dir-badge {{
+            font-size: 0.72rem;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 6px;
+        }}
+        .tmf-dir-badge.tmf-up {{
+            background: rgba(16, 185, 129, 0.2);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.4);
+        }}
+        .tmf-dir-badge.tmf-down {{
+            background: rgba(59, 130, 246, 0.2);
+            color: #60a5fa;
+            border: 1px solid rgba(59, 130, 246, 0.4);
+        }}
+        .tmf-header-sub-row {{
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            font-size: 0.75rem;
+            color: #94a3b8;
+            flex-wrap: wrap;
+        }}
+        .tmf-vol-pill {{
+            background: rgba(255, 255, 255, 0.06);
+            padding: 2px 8px;
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }}
+        .tmf-cnt-pill {{
+            background: rgba(255, 255, 255, 0.04);
+            padding: 2px 8px;
+            border-radius: 6px;
+        }}
+        .tmf-star-rank {{
+            color: #fbbf24;
+            font-weight: 700;
+        }}
+        .tmf-table-scroll {{
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+        }}
+        .tmf-table-scroll::-webkit-scrollbar {{
+            width: 6px;
+        }}
+        .tmf-table-scroll::-webkit-scrollbar-thumb {{
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+        }}
+        .tmf-table {{
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.83rem;
+        }}
+        .tmf-table th {{
+            background: rgba(15, 23, 42, 0.85);
+            color: #94a3b8;
+            font-weight: 600;
+            font-size: 0.74rem;
+            padding: 8px 12px;
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 2;
+        }}
+        .tmf-table td {{
+            padding: 8px 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            vertical-align: middle;
+        }}
+        .tmf-table tr:hover td {{
+            background: rgba(255, 255, 255, 0.035);
+        }}
+        .tmf-td-name {{
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+        }}
+        .tmf-stock-link {{
+            color: #f1f5f9;
+            text-decoration: none;
+            font-weight: 700;
+            transition: color 0.15s;
+        }}
+        .tmf-stock-link:hover {{
+            color: #38bdf8;
+            text-decoration: underline;
+        }}
+        .tmf-stock-stars {{
+            color: #fbbf24;
+            font-size: 0.8rem;
+            margin-left: 2px;
+        }}
+        .tmf-crown-badge {{
+            font-size: 0.65rem;
+            background: rgba(245, 158, 11, 0.22);
+            color: #fbbf24;
+            padding: 1px 5px;
+            border-radius: 4px;
+            border: 1px solid rgba(245, 158, 11, 0.4);
+            font-weight: 800;
+        }}
+        .tmf-crown-badge-2 {{
+            font-size: 0.65rem;
+            background: rgba(59, 130, 246, 0.2);
+            color: #60a5fa;
+            padding: 1px 5px;
+            border-radius: 4px;
+            border: 1px solid rgba(59, 130, 246, 0.35);
+            font-weight: 700;
+        }}
+        .tmf-crown-badge-3 {{
+            font-size: 0.65rem;
+            background: rgba(255, 255, 255, 0.08);
+            color: #cbd5e1;
+            padding: 1px 5px;
+            border-radius: 4px;
+        }}
+        .tmf-td-change {{
+            text-align: right;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.84rem;
+        }}
+        .tmf-txt-up {{
+            color: #f87171 !important;
+        }}
+        .tmf-txt-down {{
+            color: #60a5fa !important;
+        }}
+        .tmf-txt-even {{
+            color: #94a3b8 !important;
+        }}
+        .tmf-td-vol {{
+            text-align: right;
+            font-family: 'JetBrains Mono', monospace;
+            color: #e2e8f0;
+            font-size: 0.78rem;
+            font-weight: 600;
+        }}
+        .tmf-td-note {{
+            text-align: center;
+        }}
+        .tmf-note-pill {{
+            font-size: 0.68rem;
+            background: rgba(255, 255, 255, 0.08);
+            color: #cbd5e1;
+            padding: 1px 5px;
+            border-radius: 4px;
+        }}
         .rec-tab.active {{
             background: linear-gradient(135deg, rgba(245, 158, 11, 0.22), rgba(37, 99, 235, 0.22));
             border-color: #f59e0b;
@@ -2467,6 +2787,7 @@ def generate_html():
                 <a href="https://m.stock.naver.com/worldstock/etf/SPY" target="_blank" rel="noopener noreferrer" class="quick-tag">SPY</a>
                 <a href="https://m.stock.naver.com/worldstock/etf/SOXX" target="_blank" rel="noopener noreferrer" class="quick-tag">SOXX</a>
                 <a href="https://m.stock.naver.com/worldstock/stock/NVDA.O/total" target="_blank" rel="noopener noreferrer" class="quick-tag">NVDA</a>
+                <a href="javascript:void(0)" onclick="switchRecTrack('flow', document.querySelector('.rec-tab.tab-rose')); document.getElementById('rec-flow-container').scrollIntoView({{behavior: 'smooth'}});" class="quick-tag" style="background: rgba(244,63,94,0.22); color: #fb7185; border-color: rgba(244,63,94,0.45); font-weight: 700;">💸 오늘 돈 몰리는 곳</a>
             </div>
         </div>
         <div class="header-right-controls">
@@ -2771,6 +3092,10 @@ def generate_html():
         <button class="rec-tab tab-emerald" onclick="switchRecTrack('playbook', this)">
             <span class="rec-tab-title">📘 실전 200% 활용법</span>
             <span class="rec-tag-pill pill-emerald">★ 10대 천재 매매공식</span>
+        </button>
+        <button class="rec-tab tab-rose" onclick="switchRecTrack('flow', this)">
+            <span class="rec-tab-title">💸 실시간 머니플로우</span>
+            <span class="rec-tag-pill" style="background:rgba(244,63,94,0.22); color:#fb7185; border-color:rgba(244,63,94,0.45);">🔥 오늘 돈 몰리는 곳</span>
         </button>
     </div>
 
@@ -3142,6 +3467,11 @@ def generate_html():
         </div>
     </div>
 
+    <!-- 2-7. 오늘의 시장 흐름 (머니플로우 전광판) 탭 컨테이너 -->
+    <div id="rec-flow-container" class="rec-container" style="display: none;">
+        {market_flow_html}
+    </div>
+
     <!-- 3. 실전 4대 종가베팅/매도 가이드 -->
     <div class="section-title" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
         <span>⏱️ 실전 4대 트레이딩 라이프사이클 가이드</span>
@@ -3275,6 +3605,31 @@ def generate_html():
             document.getElementById('rec-swing-history-container').style.display = (track === 'swing_history') ? 'block' : 'none';
             const pbEl = document.getElementById('rec-playbook-container');
             if (pbEl) pbEl.style.display = (track === 'playbook') ? 'block' : 'none';
+            const flowEl = document.getElementById('rec-flow-container');
+            if (flowEl) flowEl.style.display = (track === 'flow') ? 'block' : 'none';
+        }}
+
+        function filterFlowSectors(type, btn) {{
+            document.querySelectorAll('.tmf-filter-btn').forEach(b => b.classList.remove('active'));
+            if (btn) btn.classList.add('active');
+            document.querySelectorAll('.tmf-card').forEach(card => {{
+                const dir = card.getAttribute('data-direction');
+                const stars = card.getAttribute('data-stars') || '';
+                if (type === 'all') {{
+                    card.style.display = 'flex';
+                }} else if (type === 'UP') {{
+                    card.style.display = (dir === 'UP') ? 'flex' : 'none';
+                }} else if (type === 'DOWN') {{
+                    card.style.display = (dir === 'DOWN') ? 'flex' : 'none';
+                }} else if (type === 'STAR') {{
+                    card.style.display = (stars.indexOf('⭐️⭐️') !== -1) ? 'flex' : 'none';
+                }}
+            }});
+        }}
+
+        if (window.location.hash === '#tab-flow') {{
+            const flowTab = document.querySelector('.rec-tab.tab-rose');
+            if (flowTab) switchRecTrack('flow', flowTab);
         }}
 
         function filterPlaybook(cat, btn) {{
