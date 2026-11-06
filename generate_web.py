@@ -219,6 +219,15 @@ def generate_html():
         t2_pct = pick.get('target_2_pct', '+5.0%')
         sl = pick.get('stop_loss') or (int(round(price * 0.98)) if price else 0)
         sl_pct = pick.get('stop_loss_pct', '-2.0%')
+        t3 = pick.get('target_3')
+        t3_pct = pick.get('target_3_pct', '+9.0%')
+        t3_col = f'''
+                <div class="target-col col-t3">
+                    <div class="t-label">3차 목표가 ({t3_pct})</div>
+                    <div class="t-val">{t3:,}원</div>
+                </div>''' if t3 else ''
+        target_box_cls = 'rec-target-box four-col' if t3 else 'rec-target-box'
+        rec_date_html = pick.get('rec_date_html', '')
 
         reason = pick.get('reason', '오후 15:10 메이저 수급 집중 및 익일 갭상승 확률 극대화 종목')
         holding_period = pick.get('holding_period', '당일 15:10~15:30 매수 → 익일 09:00~09:20 전량 분할 매도')
@@ -322,6 +331,7 @@ def generate_html():
                 </div>
                 <div class="rec-score-badge">⭐ AI 적중도 {score}점</div>
             </div>
+            {rec_date_html}
             {eval_box}
 
             <div class="rec-price-row">
@@ -334,7 +344,7 @@ def generate_html():
                 </div>
             </div>
 
-            <div class="rec-target-box">
+            <div class="{target_box_cls}">
                 <div class="target-col col-t1">
                     <div class="t-label">1차 목표가 ({t1_pct})</div>
                     <div class="t-val">{t1:,}원</div>
@@ -342,7 +352,7 @@ def generate_html():
                 <div class="target-col col-t2">
                     <div class="t-label">2차 목표가 ({t2_pct})</div>
                     <div class="t-val">{t2:,}원</div>
-                </div>
+                </div>{t3_col}
                 <div class="target-col col-sl">
                     <div class="t-label">손절 기준 ({sl_pct})</div>
                     <div class="t-val">{sl:,}원</div>
@@ -371,6 +381,34 @@ def generate_html():
         """
 
     closing_cards_html = "".join([render_rec_card(p, "theme-closing") for p in closing_picks])
+    # 스윙 추천일 배지: 스캔 시각 + (이전에도 추천된 종목이면) 최초 추천일 D+n
+    ko_wd_list = ['월', '화', '수', '목', '금', '토', '일']
+    hm_now = now_kst.hour * 100 + now_kst.minute
+    if now_kst.weekday() >= 5 or hm_now < 900:
+        swing_basis = '직전 거래일 종가 기준'
+    elif hm_now <= 1530:
+        swing_basis = '장중 실시간 현재가 기준'
+    else:
+        swing_basis = '당일 종가 기준'
+    swing_scan_label = f"{now_kst.strftime('%Y-%m-%d')}({ko_wd_list[now_kst.weekday()]}) {now_kst.strftime('%H:%M')}"
+    first_rec_map = {}
+    try:
+        from src.swing_track_record import load_swing_history
+        for h in load_swing_history().get('history', []):
+            for hp in h.get('picks', []):
+                c = hp.get('code')
+                if c and (c not in first_rec_map or h['date'] < first_rec_map[c]['date']) and not hp.get('completed'):
+                    first_rec_map[c] = {'date': h['date'], 'entry': hp.get('entry_price', 0), 'status': hp.get('status', '')}
+    except Exception as e:
+        print(f"스윙 최초 추천일 조회 실패: {e}")
+    for sp in swing_picks:
+        fr = first_rec_map.get(sp.get('code'))
+        prev_html = ''
+        if fr and fr['date'] < now_kst.strftime('%Y-%m-%d'):
+            prev_html = f" · 🔁 <b>최초 추천 {fr['date']}</b> (진입가 {fr['entry']:,}원 · {fr['status']})"
+        sp['rec_date_html'] = (
+            f'<div class="rec-date-badge">📅 추천일 <b>{swing_scan_label}</b> 스캔 · {swing_basis}{prev_html}</div>'
+        )
     swing_cards_html = "".join([render_rec_card(p, "theme-swing") for p in swing_picks])
     breakout_cards_html = "".join([render_rec_card(p, "theme-breakout") for p in breakout_picks])
     pullback_cards_html = "".join([render_rec_card(p, "theme-swing") for p in pullback_picks]) if pullback_picks else "<div class='empty-card'>현재 과거 기준봉의 5일선·중심선 눌림목 구간에 진입한 종목이 없습니다.</div>"
@@ -2444,6 +2482,21 @@ def generate_html():
         .col-t1 .t-val {{ color: #f87171; }}
         .col-t2 .t-val {{ color: #ef4444; }}
         .col-sl .t-val {{ color: #60a5fa; }}
+        .col-t3 .t-val {{ color: #fbbf24; }}
+        .rec-target-box.four-col {{ grid-template-columns: repeat(4, 1fr); }}
+        @media (max-width: 480px) {{
+            .rec-target-box.four-col {{ grid-template-columns: repeat(2, 1fr); }}
+        }}
+        .rec-date-badge {{
+            font-size: 0.76rem;
+            color: #c4b5fd;
+            background: rgba(139, 92, 246, 0.12);
+            border: 1px solid rgba(139, 92, 246, 0.35);
+            border-radius: 8px;
+            padding: 5px 10px;
+            margin: 6px 0 10px;
+            line-height: 1.5;
+        }}
         .rec-desc-box {{
             background: rgba(0, 0, 0, 0.2);
             border: 1px solid rgba(255, 255, 255, 0.04);
@@ -3075,7 +3128,7 @@ def generate_html():
         </button>
         <button class="rec-tab tab-purple" onclick="switchRecTrack('swing', this)">
             <span class="rec-tab-title">🌊 2~5일 스윙 추천</span>
-            <span class="rec-tag-pill pill-purple">추세 파동 +5%~+10%</span>
+            <span class="rec-tag-pill pill-purple">3분할 +3/+5/+9% · 손절 -3%</span>
         </button>
         <button class="rec-tab tab-red" onclick="switchRecTrack('breakout', this)">
             <span class="rec-tab-title">🔥 당일 +15% 돌파 대장주</span>
@@ -3163,7 +3216,7 @@ def generate_html():
     <div id="rec-swing-container" class="rec-container" style="display: none;">
         <div class="rec-strategy-banner banner-purple">
             <div>
-                <b>🌊 2~5일 스윙 전략 핵심 가이드</b>: 20일선 우상향 눌림목 지지 종목 매수 → 2~5영업일간 +5%~+10% 추세 파동 누적 익절 (손절 -3%)
+                <b>🌊 2~5일 스윙 전략 핵심 가이드 ({swing_scan_label} 스캔)</b>: 20일선 우상향 눌림목 매수 → <b>1차 +3%에서 1/3 익절 후 잔량 손절선을 본절로 상향</b> → 2차 +5% 1/3 → 3차 +9% 잔량 익절 (최초 손절 -3%, 최대 5영업일 보유)
             </div>
         </div>
 
@@ -3198,8 +3251,8 @@ def generate_html():
                 <div class="criteria-item">
                     <div class="ci-num num-purple">04</div>
                     <div class="ci-content">
-                        <div class="ci-title">정량적 손익비 (목표 +5%~+9%, 손절 -3%)</div>
-                        <div class="ci-desc">손실은 -3%로 타이트하게 제한하고, 파동 상승 시 +5%~+9% 분할 익절하여 계좌 수익 곡선을 우상향시키는 전략</div>
+                        <div class="ci-title">3분할 청산 + 본절 스탑 (+3% / +5% / +9%, 손절 -3%)</div>
+                        <div class="ci-desc">+3%에서 1/3을 먼저 챙기고 잔량 손절선을 본절로 올려 '수익 난 종목이 손실로 끝나는' 상황을 차단, 나머지 2/3로 +5%·+9% 추세를 끝까지 추종</div>
                     </div>
                 </div>
             </div>
@@ -3287,7 +3340,7 @@ def generate_html():
     <div id="rec-swing-history-container" class="rec-container" style="display: none;">
         <div class="rec-strategy-banner banner-purple">
             <div>
-                <b>📊 최근 30일(1개월) 2~5일 스윙 실전 성과 히스토리</b>: 20일선 눌림목 반등 추천 종목의 2~5영업일간 최고가 도달 수익률(1차 목표 +5%, 2차 목표 +9%) 및 손절가 이탈 여부를 정밀 추적·누적 검증합니다.
+                <b>📊 최근 30일(1개월) 2~5일 스윙 실전 성과 히스토리</b>: 20일선 눌림목 반등 추천 종목의 2~5영업일간 최고가 도달 수익률(3분할: 1차 +3% → 본절 스탑, 2차 +5%, 3차 +9%) 및 손절가 이탈 여부를 정밀 추적·누적 검증합니다.
             </div>
         </div>
         {swing_history_tab_html}
