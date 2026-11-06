@@ -522,13 +522,128 @@ def get_evening_betting_guide():
 # ==========================================================
 # 통합 디스패처: 시간에 따라 자동 분기
 # ==========================================================
+# ==========================================================
+# 3-1. [오후 13:00] 오후장 개시 시황 & 외인/기관 수급 중간점검
+# ==========================================================
+def get_midday_market_guide():
+    kp_close, kp_ratio, kp_for, kp_inst, kp_for_num, kp_inst_num = fetch_kr_market('KOSPI')
+    kd_close, kd_ratio, kd_for, kd_inst, kd_for_num, kd_inst_num = fetch_kr_market('KOSDAQ')
+    fut_price, fut_ratio = fetch_nasdaq_futures()
+    fx_close, fx_ratio, _ = fetch_usdkrw()
+    cnn_score, cnn_rating = fetch_cnn_fear_greed()
+
+    now_kst = datetime.now(KST)
+    ko_wd = ['월', '화', '수', '목', '금', '토', '일'][now_kst.weekday()]
+    date_str = f"{now_kst.strftime('%m/%d')}({ko_wd})"
+
+    total_major = kp_for_num + kp_inst_num + kd_for_num + kd_inst_num
+    score = 50.0 + (fut_ratio * 15) * 0.35 + min(max(total_major / 150, -30), 30) * 0.35 - (fx_ratio * 15) * 0.15
+    score = min(max(round(score), 0), 100)
+    gauge = make_gauge_bar(score)
+
+    def arr(r):
+        return '🔺' if r > 0 else ('🔻' if r < 0 else '➖')
+
+    fut_arr = arr(fut_ratio) if fut_price else ''
+    fx_desc = '원화 강세' if fx_ratio < 0 else '원화 약세'
+
+    if total_major > 1000:
+        supply_tone = "🟢 외인/기관 메이저 양매수 유입 (오후장 지수 견인 기대)"
+    elif total_major < -1000:
+        supply_tone = "🔴 외인/기관 쌍끌이 매도세 지속 (오후장 보수적 관망 권장)"
+    else:
+        supply_tone = "🟡 수급 공방전 진행 중 (종목별 차별화 장세)"
+
+    msg = f"☀️ <b>[13:00 오후장 개시 & 수급 중간점검]</b> ({date_str} 13:00 알림)\n"
+    msg += "━━━━━━━━━━━━━━━━━━━━\n"
+    msg += f"🎯 <b>수급 판정</b>: <b>{supply_tone}</b>\n"
+    msg += f"📊 <b>오후장 점수</b>: <b>{score}점</b> [{gauge}] | <b>메이저 순매수: {total_major:+,}억</b>\n"
+    msg += "━━━━━━━━━━━━━━━━━━━━\n\n"
+
+    msg += "⚡ <b>오후장 외인/기관 실시간 수급 현황</b>\n"
+    msg += f"• 🇰🇷 코스피: <b>{kp_close}</b> ({kp_ratio:+.2f}%) | 외인 {kp_for}억, 기관 {kp_inst}억\n"
+    msg += f"• 🇰🇷 코스닥: <b>{kd_close}</b> ({kd_ratio:+.2f}%) | 외인 {kd_for}억, 기관 {kd_inst}억\n"
+    if fut_price:
+        msg += f"• 🇺🇸 NQ선물: <b>{fut_price:,.1f}</b> ({fut_ratio:+.2f}%) {fut_arr} | 💱 환율: <b>{fx_close}원</b> ({fx_desc})\n"
+    msg += f"• 🧭 CNN 심리: <b>{cnn_score:.0f}점</b> ({cnn_rating.upper()})\n\n"
+
+    msg += "💡 <b>오후장 실전 대응 가이드</b>\n"
+    if score >= 60:
+        msg += "• <b>전략</b>: 메이저 수급이 지수를 견인 중입니다. 거래대금 상위 주도 섹터 1등주의 오후 눌림목 구간을 주목하세요.\n"
+        msg += "• <b>원칙</b>: 무리한 추격매수보다는 14:00 이후 종가베팅 후보 압축에 집중하세요."
+    elif score >= 40:
+        msg += "• <b>전략</b>: 지수는 횡보/등락 중이며 개별 테마주 위주로 순환매가 빠르게 돕니다. 비중 조절 필수!\n"
+        msg += "• <b>원칙</b>: 14:00 종가베팅 사전 레이더 알림 전까지 무리한 뇌동매매 자제."
+    else:
+        msg += "• <b>전략</b>: 외인/기관 매도세로 지수 하방 압력이 큽니다. 신규 매수 일체 자제 및 현금 비중 확보 우선!\n"
+        msg += "• <b>원칙</b>: 손실 중인 종목 물타기 금지, 리스크 관리에 만전을 기하세요."
+
+    msg += f"\n\n🔗 <b>실시간 대시보드</b>: {DASHBOARD_URL}"
+    return msg
+
+
+# ==========================================================
+# 3-2. [오후 14:00] 종가베팅 1시간 전 사전 레이더 & 시장 리스크 점검
+# ==========================================================
+def get_preclosing_guide():
+    kp_close, kp_ratio, kp_for, kp_inst, kp_for_num, kp_inst_num = fetch_kr_market('KOSPI')
+    kd_close, kd_ratio, kd_for, kd_inst, kd_for_num, kd_inst_num = fetch_kr_market('KOSDAQ')
+    fut_price, fut_ratio = fetch_nasdaq_futures()
+    fx_close, fx_ratio, _ = fetch_usdkrw()
+
+    total_major = kp_for_num + kp_inst_num + kd_for_num + kd_inst_num
+    score = 50.0 + (fut_ratio * 15) * 0.35 + min(max(total_major / 150, -30), 30) * 0.35 - (fx_ratio * 15) * 0.15
+    score = min(max(round(score), 0), 100)
+    gauge = make_gauge_bar(score)
+
+    now_kst = datetime.now(KST)
+    ko_wd = ['월', '화', '수', '목', '금', '토', '일'][now_kst.weekday()]
+    date_str = f"{now_kst.strftime('%m/%d')}({ko_wd})"
+
+    if score >= 70:
+        pre_verdict = "🟢 종가베팅 진입 적합 (15:10 적극 공략 준비)"
+        pre_guide = "• <b>예상 비중</b>: 60~80% 적극 진입 가능\n• <b>포인트</b>: 메이저 수급이 견조하여 15:10 공식 추천 종목 진입 확률이 매우 높습니다."
+    elif score >= 50:
+        pre_verdict = "🟡 선별 진입 권장 (확실한 주도주 1종목만 30~50%)"
+        pre_guide = "• <b>예상 비중</b>: 30~50% 선별 진입\n• <b>포인트</b>: 지수 변동성에 유의하며 거래대금 최상위 1등주 위주로 압축 대응하세요."
+    else:
+        pre_verdict = "🔴 종가베팅 주의/보수적 관망 (비중 20% 이하 또는 전량 현금)"
+        pre_guide = "• <b>예상 비중</b>: 0~20% 극소액 또는 관망\n• <b>포인트</b>: 하방 리스크가 잔존하므로 15:10 최종 판정 점수를 반드시 재확인하세요."
+
+    msg = f"🎯 <b>[14:00 종가베팅 1시간 전 사전 레이더]</b> ({date_str} 14:00 알림)\n"
+    msg += "━━━━━━━━━━━━━━━━━━━━\n"
+    msg += f"🎯 <b>사전 판정</b>: <b>{pre_verdict}</b>\n"
+    msg += f"📊 <b>예비 리스크 점수</b>: <b>{score}점</b> [{gauge}] | <b>15:10 골든타임 1시간 전</b>\n"
+    msg += "━━━━━━━━━━━━━━━━━━━━\n\n"
+
+    msg += "⚡ <b>장마감 1시간 전 시장 지표 체크</b>\n"
+    msg += f"• 🇰🇷 코스피: <b>{kp_close}</b> ({kp_ratio:+.2f}%) | 외인 {kp_for}억, 기관 {kp_inst}억\n"
+    msg += f"• 🇰🇷 코스닥: <b>{kd_close}</b> ({kd_ratio:+.2f}%) | 외인 {kd_for}억, 기관 {kd_inst}억\n"
+    if fut_price:
+        msg += f"• 🇺🇸 NQ선물: <b>{fut_price:,.1f}</b> ({fut_ratio:+.2f}%) | 💱 환율: <b>{fx_close}원</b>\n"
+
+    msg += f"\n💡 <b>15:10 골든타임 대비 행동 요령</b>\n{pre_guide}\n"
+
+    try:
+        from src.recommender import get_recommendations
+        rec = get_recommendations()
+        closing_picks = rec.get('closing', [])
+        if closing_picks:
+            msg += "\n🔥 <b>현재 시점 유력 후보 레이더 TOP 3 (15:10 최종 확정)</b>\n"
+            for idx, s in enumerate(closing_picks[:3], 1):
+                chart_url = s.get('chart_url', f"https://m.stock.naver.com/domestic/stock/{s['code']}/total")
+                sec = s.get('sector', '주도주')
+                msg += f"{idx}. <a href=\"{chart_url}\"><b>{s['name']}</b></a> (<b>{s['change_pct']:+.2f}%</b>) 🏷️ <code>[{sec}]</code> | 💰 거래대금: <b>{s['amount_eok']:,}억</b>\n"
+    except Exception as e:
+        logger.warning(f"사전 추천 종목 조회 실패: {e}")
+
+    msg += f"\n🔗 <b>실시간 대시보드 (100% 실시간 갱신)</b>: {DASHBOARD_URL}"
+    return msg
+
+
 def get_market_score_message(mode=None):
     """
-    지정된 mode 또는 현재 KST 시간에 맞춰 4대 가이드 반환
-    1. 07:40 타임 (06:00~08:15 KST) -> [08:00 NXT 프리마켓 시초가 매도 가이드]
-    2. 08:40 타임 (08:15~10:59 KST) -> [09:00 정규장 개장 최종 매도 가이드]
-    3. 15:10 타임 (11:00~16:59 KST) -> [정규장 1차 종가베팅 가이드]
-    4. 19:40 타임 (17:00~05:59 KST) -> [NXT 8시 마감 최종 종가베팅 가이드]
+    지정된 mode 또는 현재 KST 시간에 맞춰 가이드 반환
     """
     if not mode or mode == 'auto':
         now_kst = datetime.now(KST)
@@ -539,7 +654,11 @@ def get_market_score_message(mode=None):
             mode = 'morning_740'
         elif 8 <= hour < 11:
             mode = 'morning_840'
-        elif 11 <= hour < 17:
+        elif hour == 13:
+            mode = 'midday_1300'
+        elif hour == 14 and minute < 45:
+            mode = 'preclosing_1400'
+        elif (hour == 14 and minute >= 45) or (15 <= hour < 17):
             mode = 'closing'
         else:
             mode = 'night'
@@ -548,6 +667,10 @@ def get_market_score_message(mode=None):
         return get_morning_sell_guide(time_label="07:40", is_nxt=True)
     elif mode == 'morning_840':
         return get_morning_sell_guide(time_label="08:40", is_nxt=False)
+    elif mode == 'midday_1300':
+        return get_midday_market_guide()
+    elif mode == 'preclosing_1400':
+        return get_preclosing_guide()
     elif mode == 'closing':
         return get_closing_betting_guide()
     else:

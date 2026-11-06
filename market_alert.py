@@ -29,7 +29,7 @@ def main():
     parser = argparse.ArgumentParser(description="종가베팅 & 시초가 매도 시황 알림 발송")
     parser.add_argument(
         '--mode',
-        choices=['morning_740', 'morning_840', 'morning', 'closing', 'night', 'auto'],
+        choices=['morning_740', 'morning_840', 'morning', 'midday_1300', 'preclosing_1400', 'closing', 'night', 'auto'],
         default='auto',
         help="발송 모드 지정 (기본값: auto - 현재 KST 시간 자동 판별)"
     )
@@ -62,6 +62,14 @@ def main():
 
         if args.mode == 'morning_840' and (now.hour > 9 or (now.hour == 9 and now.minute > 5)):
             print(f"⚠️ [발송 건너뜀] 현재 시각({time_str} KST)은 09:00 정규장 개장 이후입니다. 지연 실행된 08:40 가이드 발송을 취소합니다.")
+            return
+
+        if args.mode == 'midday_1300' and (now.hour > 13 or (now.hour == 13 and now.minute > 45)):
+            print(f"⚠️ [발송 건너뜀] 현재 시각({time_str} KST)은 13:00 오후장 개시 이후 한참 지연되었습니다. 발송을 취소합니다.")
+            return
+
+        if args.mode == 'preclosing_1400' and (now.hour > 14 or (now.hour == 14 and now.minute > 45)):
+            print(f"⚠️ [발송 건너뜀] 현재 시각({time_str} KST)은 14:00 이후 지연되었습니다. 곧 15:10 종가베팅 알림이 실행되므로 취소합니다.")
             return
 
         if args.mode == 'closing' and (now.hour > 15 or (now.hour == 15 and now.minute > 35)):

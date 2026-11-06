@@ -2516,16 +2516,18 @@ def generate_html():
                 </div>
 
                 <div class="cloud-schedule-box">
-                    <div class="csb-title">⏰ BiniStock 실시간 자동 배포 스케줄 (텔레그램 6대 알림 100% 동기화)</div>
+                    <div class="csb-title">⏰ BiniStock 실시간 자동 배포 스케줄 (텔레그램 8대 알림 100% 동기화)</div>
                     <ul>
                         <li>🌅 <b>07:00 KST</b> : 모닝 시황 브리핑 & 주간 캘린더</li>
                         <li>⚡ <b>07:35 KST</b> : NXT 개장 전 1차 시초가 매도 가이드</li>
                         <li>📑 <b>08:10 KST</b> : DART 실적 & 핵심 공시</li>
                         <li>🎯 <b>08:35 KST</b> : 정규장 개장 전 최종 시초가 매도 가이드</li>
+                        <li>☀️ <b>13:00 KST</b> : 오후장 개시 시황 & 수급 중간점검</li>
+                        <li>🎯 <b>14:00 KST</b> : 종가베팅 1시간 전 사전 레이더 & 리스크 점검</li>
                         <li>🔥 <b>15:10 KST</b> : 정규장 15:10 공식 종가베팅 골든타임</li>
                         <li>🌙 <b>19:40 KST</b> : NXT 야간 최종 종가베팅 가이드</li>
                     </ul>
-                    <div class="csb-sub">※ 텔레그램 6대 알림 발송과 동시에 웹 대시보드가 실시간으로 자동 갱신됩니다.</div>
+                    <div class="csb-sub">※ 텔레그램 8대 알림 발송과 동시에 웹 대시보드가 실시간으로 자동 갱신됩니다.</div>
                 </div>
             </div>
         </div>
